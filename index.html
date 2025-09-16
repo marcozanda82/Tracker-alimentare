@@ -2104,16 +2104,66 @@
             eseguiMigrazioneStorico(); 
             initAppUI(); 
             
-            // Logica per gestire il nuovo modale del profilo
+// --- INIZIO BLOCCO CORRETTO PER LA GESTIONE DEL PROFILO ---
+
             const profileModal = document.getElementById('profile-modal');
             const btnOpenProfile = document.getElementById('btn-open-profile');
+            const profileFormFields = ['profile-age', 'profile-gender', 'profile-weight', 'profile-height', 'profile-activity', 'profile-goal'];
+
+            // Funzione centralizzata per ricalcolare e mostrare gli obiettivi nel modale
+            const recalculateAndDisplayProfileGoals = () => {
+                const tempProfile = {
+                    age: parseFloat(document.getElementById('profile-age').value),
+                    gender: document.getElementById('profile-gender').value,
+                    weight: parseFloat(document.getElementById('profile-weight').value),
+                    height: parseFloat(document.getElementById('profile-height').value),
+                    activity: parseFloat(document.getElementById('profile-activity').value),
+                    goal: parseFloat(document.getElementById('profile-goal').value),
+                };
+
+                // Esegui il calcolo solo se i dati base sono presenti
+                if(tempProfile.age && tempProfile.weight && tempProfile.height) {
+                    const calculatedGoals = calculateNutritionalGoals(tempProfile);
+                    
+                    // Mostra i valori calcolati nei campi di override, ma solo se sono vuoti
+                    // per non sovrascrivere le scelte manuali dell'utente
+                    if (!document.getElementById('profile-kcal').value) document.getElementById('profile-kcal').value = calculatedGoals.kcal;
+                    if (!document.getElementById('profile-prot').value) document.getElementById('profile-prot').value = calculatedGoals.prot;
+                    if (!document.getElementById('profile-carb').value) document.getElementById('profile-carb').value = calculatedGoals.carb;
+                    if (!document.getElementById('profile-fat').value) document.getElementById('profile-fat').value = calculatedGoals.fatTotal;
+                }
+            };
+
+            const forceRecalculateAndDisplayProfileGoals = () => {
+                 const tempProfile = {
+                    age: parseFloat(document.getElementById('profile-age').value),
+                    gender: document.getElementById('profile-gender').value,
+                    weight: parseFloat(document.getElementById('profile-weight').value),
+                    height: parseFloat(document.getElementById('profile-height').value),
+                    activity: parseFloat(document.getElementById('profile-activity').value),
+                    goal: parseFloat(document.getElementById('profile-goal').value),
+                };
+
+                if(!tempProfile.age || !tempProfile.weight || !tempProfile.height) {
+                    alert("Per favore, compila Età, Peso e Altezza per il calcolo.");
+                    return;
+                }
+                const calculatedGoals = calculateNutritionalGoals(tempProfile);
+                
+                // Sovrascrive sempre i campi quando si preme il pulsante
+                document.getElementById('profile-kcal').value = calculatedGoals.kcal;
+                document.getElementById('profile-prot').value = calculatedGoals.prot;
+                document.getElementById('profile-carb').value = calculatedGoals.carb;
+                document.getElementById('profile-fat').value = calculatedGoals.fatTotal;
+            };
+
 
             btnOpenProfile.addEventListener('click', () => {
                 document.getElementById('profile-age').value = userProfile.age || '';
                 document.getElementById('profile-gender').value = userProfile.gender || 'male';
                 document.getElementById('profile-weight').value = userProfile.weight || '';
                 document.getElementById('profile-height').value = userProfile.height || '';
-                document.getElementById('profile-activity').value = userProfile.activity || '1.2';
+                document.getElementById('profile-activity').value = userProfile.activity ?? '1.2';
                 document.getElementById('profile-goal').value = userProfile.goal ?? '-400';
                 document.getElementById('profile-kcal').value = userProfile.manual_kcal || '';
                 document.getElementById('profile-prot').value = userProfile.manual_prot || '';
@@ -2121,6 +2171,36 @@
                 document.getElementById('profile-fat').value = userProfile.manual_fat || '';
                 profileModal.style.display = 'block';
             });
+
+            // Aggiungi un listener a tutti i campi del profilo per il ricalcolo automatico
+            profileFormFields.forEach(fieldId => {
+                document.getElementById(fieldId).addEventListener('change', recalculateAndDisplayProfileGoals);
+            });
+            
+            // Il pulsante ora forza il ricalcolo, sovrascrivendo i valori manuali
+            document.getElementById('btn-calculate-profile-ai').addEventListener('click', forceRecalculateAndDisplayProfileGoals);
+
+            document.getElementById('btn-save-profile').addEventListener('click', () => {
+                userProfile.age = parseFloat(document.getElementById('profile-age').value) || null;
+                userProfile.gender = document.getElementById('profile-gender').value;
+                userProfile.weight = parseFloat(document.getElementById('profile-weight').value) || null;
+                userProfile.height = parseFloat(document.getElementById('profile-height').value) || null;
+                userProfile.activity = parseFloat(document.getElementById('profile-activity').value);
+                userProfile.goal = parseFloat(document.getElementById('profile-goal').value);
+                userProfile.manual_kcal = parseFloat(document.getElementById('profile-kcal').value) || null;
+                userProfile.manual_prot = parseFloat(document.getElementById('profile-prot').value) || null;
+                userProfile.manual_carb = parseFloat(document.getElementById('profile-carb').value) || null;
+                userProfile.manual_fat = parseFloat(document.getElementById('profile-fat').value) || null;
+
+                saveSingleItemToCloud('userProfile', userProfile);
+                localStorage.setItem('userProfile', JSON.stringify(userProfile));
+                alert("Profilo salvato!");
+                profileModal.style.display = 'none';
+                aggiornaUI();
+                renderMealBuilder();
+            });
+
+            // --- FINE BLOCCO CORRETTO ---
 
             document.getElementById('btn-calculate-profile-ai').addEventListener('click', () => {
                 const tempProfile = {
@@ -2693,3 +2773,4 @@
 </body>
 
 </html>
+
