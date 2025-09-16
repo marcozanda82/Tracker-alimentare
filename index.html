@@ -2114,7 +2114,7 @@
                 document.getElementById('profile-weight').value = userProfile.weight || '';
                 document.getElementById('profile-height').value = userProfile.height || '';
                 document.getElementById('profile-activity').value = userProfile.activity || '1.2';
-                document.getElementById('profile-goal').value = userProfile.goal || '-400';
+                document.getElementById('profile-goal').value = userProfile.goal ?? '-400';
                 document.getElementById('profile-kcal').value = userProfile.manual_kcal || '';
                 document.getElementById('profile-prot').value = userProfile.manual_prot || '';
                 document.getElementById('profile-carb').value = userProfile.manual_carb || '';
@@ -2691,4 +2691,5 @@
         });
     </script>
 </body>
+
 </html>
