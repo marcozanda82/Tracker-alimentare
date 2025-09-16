@@ -1484,17 +1484,56 @@
     }
     
     // --- PUNTO DI INGRESSO DELLO SCRIPT ---
-    document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => {
+        // --- INIZIO BLOCCO AGGIUNTO ---
+        // Seleziona tutti gli elementi del DOM necessari per l'autenticazione
+        const btnRegister = document.getElementById('btn-register');
+        const btnLogin = document.getElementById('btn-login');
+        const btnSignOut = document.getElementById('btn-sign-out');
+        const userEmailInput = document.getElementById('user-email');
+        const userPasswordInput = document.getElementById('user-password');
+        const authStatusP = document.getElementById('auth-status');
+        const authSection = document.getElementById('auth-section');
+        const mainTrackerContent = document.getElementById('main-tracker-content');
+        const welcomeMessage = document.getElementById('welcome-message');
+        // --- FINE BLOCCO AGGIUNTO ---
+
         eseguiMigrazioneStorico();
 
         try {
-            if (!getApps().some(app => app.name === "globalTrackerApp")) { firebaseApp = initializeApp(firebaseConfig, "globalTrackerApp"); } else { firebaseApp = getApp("globalTrackerApp"); }
+            if (!getApps().some(app => app.name === "globalTrackerApp")) { 
+                firebaseApp = initializeApp(firebaseConfig, "globalTrackerApp"); 
+            } else { 
+                firebaseApp = getApp("globalTrackerApp"); 
+            }
             db = getDatabase(firebaseApp);
             auth = getAuth(firebaseApp);
 
-            btnRegister.addEventListener('click', async () => { try { await createUserWithEmailAndPassword(auth, userEmailInput.value, userPasswordInput.value); alert("Registrazione completata!"); } catch (e) { alert(e.message); } });
-            btnLogin.addEventListener('click', async () => { try { await signInWithEmailAndPassword(auth, userEmailInput.value, userPasswordInput.value); } catch (e) { alert(e.message); } });
-            btnSignOut.addEventListener('click', async () => { try { await signOut(auth); location.reload(); } catch (e) { alert(e.message); } });
+            btnRegister.addEventListener('click', async () => { 
+                try { 
+                    await createUserWithEmailAndPassword(auth, userEmailInput.value, userPasswordInput.value); 
+                    alert("Registrazione completata!"); 
+                } catch (e) { 
+                    alert(e.message); 
+                } 
+            });
+
+            btnLogin.addEventListener('click', async () => { 
+                try { 
+                    await signInWithEmailAndPassword(auth, userEmailInput.value, userPasswordInput.value); 
+                } catch (e) { 
+                    alert(e.message); 
+                } 
+            });
+
+            btnSignOut.addEventListener('click', async () => { 
+                try { 
+                    await signOut(auth); 
+                    location.reload(); 
+                } catch (e) { 
+                    alert(e.message); 
+                } 
+            });
 
             onAuthStateChanged(auth, async (user) => {
                 const isLoggedIn = !!user;
@@ -1518,6 +1557,7 @@
                 </body>
 
 </html>
+
 
 
 
