@@ -1354,8 +1354,27 @@
         });
     }
 
-    // ... e così via per tutte le altre funzioni fino a `eseguiMigrazioneStorico`
-    // ...
+    function calcolaQualitaProteine(item) {
+        if (!item || !item.prot) return { score: 0, limiting: 'N/A' };
+        let minRatio = Infinity;
+        let limitingAmino = 'Nessuno';
+        const itemProteineGrammi = item.prot;
+        for (const amino in OBIETTIVI_AMINO) {
+            const aminoMg = item[amino] || 0;
+            const aminoPerGrammoProteina = itemProteineGrammi > 0 ? (aminoMg / itemProteineGrammi) : 0;
+            const riferimentoMg = PROFILO_AMINOACIDICO_RIFERIMENTO[amino];
+            if (riferimentoMg > 0) {
+                const ratio = aminoPerGrammoProteina / riferimentoMg;
+                if (ratio < minRatio) {
+                    minRatio = ratio;
+                    limitingAmino = amino.charAt(0).toUpperCase() + amino.slice(1);
+                }
+            }
+        }
+        const score = Math.min(100, Math.round(minRatio * 100));
+        return { score, limiting: limitingAmino };
+    }
+
 
     function initAppUI() {
         const mealTypeSelector = document.getElementById('meal-type-selector');
@@ -1379,20 +1398,39 @@
         }
     }
 
-function initializeAppTracker() {
+    function initializeAppTracker() {
         const btnOpenProfile = document.getElementById('btn-open-profile');
         const profileModal = document.getElementById('profile-modal');
         const goalDropdown = document.getElementById('profile-goal');
-        
-        // La riga seguente causava l'errore perché l'elemento non esiste nell'HTML
-        // const goalAdjustmentInput = document.getElementById('profile-goal-adjustment');
-        
         const btnScanBarcode = document.getElementById('btn-scan-barcode');
         const barcodeScannerModal = document.getElementById('barcode-scanner-modal');
         const barcodeModalCloseBtn = barcodeScannerModal.querySelector('.modal-close');
         
         initAppUI();
         
+        const builderDescInput = document.getElementById('builder-desc');
+        
+        const popolaCampiNutrienti = () => {
+            const nomeAlimento = builderDescInput.value.toLowerCase();
+            const sanitizedKey = sanitizeFirebaseKey(nomeAlimento);
+            const datiAlimento = foodDatabase[sanitizedKey];
+
+            if (datiAlimento) {
+                Object.keys(datiAlimento).forEach(key => {
+                    const inputId = `builder-${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
+                    const inputElement = document.getElementById(inputId);
+                    if (inputElement) {
+                        inputElement.value = datiAlimento[key] || '';
+                    }
+                });
+                if (datiAlimento.kcal || datiAlimento.cal) {
+                    document.getElementById('builder-kcal').value = datiAlimento.kcal || datiAlimento.cal;
+                }
+            }
+        };
+
+        builderDescInput.addEventListener('input', popolaCampiNutrienti);
+
         const recalculateAndDisplayProfileGoals = () => {
             const tempProfile = {
                 age: parseFloat(document.getElementById('profile-age').value),
@@ -1401,8 +1439,7 @@ function initializeAppTracker() {
                 height: parseFloat(document.getElementById('profile-height').value),
                 activity: parseFloat(document.getElementById('profile-activity').value),
                 goal: parseFloat(goalDropdown.value),
-                // Rimosso riferimento a goal_adjustment
-                goal_adjustment: null 
+                goal_adjustment: null
             };
             if(tempProfile.age && tempProfile.weight && tempProfile.height) {
                 const calculatedGoals = calculateNutritionalGoals(tempProfile);
@@ -1420,11 +1457,6 @@ function initializeAppTracker() {
             document.getElementById('profile-height').value = userProfile.height || '';
             document.getElementById('profile-activity').value = userProfile.activity ?? '1.2';
             document.getElementById('profile-goal').value = userProfile.goal ?? '-400';
-            
-            // Le righe seguenti causavano errori perché 'goalAdjustmentInput' era null
-            // goalAdjustmentInput.value = userProfile.goal_adjustment || '';
-            // goalDropdown.disabled = !!goalAdjustmentInput.value;
-
             document.getElementById('profile-kcal').value = userProfile.manual_kcal || '';
             document.getElementById('profile-prot').value = userProfile.manual_prot || '';
             document.getElementById('profile-carb').value = userProfile.manual_carb || '';
@@ -1432,8 +1464,6 @@ function initializeAppTracker() {
             profileModal.style.display = 'block';
         });
 
-        // Ho rimosso gli event listener che dipendevano da 'goalAdjustmentInput'
-        
         goalDropdown.addEventListener('change', () => {
             recalculateAndDisplayProfileGoals();
         });
@@ -1451,16 +1481,16 @@ function initializeAppTracker() {
             userProfile.height = parseFloat(document.getElementById('profile-height').value) || null;
             userProfile.activity = parseFloat(document.getElementById('profile-activity').value);
             userProfile.goal = parseFloat(goalDropdown.value);
-            
-            // Rimosso riferimento a goal_adjustment
-            userProfile.goal_adjustment = null; 
-
+            userProfile.goal_adjustment = null;
             userProfile.manual_kcal = parseFloat(document.getElementById('profile-kcal').value) || null;
             userProfile.manual_prot = parseFloat(document.getElementById('profile-prot').value) || null;
             userProfile.manual_carb = parseFloat(document.getElementById('profile-carb').value) || null;
             userProfile.manual_fat = parseFloat(document.getElementById('profile-fat').value) || null;
-            saveSingleItemToCloud('userProfile', userProfile);
+            
+            // Salva su Local Storage E su Cloud
             localStorage.setItem('userProfile', JSON.stringify(userProfile));
+            saveSingleItemToCloud('userProfile', userProfile);
+
             alert("Profilo salvato!");
             profileModal.style.display = 'none';
             aggiornaUI();
@@ -1468,12 +1498,11 @@ function initializeAppTracker() {
         });
         
         btnScanBarcode.addEventListener('click', startBarcodeScanner);
-        barcodeModalCloseBtn.addEventListener('click', stopBarcodeScanner);
+        if(barcodeModalCloseBtn) barcodeModalCloseBtn.addEventListener('click', stopBarcodeScanner);
         document.getElementById('daily-notes').addEventListener('input', () => salvaGiorno(giornoVisualizzato, datiGiornalieri));
         document.getElementById('btn-vai-a-oggi').addEventListener('click', () => caricaGiorno(getTodayString()));
-        // ... Aggiungi tutti gli altri event listener qui
+        // Aggiungi qui gli altri event listener...
     }
-    
 
     function eseguiMigrazioneStorico() {
         const vecchioStoricoRaw = localStorage.getItem('trackerStorico');
@@ -1487,8 +1516,8 @@ function initializeAppTracker() {
             }
         } catch (e) { console.error("Errore migrazione storico.", e); }
     }
-
- async function startBarcodeScanner() {
+    
+    async function startBarcodeScanner() {
         const barcodeScannerModal = document.getElementById('barcode-scanner-modal');
         const video = document.getElementById('barcode-scanner-video');
         const statusEl = document.getElementById('barcode-scanner-status');
@@ -1497,7 +1526,6 @@ function initializeAppTracker() {
         statusEl.textContent = 'Avvio della fotocamera...';
 
         try {
-            // Richiedi l'accesso alla fotocamera posteriore del dispositivo
             videoStream = await navigator.mediaDevices.getUserMedia({ 
                 video: { facingMode: 'environment' } 
             });
@@ -1505,12 +1533,7 @@ function initializeAppTracker() {
             await video.play();
             statusEl.textContent = 'Inquadra un codice a barre...';
             isScanning = true;
-            
             // NOTA: Manca una libreria per la decodifica del codice a barre.
-            // Questo codice attiva solo la fotocamera. Per leggere effettivamente
-            // il codice a barre, dovresti integrare una libreria come
-            // zxing-js/library o simili e avviare la scansione qui.
-            
         } catch (err) {
             console.error("Errore nell'accesso alla fotocamera:", err);
             statusEl.textContent = 'Impossibile accedere alla fotocamera.';
@@ -1523,7 +1546,7 @@ function initializeAppTracker() {
         const video = document.getElementById('barcode-scanner-video');
         
         if (videoStream) {
-            videoStream.getTracks().forEach(track => track.stop()); // Spegne la fotocamera
+            videoStream.getTracks().forEach(track => track.stop());
         }
         video.srcObject = null;
         barcodeScannerModal.style.display = 'none';
@@ -1531,9 +1554,7 @@ function initializeAppTracker() {
     }
     
     // --- PUNTO DI INGRESSO DELLO SCRIPT ---
-document.addEventListener('DOMContentLoaded', () => {
-        // --- INIZIO BLOCCO AGGIUNTO ---
-        // Seleziona tutti gli elementi del DOM necessari per l'autenticazione
+    document.addEventListener('DOMContentLoaded', () => {
         const btnRegister = document.getElementById('btn-register');
         const btnLogin = document.getElementById('btn-login');
         const btnSignOut = document.getElementById('btn-sign-out');
@@ -1543,44 +1564,28 @@ document.addEventListener('DOMContentLoaded', () => {
         const authSection = document.getElementById('auth-section');
         const mainTrackerContent = document.getElementById('main-tracker-content');
         const welcomeMessage = document.getElementById('welcome-message');
-        // --- FINE BLOCCO AGGIUNTO ---
+
+        // Gestore generico per chiusura modali
+        document.querySelectorAll('.modal-close').forEach(button => {
+            button.addEventListener('click', (event) => {
+                const modalId = event.target.getAttribute('data-modal');
+                if (modalId) {
+                    const modal = document.getElementById(modalId);
+                    if (modal) modal.style.display = 'none';
+                }
+            });
+        });
 
         eseguiMigrazioneStorico();
 
         try {
-            if (!getApps().some(app => app.name === "globalTrackerApp")) { 
-                firebaseApp = initializeApp(firebaseConfig, "globalTrackerApp"); 
-            } else { 
-                firebaseApp = getApp("globalTrackerApp"); 
-            }
+            if (!getApps().some(app => app.name === "globalTrackerApp")) { firebaseApp = initializeApp(firebaseConfig, "globalTrackerApp"); } else { firebaseApp = getApp("globalTrackerApp"); }
             db = getDatabase(firebaseApp);
             auth = getAuth(firebaseApp);
 
-            btnRegister.addEventListener('click', async () => { 
-                try { 
-                    await createUserWithEmailAndPassword(auth, userEmailInput.value, userPasswordInput.value); 
-                    alert("Registrazione completata!"); 
-                } catch (e) { 
-                    alert(e.message); 
-                } 
-            });
-
-            btnLogin.addEventListener('click', async () => { 
-                try { 
-                    await signInWithEmailAndPassword(auth, userEmailInput.value, userPasswordInput.value); 
-                } catch (e) { 
-                    alert(e.message); 
-                } 
-            });
-
-            btnSignOut.addEventListener('click', async () => { 
-                try { 
-                    await signOut(auth); 
-                    location.reload(); 
-                } catch (e) { 
-                    alert(e.message); 
-                } 
-            });
+            btnRegister.addEventListener('click', async () => { try { await createUserWithEmailAndPassword(auth, userEmailInput.value, userPasswordInput.value); alert("Registrazione completata!"); } catch (e) { alert(e.message); } });
+            btnLogin.addEventListener('click', async () => { try { await signInWithEmailAndPassword(auth, userEmailInput.value, userPasswordInput.value); } catch (e) { alert(e.message); } });
+            btnSignOut.addEventListener('click', async () => { try { await signOut(auth); location.reload(); } catch (e) { alert(e.message); } });
 
             onAuthStateChanged(auth, async (user) => {
                 const isLoggedIn = !!user;
@@ -1591,28 +1596,39 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 if (isLoggedIn) {
                     welcomeMessage.textContent = `Benvenuto, ${user.email}!`;
+                    
+                    try {
+                        const userRef = ref(db, `users/${currentUserUID}`);
+                        const snapshot = await get(userRef);
+                        if (snapshot.exists()) {
+                            const cloudData = snapshot.val();
+                            
+                            if (cloudData.userProfile) {
+                                localStorage.setItem('userProfile', JSON.stringify(cloudData.userProfile));
+                            }
+                            if (cloudData.tracker_data?.trackerFoodDatabase) {
+                                const dbRicostruito = {};
+                                for(const key in cloudData.tracker_data.trackerFoodDatabase) {
+                                    const originalKey = cloudData.tracker_data.trackerFoodDatabase[key]?.desc?.toLowerCase() || key.replace(/_/g, " ");
+                                    dbRicostruito[sanitizeFirebaseKey(originalKey)] = cloudData.tracker_data.trackerFoodDatabase[key];
+                                }
+                                localStorage.setItem('trackerFoodDatabase', JSON.stringify(dbRicostruito));
+                            }
+                        }
+                    } catch (error) {
+                        console.error("Errore nel download dei dati dal cloud:", error);
+                        alert("Non è stato possibile sincronizzare i tuoi dati dal cloud.");
+                    }
+
                     initializeAppTracker(); 
                 }
             });
         } catch (error) { 
             console.error("Errore Firebase:", error); 
-            authStatusP.textContent = `Errore Firebase: ${error.message}`; 
+            if(authStatusP) authStatusP.textContent = `Errore Firebase: ${error.message}`; 
         }
     });
 
-</script>
-                </body>
-
+</script>   
+</body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
