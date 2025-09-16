@@ -1407,6 +1407,15 @@
         const barcodeModalCloseBtn = barcodeScannerModal.querySelector('.modal-close');
         
         initAppUI();
+      
+        // --- INIZIO BLOCCO DA AGGIUNGERE ---
+        
+        document.getElementById('btn-clear-nutrients').addEventListener('click', () => {
+            const campiDaPulire = document.querySelectorAll('#food-adder input[type="text"], #food-adder input[type="number"]');
+            campiDaPulire.forEach(input => input.value = '');
+        });
+        
+        // --- FINE BLOCCO DA AGGIUNGERE ---
         
         const builderDescInput = document.getElementById('builder-desc');
         
@@ -1632,3 +1641,4 @@
 </script>   
 </body>
 </html>
+
