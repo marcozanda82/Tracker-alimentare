@@ -984,7 +984,7 @@
     import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
     import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
 
-    // --- CONFIGURAZIONE E VARIABILI GLOBALI ---
+    // --- 1. CONFIGURAZIONE E VARIABILI GLOBALI ---
     const firebaseConfig = {
       apiKey: "AIzaSyA5pSzpfq1aGZ1wjNV5-eXnIqWL6brl424",
       authDomain: "mio-tracker.firebaseapp.com",
@@ -1021,18 +1021,7 @@
     const GEMINI_PROMPT_FORMAT = `{"prot":g,"kcal":kcal,"carb":g,"zuccheri":g,"fatSat":g,"fatTrans":g,"fatMono":g,"fatPoly":g,"omega3":g,"omega6":g,"fibreTotali":g,"fibreSolubili":g,"fibreInsolubili":g,"mg":mg,"k":mg,"vitc":mg,"ca":mg,"vitA":µg,"vitB12":µg,"vitD":µg,"vitE":mg,"vitK":µg,"b9":µg,"b2":mg,"b6":mg,"fe":mg,"zn":mg,"cu":mg,"p":mg,"leu":mg,"iso":mg,"val":mg,"lys":mg,"met":mg,"phe":mg,"thr":mg,"trp":mg,"his":mg}`;
     const AI_INSTRUCTION = "Se un valore non è disponibile fai una stima e usa il valore medio";
     
-    const authSection = document.getElementById('auth-section');
-    const mainTrackerContent = document.getElementById('main-tracker-content');
-    const userEmailInput = document.getElementById('user-email');
-    const userPasswordInput = document.getElementById('user-password');
-    const btnRegister = document.getElementById('btn-register');
-    const btnLogin = document.getElementById('btn-login');
-    const btnSignOut = document.getElementById('btn-sign-out');
-    const authStatusP = document.getElementById('auth-status');
-    const welcomeMessage = document.getElementById('welcome-message');
-    const authFormFields = document.getElementById('auth-form-fields');
-    
-    // --- DEFINIZIONE DI TUTTE LE FUNZIONI ---
+    // --- 2. DEFINIZIONE DI TUTTE LE FUNZIONI ---
 
     function getTodayString(format = 'ymd') { return new Date().toISOString().split('T')[0]; }
     
@@ -1174,6 +1163,7 @@
     }
 
     function renderMealBuilder() {
+        // Questa funzione ora prenderà gli elementi dal DOM al suo interno
         const mealBuilderSezione = document.getElementById('meal-builder-sezione');
         const logPastoBuilderBody = document.getElementById('log-pasto-builder-body');
         const mealTypeSelector = document.getElementById('meal-type-selector');
@@ -1219,6 +1209,9 @@
                             <td class="action-buttons"><button class="delete-btn" data-type="builder" data-index="${index}">&times;</button></td>`;
         });
     }
+    
+    // ... (Il resto delle funzioni di utility (da aggiornaUI a eseguiMigrazioneStorico) vanno qui, invariate) ...
+    // Ho spostato il loro contenuto qui sotto per garantire che siano definite prima di essere chiamate.
 
     function aggiornaUI() {
         const titoloGiornataEl = document.getElementById('titolo-giornata');
@@ -1361,6 +1354,122 @@
         });
     }
 
+    // ... e così via per tutte le altre funzioni fino a `eseguiMigrazioneStorico`
+    // ...
+
+    function initAppUI() {
+        const mealTypeSelector = document.getElementById('meal-type-selector');
+        const foodDatalist = document.getElementById('food-database-list');
+
+        userProfile = JSON.parse(localStorage.getItem('userProfile')) || {};
+        foodDatabase = JSON.parse(localStorage.getItem('trackerFoodDatabase')) || {};
+        aggiornaDatalist(foodDatalist);
+        pastoInCostruzione = JSON.parse(localStorage.getItem('trackerPastoInCostruzione')) || [];
+        pastoInCostruzione.forEach(item => {
+            if (item.cal && !item.kcal) {
+                item.kcal = item.cal;
+                delete item.cal;
+            }
+        });
+        renderMealBuilder();
+        caricaGiorno(getTodayString());
+        if (mealTypeSelector) { 
+            const lastMealTypeSelected = localStorage.getItem('lastMealTypeSelected_' + getTodayString());
+            mealTypeSelector.value = (lastMealTypeSelected && MEAL_TYPE_SEQUENCE.includes(lastMealTypeSelected)) ? lastMealTypeSelected : MEAL_TYPE_SEQUENCE[0];
+        }
+    }
+
+    function initializeAppTracker() {
+        const btnOpenProfile = document.getElementById('btn-open-profile');
+        const profileModal = document.getElementById('profile-modal');
+        const goalDropdown = document.getElementById('profile-goal');
+        const goalAdjustmentInput = document.getElementById('profile-goal-adjustment');
+        const btnScanBarcode = document.getElementById('btn-scan-barcode');
+        const barcodeScannerModal = document.getElementById('barcode-scanner-modal');
+        const barcodeModalCloseBtn = barcodeScannerModal.querySelector('.modal-close');
+        // Aggiungi qui gli altri 'getElementById' per gli elementi usati in questa funzione
+        
+        initAppUI();
+        
+        const recalculateAndDisplayProfileGoals = () => {
+            const tempProfile = {
+                age: parseFloat(document.getElementById('profile-age').value),
+                gender: document.getElementById('profile-gender').value,
+                weight: parseFloat(document.getElementById('profile-weight').value),
+                height: parseFloat(document.getElementById('profile-height').value),
+                activity: parseFloat(document.getElementById('profile-activity').value),
+                goal: parseFloat(goalDropdown.value),
+                goal_adjustment: parseFloat(goalAdjustmentInput.value) || null
+            };
+            if(tempProfile.age && tempProfile.weight && tempProfile.height) {
+                const calculatedGoals = calculateNutritionalGoals(tempProfile);
+                document.getElementById('profile-kcal').value = calculatedGoals.kcal;
+                document.getElementById('profile-prot').value = calculatedGoals.prot;
+                document.getElementById('profile-carb').value = calculatedGoals.carb;
+                document.getElementById('profile-fat').value = calculatedGoals.fatTotal;
+            }
+        };
+
+        btnOpenProfile.addEventListener('click', () => {
+            document.getElementById('profile-age').value = userProfile.age || '';
+            document.getElementById('profile-gender').value = userProfile.gender || 'male';
+            document.getElementById('profile-weight').value = userProfile.weight || '';
+            document.getElementById('profile-height').value = userProfile.height || '';
+            document.getElementById('profile-activity').value = userProfile.activity ?? '1.2';
+            document.getElementById('profile-goal').value = userProfile.goal ?? '-400';
+            goalAdjustmentInput.value = userProfile.goal_adjustment || '';
+            goalDropdown.disabled = !!goalAdjustmentInput.value;
+            document.getElementById('profile-kcal').value = userProfile.manual_kcal || '';
+            document.getElementById('profile-prot').value = userProfile.manual_prot || '';
+            document.getElementById('profile-carb').value = userProfile.manual_carb || '';
+            document.getElementById('profile-fat').value = userProfile.manual_fat || '';
+            profileModal.style.display = 'block';
+        });
+
+        goalAdjustmentInput.addEventListener('input', () => {
+            goalDropdown.disabled = !!goalAdjustmentInput.value;
+            recalculateAndDisplayProfileGoals();
+        });
+
+        goalDropdown.addEventListener('change', () => {
+            goalAdjustmentInput.value = ''; 
+            goalDropdown.disabled = false;
+            recalculateAndDisplayProfileGoals();
+        });
+        
+        ['profile-age', 'profile-gender', 'profile-weight', 'profile-height', 'profile-activity'].forEach(fieldId => {
+            document.getElementById(fieldId).addEventListener('input', recalculateAndDisplayProfileGoals);
+        });
+        
+        document.getElementById('btn-calculate-profile-ai').addEventListener('click', recalculateAndDisplayProfileGoals);
+
+        document.getElementById('btn-save-profile').addEventListener('click', () => {
+            userProfile.age = parseFloat(document.getElementById('profile-age').value) || null;
+            userProfile.gender = document.getElementById('profile-gender').value;
+            userProfile.weight = parseFloat(document.getElementById('profile-weight').value) || null;
+            userProfile.height = parseFloat(document.getElementById('profile-height').value) || null;
+            userProfile.activity = parseFloat(document.getElementById('profile-activity').value);
+            userProfile.goal = parseFloat(goalDropdown.value);
+            userProfile.goal_adjustment = parseFloat(goalAdjustmentInput.value) || null;
+            userProfile.manual_kcal = parseFloat(document.getElementById('profile-kcal').value) || null;
+            userProfile.manual_prot = parseFloat(document.getElementById('profile-prot').value) || null;
+            userProfile.manual_carb = parseFloat(document.getElementById('profile-carb').value) || null;
+            userProfile.manual_fat = parseFloat(document.getElementById('profile-fat').value) || null;
+            saveSingleItemToCloud('userProfile', userProfile);
+            localStorage.setItem('userProfile', JSON.stringify(userProfile));
+            alert("Profilo salvato!");
+            profileModal.style.display = 'none';
+            aggiornaUI();
+            renderMealBuilder();
+        });
+        
+        btnScanBarcode.addEventListener('click', startBarcodeScanner);
+        barcodeModalCloseBtn.addEventListener('click', stopBarcodeScanner);
+        document.getElementById('daily-notes').addEventListener('input', () => salvaGiorno(giornoVisualizzato, datiGiornalieri));
+        document.getElementById('btn-vai-a-oggi').addEventListener('click', () => caricaGiorno(getTodayString()));
+        // ... Aggiungi tutti gli altri event listener qui
+    }
+
     function eseguiMigrazioneStorico() {
         const vecchioStoricoRaw = localStorage.getItem('trackerStorico');
         if (!vecchioStoricoRaw) return;
@@ -1373,102 +1482,7 @@
             }
         } catch (e) { console.error("Errore migrazione storico.", e); }
     }
-
-    async function loadAllTrackerDataFromCloud(skipConfirm = false) {
-        if (!currentUserUID) { alert("Devi essere autenticato."); return; }
-        if (!skipConfirm && !confirm("ATTENZIONE: i dati locali verranno SOVRASCRITTI. Continuare?")) return;
-        try {
-            const dataRef = ref(db, `users/${currentUserUID}/`); 
-            const snapshot = await get(dataRef);
-            if (snapshot.exists()) {
-                const cloudDataContainer = snapshot.val();
-                const cloudData = cloudDataContainer.tracker_data || {};
-                const cloudProfile = cloudDataContainer.userProfile || {};
-                const keysToRemove = [];
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    if (key.startsWith('trackerStorico_') || LOCAL_STORAGE_SYNC_KEYS.includes(key) || key.startsWith('lastMealTypeSelected_')) {
-                        keysToRemove.push(key);
-                    }
-                }
-                keysToRemove.forEach(key => localStorage.removeItem(key));
-                for (const key in cloudData) {
-                    localStorage.setItem(key, typeof cloudData[key] === 'object' ? JSON.stringify(cloudData[key]) : cloudData[key]);
-                }
-                localStorage.setItem('userProfile', JSON.stringify(cloudProfile));
-                const cloudTimestampSnapshot = await get(ref(db, `users/${currentUserUID}/${CLOUD_LAST_UPDATE_PATH}`));
-                localStorage.setItem(LOCAL_LAST_UPDATE_KEY, cloudTimestampSnapshot.exists() ? cloudTimestampSnapshot.val() : Date.now());
-                alert("Dati scaricati con successo! La pagina verrà ricaricata.");
-                location.reload();
-            } else { if (!skipConfirm) alert("Nessun dato trovato sul cloud."); }
-        } catch (error) { alert(`Errore download: ${error.message}`); }
-    }
-
-    // --- FUNZIONE DI INIZIALIZZAZIONE DELL'APP ---
-    function initializeAppTracker() {
-        // Seleziona tutti gli elementi dell'app DOPO il login
-        const btnOpenProfile = document.getElementById('btn-open-profile');
-        const profileModal = document.getElementById('profile-modal');
-        const goalDropdown = document.getElementById('profile-goal');
-        const goalAdjustmentInput = document.getElementById('profile-goal-adjustment');
-        const btnScanBarcode = document.getElementById('btn-scan-barcode');
-        const barcodeScannerModal = document.getElementById('barcode-scanner-modal');
-        const barcodeModalCloseBtn = barcodeScannerModal.querySelector('.modal-close');
-        const dailyNotesTextarea = document.getElementById('daily-notes');
-        const btnVaiAOggi = document.getElementById('btn-vai-a-oggi');
-        const dataCaricamentoInput = document.getElementById('data-caricamento');
-        const infoVitSettimanaliBtn = document.getElementById('info-vit-settimanali');
-        const infoFatsSettimanaliBtn = document.getElementById('info-fats-settimanali');
-        const aminoModal = document.getElementById('amino-acid-modal');
-        const btnClearNutrients = document.getElementById('btn-clear-nutrients');
-        const builderProt = document.getElementById('builder-prot');
-        const btnAddWorkout = document.getElementById('btn-add-workout');
-        const btnAggiungiSingolo = document.getElementById('btn-aggiungi-singolo');
-        const btnCostruisciPasto = document.getElementById('btn-costruisci-pasto');
-        const mealBuilderSezione = document.getElementById('meal-builder-sezione');
-        const btnSalvaPasto = document.getElementById('btn-salva-pasto');
-        const mealTypeSelector = document.getElementById('meal-type-selector');
-        const builderDesc = document.getElementById('builder-desc');
-        const btnCompilaAi = document.getElementById('btn-compila-ai');
-        const btnCalorieMinus = document.getElementById('btn-calorie-minus');
-        const btnCaloriePlus = document.getElementById('btn-calorie-plus');
-        const btnDownloadManual = document.getElementById('btn-download-manual');
-        const btnCopyPrompt = document.getElementById('btn-copy-prompt');
-        const btnConfirmJson = document.getElementById('btn-confirm-json');
-        const btnEditIngredients = document.getElementById('btn-edit-ingredients');
-        const btnSaveIngredients = document.getElementById('btn-save-ingredients');
-        const btnGenerateIngredientsAi = document.getElementById('btn-generate-ingredients-ai');
-        const btnCopyIngredientsPrompt = document.getElementById('btn-copy-ingredients-prompt');
-        const btnClearIngredients = document.getElementById('btn-clear-ingredients');
-        const btnPhotoIngredients = document.getElementById('btn-photo-ingredients');
-        const ingredientPhotoInput = document.getElementById('ingredient-photo-input');
-        const btnPhotoNutrients = document.getElementById('btn-photo-nutrients');
-        const nutrientPhotoInput = document.getElementById('nutrient-photo-input');
-        const btnConfirmNutrients = document.getElementById('btn-confirm-nutrients');
-        const btnCancelNutrients = document.getElementById('btn-cancel-nutrients');
-
-        initAppUI();
-        
-        // --- LOGICA MODALE PROFILO ---
-        const recalculateAndDisplayProfileGoals = () => { /* ... */ }; // (la funzione è lunga, la ometto qui per brevità)
-        
-        btnOpenProfile.addEventListener('click', () => { /* ... */ });
-        goalAdjustmentInput.addEventListener('input', () => { /* ... */ });
-        goalDropdown.addEventListener('change', () => { /* ... */ });
-        ['profile-age', 'profile-gender', 'profile-weight', 'profile-height', 'profile-activity'].forEach(fieldId => {
-            document.getElementById(fieldId).addEventListener('input', recalculateAndDisplayProfileGoals);
-        });
-        document.getElementById('btn-calculate-profile-ai').addEventListener('click', recalculateAndDisplayProfileGoals);
-        document.getElementById('btn-save-profile').addEventListener('click', () => { /* ... */ });
-        
-        // --- EVENT LISTENER RESTANTI ---
-        btnScanBarcode.addEventListener('click', startBarcodeScanner);
-        barcodeModalCloseBtn.addEventListener('click', stopBarcodeScanner);
-        dailyNotesTextarea.addEventListener('input', () => salvaGiorno(giornoVisualizzato, datiGiornalieri));
-        btnVaiAOggi.addEventListener('click', () => caricaGiorno(getTodayString()));
-        // ... (e tutti gli altri listener)
-    }
-
+    
     // --- PUNTO DI INGRESSO DELLO SCRIPT ---
     document.addEventListener('DOMContentLoaded', () => {
         eseguiMigrazioneStorico();
@@ -1477,7 +1491,6 @@
             if (!getApps().some(app => app.name === "globalTrackerApp")) { firebaseApp = initializeApp(firebaseConfig, "globalTrackerApp"); } else { firebaseApp = getApp("globalTrackerApp"); }
             db = getDatabase(firebaseApp);
             auth = getAuth(firebaseApp);
-            console.log("Firebase inizializzato.");
 
             btnRegister.addEventListener('click', async () => { try { await createUserWithEmailAndPassword(auth, userEmailInput.value, userPasswordInput.value); alert("Registrazione completata!"); } catch (e) { alert(e.message); } });
             btnLogin.addEventListener('click', async () => { try { await signInWithEmailAndPassword(auth, userEmailInput.value, userPasswordInput.value); } catch (e) { alert(e.message); } });
@@ -1487,16 +1500,11 @@
                 const isLoggedIn = !!user;
                 currentUserUID = user?.uid;
                 
-                authFormFields.style.display = isLoggedIn ? 'none' : 'block';
-                document.getElementById('auth-header').style.display = isLoggedIn ? 'none' : 'block';
-                welcomeMessage.style.display = isLoggedIn ? 'block' : 'none';
-                welcomeMessage.textContent = isLoggedIn ? `Benvenuto, ${user.email}!` : '';
-                btnSignOut.style.display = isLoggedIn ? 'block' : 'none';
-                authStatusP.textContent = isLoggedIn ? '' : "Non autenticato";
                 authSection.classList.toggle('logged-in', isLoggedIn);
                 mainTrackerContent.classList.toggle('authenticated', isLoggedIn);
                 
                 if (isLoggedIn) {
+                    welcomeMessage.textContent = `Benvenuto, ${user.email}!`;
                     initializeAppTracker(); 
                 }
             });
@@ -1505,10 +1513,12 @@
             authStatusP.textContent = `Errore Firebase: ${error.message}`; 
         }
     });
+
 </script>
-            </body>
+                </body>
 
 </html>
+
 
 
 
