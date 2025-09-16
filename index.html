@@ -1487,6 +1487,48 @@ function initializeAppTracker() {
             }
         } catch (e) { console.error("Errore migrazione storico.", e); }
     }
+
+ async function startBarcodeScanner() {
+        const barcodeScannerModal = document.getElementById('barcode-scanner-modal');
+        const video = document.getElementById('barcode-scanner-video');
+        const statusEl = document.getElementById('barcode-scanner-status');
+
+        barcodeScannerModal.style.display = 'block';
+        statusEl.textContent = 'Avvio della fotocamera...';
+
+        try {
+            // Richiedi l'accesso alla fotocamera posteriore del dispositivo
+            videoStream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: 'environment' } 
+            });
+            video.srcObject = videoStream;
+            await video.play();
+            statusEl.textContent = 'Inquadra un codice a barre...';
+            isScanning = true;
+            
+            // NOTA: Manca una libreria per la decodifica del codice a barre.
+            // Questo codice attiva solo la fotocamera. Per leggere effettivamente
+            // il codice a barre, dovresti integrare una libreria come
+            // zxing-js/library o simili e avviare la scansione qui.
+            
+        } catch (err) {
+            console.error("Errore nell'accesso alla fotocamera:", err);
+            statusEl.textContent = 'Impossibile accedere alla fotocamera.';
+            isScanning = false;
+        }
+    }
+
+    function stopBarcodeScanner() {
+        const barcodeScannerModal = document.getElementById('barcode-scanner-modal');
+        const video = document.getElementById('barcode-scanner-video');
+        
+        if (videoStream) {
+            videoStream.getTracks().forEach(track => track.stop()); // Spegne la fotocamera
+        }
+        video.srcObject = null;
+        barcodeScannerModal.style.display = 'none';
+        isScanning = false;
+    }
     
     // --- PUNTO DI INGRESSO DELLO SCRIPT ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -1562,6 +1604,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </body>
 
 </html>
+
 
 
 
