@@ -1379,15 +1379,17 @@
         }
     }
 
-    function initializeAppTracker() {
+function initializeAppTracker() {
         const btnOpenProfile = document.getElementById('btn-open-profile');
         const profileModal = document.getElementById('profile-modal');
         const goalDropdown = document.getElementById('profile-goal');
-        const goalAdjustmentInput = document.getElementById('profile-goal-adjustment');
+        
+        // La riga seguente causava l'errore perché l'elemento non esiste nell'HTML
+        // const goalAdjustmentInput = document.getElementById('profile-goal-adjustment');
+        
         const btnScanBarcode = document.getElementById('btn-scan-barcode');
         const barcodeScannerModal = document.getElementById('barcode-scanner-modal');
         const barcodeModalCloseBtn = barcodeScannerModal.querySelector('.modal-close');
-        // Aggiungi qui gli altri 'getElementById' per gli elementi usati in questa funzione
         
         initAppUI();
         
@@ -1399,7 +1401,8 @@
                 height: parseFloat(document.getElementById('profile-height').value),
                 activity: parseFloat(document.getElementById('profile-activity').value),
                 goal: parseFloat(goalDropdown.value),
-                goal_adjustment: parseFloat(goalAdjustmentInput.value) || null
+                // Rimosso riferimento a goal_adjustment
+                goal_adjustment: null 
             };
             if(tempProfile.age && tempProfile.weight && tempProfile.height) {
                 const calculatedGoals = calculateNutritionalGoals(tempProfile);
@@ -1417,8 +1420,11 @@
             document.getElementById('profile-height').value = userProfile.height || '';
             document.getElementById('profile-activity').value = userProfile.activity ?? '1.2';
             document.getElementById('profile-goal').value = userProfile.goal ?? '-400';
-            goalAdjustmentInput.value = userProfile.goal_adjustment || '';
-            goalDropdown.disabled = !!goalAdjustmentInput.value;
+            
+            // Le righe seguenti causavano errori perché 'goalAdjustmentInput' era null
+            // goalAdjustmentInput.value = userProfile.goal_adjustment || '';
+            // goalDropdown.disabled = !!goalAdjustmentInput.value;
+
             document.getElementById('profile-kcal').value = userProfile.manual_kcal || '';
             document.getElementById('profile-prot').value = userProfile.manual_prot || '';
             document.getElementById('profile-carb').value = userProfile.manual_carb || '';
@@ -1426,14 +1432,9 @@
             profileModal.style.display = 'block';
         });
 
-        goalAdjustmentInput.addEventListener('input', () => {
-            goalDropdown.disabled = !!goalAdjustmentInput.value;
-            recalculateAndDisplayProfileGoals();
-        });
-
+        // Ho rimosso gli event listener che dipendevano da 'goalAdjustmentInput'
+        
         goalDropdown.addEventListener('change', () => {
-            goalAdjustmentInput.value = ''; 
-            goalDropdown.disabled = false;
             recalculateAndDisplayProfileGoals();
         });
         
@@ -1450,7 +1451,10 @@
             userProfile.height = parseFloat(document.getElementById('profile-height').value) || null;
             userProfile.activity = parseFloat(document.getElementById('profile-activity').value);
             userProfile.goal = parseFloat(goalDropdown.value);
-            userProfile.goal_adjustment = parseFloat(goalAdjustmentInput.value) || null;
+            
+            // Rimosso riferimento a goal_adjustment
+            userProfile.goal_adjustment = null; 
+
             userProfile.manual_kcal = parseFloat(document.getElementById('profile-kcal').value) || null;
             userProfile.manual_prot = parseFloat(document.getElementById('profile-prot').value) || null;
             userProfile.manual_carb = parseFloat(document.getElementById('profile-carb').value) || null;
@@ -1469,6 +1473,7 @@
         document.getElementById('btn-vai-a-oggi').addEventListener('click', () => caricaGiorno(getTodayString()));
         // ... Aggiungi tutti gli altri event listener qui
     }
+    
 
     function eseguiMigrazioneStorico() {
         const vecchioStoricoRaw = localStorage.getItem('trackerStorico');
@@ -1557,6 +1562,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </body>
 
 </html>
+
 
 
 
