@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aggiungi Dati - Tracker Nutrizionale</title>
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f7f9; color: #333; margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 800px; background-color: #ffffff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #0d47a1; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px; margin-top: 0; }
+        .sezione { margin-bottom: 25px; padding: 20px; background-color: #fafafa; border: 1px solid #e0e0e0; border-radius: 8px; border-left-width: 5px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: #555; }
+        input[type="text"], input[type="number"], input[type="date"], select, input[type="email"], input[type="password"], textarea {
+            width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 1em;
+        }
+        button { background-color: #1976d2; color: white; padding: 12px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 1em; font-weight: 600; transition: background-color 0.3s; }
+        button:hover { background-color: #1565c0; }
+        .nav-links { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .nav-links a { flex-grow: 1; text-align: center; padding: 12px 10px; background-color: #607d8b; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; min-width: 120px; }
+        .nav-links a.active { background-color: #1976d2; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        table { border-collapse: collapse; margin-top: 15px; font-size: 0.9em; width:100%;}
+        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; vertical-align: middle; }
+        th { background-color: #f2f2f2; font-weight: 600; }
+        .builder-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+        .button-group { display: flex; gap: 10px; margin-top: 15px; }
+        .collapsible-header { cursor: pointer; padding: 10px 0; border-bottom: 1px solid #e0e0e0; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; color: #0d47a1; font-size: 1.4em; }
+        .collapsible-header:hover { color: #1976d2; }
+        .collapsible-header .arrow { font-size: 0.8em; transition: transform 0.3s ease; }
+        .collapsible-content { display: none; overflow: hidden; transition: max-height 0.3s ease-out; max-height: 0; }
+        .collapsible-content.expanded { display: block; max-height: 2000px; }
+        .collapsible-header.expanded .arrow { transform: rotate(90deg); }
+        #auth-section { margin-bottom: 25px; padding: 20px; background-color: #fafafa; border: 1px solid #e0e0e0; border-radius: 8px; border-left-width: 5px; border-left-color: #673ab7; }
+        #auth-section h2 { margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        #auth-section .auth-buttons { display: flex; gap: 10px; }
+        #auth-section .auth-buttons button { width: 50%; background-color: #1976d2; }
+        #auth-section #btn-sign-out { background-color: #607d8b; display: none; margin-top: 15px; }
+        #auth-status { text-align: center; font-weight: 600; margin-top: 15px; }
+        #welcome-message { text-align: center; font-weight: bold; font-size: 1.2em; color: #0d47a1; margin-bottom: 10px; display: none; }
+        #main-tracker-content { display: none; }
+        #main-tracker-content.authenticated { display: block; }
+        #auth-section.logged-in { padding: 10px 20px; background-color: #e3f2fd; border: 1px solid #90caf9; box-shadow: none; text-align: center; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 10px; }
+        #auth-section.logged-in #auth-header, #auth-section.logged-in #auth-form-fields, #auth-section.logged-in #auth-status { display: none !important; }
+        #auth-section.logged-in #welcome-message { margin: 0; font-size: 1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #auth-section.logged-in #btn-sign-out { width: auto; padding: 5px 10px; font-size: 0.8em; margin: 0; flex-shrink: 0; }
+        /* Aggiungere qui tutti gli altri stili da index.html per coerenza */
+        .food-adder-header { display: flex; justify-content: space-between; align-items: center; }
+        .food-adder-header button { background: none; border: none; font-size: 1.5em; cursor: pointer; color: #555; padding: 5px 10px; }
+        #btn-clear-nutrients { color: #d32f2f; }
+        .food-label-container { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .food-label-container label { margin-bottom: 0; flex-shrink: 0; }
+        #btn-edit-ingredients, #btn-edit-name { background: none; border: none; font-size: 1.1em; color: #607d8b; cursor: pointer; padding: 0; line-height: 1; }
+        #custom-suggestions { display: none; position: absolute; background-color: #ffffff; border: 1px solid #ccc; border-radius: 0 0 6px 6px; width: 100%; max-height: 250px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 8px rgba(0,0,0,0.1); box-sizing: border-box; }
+        .suggestion-item { padding: 10px 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; font-size: 0.95em; }
+        .suggestion-item:hover { background-color: #e3f2fd; }
+        .suggestion-delete-btn { color: #d32f2f; background: none; border: none; font-size: 1.3em; cursor: pointer; padding: 2px 8px; line-height: 1; }
+        #btn-clear-dettagli { background: none; border: none; color: #d32f2f; font-size: 1em; cursor: pointer; padding: 0 10px; opacity: 0.7; }
+        #manual-fill-section { margin-top: 15px; padding-top: 15px; border-top: 1px solid #ccc; }
+        #manual-fill-section textarea { width: 100%; height: 100px; margin-top: 10px; resize: vertical; }
+        #manual-fill-section .button-group { justify-content: space-between; }
+        #btn-costruisci-pasto { background-color: #ff8f00; }
+        #btn-aggiungi-singolo { background-color: #5c6bc0; }
+        #meal-builder-sezione { border-left-color: #ff8f00; display:block; }
+        #btn-salva-pasto { background-color: #2e7d32; width: 100%; margin-top: 15px; }
+        .action-buttons { display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .action-buttons button { background: none; border: none; padding: 4px; font-size: 1.3em; line-height: 1; cursor: pointer; }
+        .delete-btn { color: #d32f2f; }
+        #meal-builder-summary { margin-bottom: 20px; padding: 15px; background-color: #e3f2fd; border: 1px solid #90caf9; border-radius: 8px; }
+        #meal-builder-summary p { margin: 5px 0; font-weight: 600; color: #1e88e5; }
+        #meal-builder-summary .progress-container { display: flex; gap: 20px; margin-top: 10px; }
+        #meal-builder-summary .progress-item { flex: 1; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); }
+        .modal-content { background-color: #fefefe; margin: 10% auto; padding: 25px; border: 1px solid #888; width: 90%; max-width: 700px; border-radius: 12px; }
+        .modal-close { color: #aaa; float: right; font-size: 28px; font-weight: bold; line-height: 1; cursor: pointer; }
+        /* ... e tutti gli altri stili ... */
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Tracker Nutrizionale Marco</h1>
+
+        <div id="auth-section" class="sezione">
+            <h2 id="auth-header">Accedi / Registrati</h2>
+            <p id="welcome-message"></p>
+            <div id="auth-form-fields">
+                <div><label for="user-email">Email</label><input type="email" id="user-email"></div>
+                <div><label for="user-password">Password</label><input type="password" id="user-password"></div>
+                <div class="auth-buttons">
+                    <button id="btn-register">Registrati</button>
+                    <button id="btn-login">Accedi</button>
+                </div>
+            </div>
+            <button id="btn-sign-out">Esci</button>
+            <p id="auth-status"></p>
+        </div>
+
+        <div id="main-tracker-content">
+            <div class="nav-links">
+                <a href="dashboard.html">📊 Dashboard</a>
+                <a href="aggiungi.html" class="active">➕ Aggiungi</a>
+                <a href="diario.html">📖 Diario</a>
+                <a href="storico.html">📈 Storico</a>
+            </div>
+
+            <div id="form-allenamento" class="sezione">
+                <h2 class="collapsible-header" id="workout-header">Registra Allenamento <span class="arrow">▶</span></h2>
+                <div class="collapsible-content" id="workout-content">
+                    <label for="workout-desc">Descrizione Allenamento</label>
+                    <input type="text" id="workout-desc" placeholder="es. Corsa 30 min, Pesistica">
+                    <label for="workout-calories">Calorie Bruciate (kcal)</label>
+                    <input type="number" id="workout-calories" min="0">
+                    <button id="btn-add-workout">Aggiungi Allenamento</button>
+                </div>
+            </div>
+            
+            <div id="food-adder" class="sezione">
+                <div class="food-adder-header">
+                    <h2>Aggiungi Alimento</h2>
+                    <div id="photo-ocr-controls" style="display: flex; align-items: center; gap: 5px;">
+                         <span id="photo-ocr-status" style="display:none; color: #555; font-style: italic; font-size: 0.9em;"></span>
+                         <button id="btn-photo-nutrients" title="Acquisisci Nutrienti da Foto"><i class="fas fa-camera"></i></button>
+                         <button id="btn-scan-barcode" title="Scansiona Codice a Barre"><i class="fas fa-barcode"></i></button>
+                         <button id="btn-clear-nutrients" title="Cancella campi nutrienti"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                </div>
+                <div class="builder-grid">
+                    <div style="position: relative;">
+                        <div class="food-label-container">
+                            <label for="builder-desc">Alimento</label>
+                            <button id="btn-edit-name" title="Modifica solo il nome senza ricaricare i dati" style="display: none;">✏️</button>
+                            <button id="btn-edit-ingredients" title="Modifica Lista Ingredienti">📜</button>
+                        </div>
+                        <input type="text" id="builder-desc" autocomplete="off">
+                        <div id="custom-suggestions"></div>
+                    </div>
+                    <div><label>Quantità (g)</label><input type="text" id="builder-qta"></div>
+                    <div><label>Proteine/100g</label><input type="number" id="builder-prot" step="0.1"></div>
+                    <div><label>Kcal/100g</label><input type="number" id="builder-kcal" min="0"></div>
+                    <div><label>Carboidrati/100g</label><input type="number" id="builder-carb" step="0.1"></div>
+                    <div><label>Zuccheri/100g</label><input type="number" id="builder-zuccheri" step="0.1"></div>
+                    <div><label>Grassi Totali/100g</label><input type="number" id="builder-fat-total" step="0.1"></div>
+                    <div><label>Gr. Saturi/100g</label><input type="number" id="builder-fat-sat" min="0" step="0.1"></div>
+                    <div><label>Fibre Totali/100g</label><input type="number" id="builder-fibre-totali" step="0.1"></div>
+                </div>
+                <h2 class="collapsible-header" id="nutrients-header">
+                    <span>Dettagli Nutrizionali</span>
+                    <div style="display: flex; align-items: center;">
+                        <button id="btn-clear-dettagli" title="Pulisci Dettagli Nutrizionali"><i class="fas fa-eraser"></i></button>
+                        <span class="arrow">▶</span>
+                    </div>
+                </h2>
+                <div class="collapsible-content" id="nutrients-content">
+                    </div>
+                <div class="button-group">
+                    <button id="btn-costruisci-pasto">Aggiungi a Pasto</button>
+                    <button id="btn-aggiungi-singolo">Aggiungi al Diario</button>
+                    <button id="btn-compila-ai" style="background-color: #0d47a1;">Compila AI</button>
+                </div>
+            </div>
+
+            <div id="meal-builder-sezione" class="sezione">
+                <h2>Costruttore Pasto</h2>
+                <div id="meal-builder-summary">
+                     <p>Pasto Selezionato: <span id="current-meal-type-display"></span></p>
+                    <div class="progress-container">
+                        <div class="progress-item"><p>Proteine: <span id="meal-prot-current">0</span>/<span id="meal-prot-target"></span>g</p><progress id="meal-progress-prot" value="0"></progress></div>
+                        <div class="progress-item"><p>Calorie: <span id="meal-cal-current">0</span>/<span id="meal-cal-target"></span>kcal</p><progress id="meal-progress-cal" value="0"></progress></div>
+                    </div>
+                </div>
+                <select id="meal-type-selector">
+                    <option value="merenda1">Merenda AM</option>
+                    <option value="pranzo">Pranzo</option>
+                    <option value="merenda2">Merenda PM</option>
+                    <option value="cena">Cena</option>
+                </select>
+                <table id="log-pasto-builder">
+                    <thead><tr><th>Sel.</th><th>Descrizione</th><th>(g)</th><th>Prot</th><th>Kcal</th><th>Azione</th></tr></thead>
+                    <tbody id="log-pasto-builder-body"></tbody>
+                </table>
+                <button id="btn-salva-pasto">Salva Pasto nel Diario</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js" type="module"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js" type="module"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js" type="module"></script> 
+    <script type="module">
+        // ... (INCOLLARE QUI TUTTO LO SCRIPT DI index.html) ...
+    </script>
+</body>
+</html>
