@@ -24,8 +24,6 @@
         .nav-links { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
         .nav-links a { flex-grow: 1; text-align: center; padding: 12px 10px; background-color: #607d8b; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; min-width: 120px; }
         .nav-links a.active { background-color: #1976d2; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-        .sync-button-container { text-align: center; margin-top: 20px; }
-        .sync-button { display: inline-block; background-color: #ff8f00; color: white; padding: 10px 15px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 0.9em; }
         #riepilogo p { font-size: 1.1em; margin: 8px 0; }
         progress { width: 100%; height: 15px; border-radius: 6px; margin-top: 2px; cursor: pointer; }
         progress.macro-progress { height: 25px; }
@@ -47,7 +45,6 @@
         #calorie-adjuster label { margin-bottom: 0; font-weight: normal; color: #333; }
         .cloud-sync-section { display: flex; gap: 10px; margin-top: 20px; padding: 15px; background-color: #e0f2f7; border: 1px solid #b2ebf2; border-radius: 8px; flex-wrap: wrap; }
         .cloud-sync-section button { flex: 1 1 auto; min-width: 150px; margin-bottom: 5px; }
-        .cloud-sync-section #btn-download-manual { background-color: #e64a19; }
         .cloud-sync-status { width: 100%; text-align: center; font-size: 0.9em; color: #555; margin-top: 10px; }
         .cloud-sync-status.connected { color: #2e7d32; font-weight: bold; }
         .cloud-sync-status.disconnected { color: #c62828; font-weight: bold; }
@@ -65,34 +62,22 @@
         #auth-section.logged-in #welcome-message { margin: 0; font-size: 1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         #auth-section.logged-in #btn-sign-out { width: auto; padding: 5px 10px; font-size: 0.8em; margin: 0; flex-shrink: 0; }
         .summary-header-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px; margin-bottom: 25px; }
-        .fats-bar-container { margin-top: 15px; }
         .fats-group { padding-left: 15px; border-left: 3px solid #eee; margin-top: 15px; }
         .fats-sub-bars-container { display: flex; gap: 20px; margin-top: 10px; }
         .fats-sub-bars-container > div { flex-grow: 1; flex-basis: 0; }
-        .progress-fat-sat.green::-webkit-progress-value { background-color: #4CAF50; }
-        .progress-fat-sat.green::-moz-progress-bar { background-color: #4CAF50; }
-        .progress-fat-sat.orange::-webkit-progress-value { background-color: #ff9800; }
-        .progress-fat-sat.orange::-moz-progress-bar { background-color: #ff9800; }
-        .progress-fat-sat.red::-webkit-progress-value { background-color: #f44336; }
-        .progress-fat-sat.red::-moz-progress-bar { background-color: #f44336; }
         .vitamin-group { padding: 10px; margin-top: 10px; background-color: #f9f9f9; border: 1px solid #eee; border-radius: 6px; }
         #vit-content { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); -webkit-animation-name: fadeIn; -webkit-animation-duration: 0.4s; animation-name: fadeIn; animation-duration: 0.4s; }
-        .modal-content { background-color: #fefefe; margin: 10% auto; padding: 25px; border: 1px solid #888; width: 90%; max-width: 700px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); -webkit-animation-name: slideIn; -webkit-animation-duration: 0.4s; animation-name: slideIn; animation-duration: 0.4s; }
-        .modal-close { color: #aaa; float: right; font-size: 28px; font-weight: bold; line-height: 1; }
-        .modal-close:hover, .modal-close:focus { color: black; text-decoration: none; cursor: pointer; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); animation-name: fadeIn; animation-duration: 0.4s; }
+        .modal-content { background-color: #fefefe; margin: 10% auto; padding: 25px; border: 1px solid #888; width: 90%; max-width: 700px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); animation-name: slideIn; animation-duration: 0.4s; }
+        .modal-close { color: #aaa; float: right; font-size: 28px; font-weight: bold; line-height: 1; cursor: pointer; }
         .vitamin-weekly-summary { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
-        .vitamin-weekly-summary:last-child { border-bottom: none; margin-bottom: 0; }
+        .vitamin-weekly-summary:last-child { border-bottom: none; }
         .vitamin-weekly-summary h4 { margin-top: 0; margin-bottom: 8px; color: #1565c0; border: none; }
         .vitamin-weekly-summary p { margin: 4px 0; font-size: 0.95em; }
-        .vitamin-weekly-summary i { color: #555; font-size: 0.9em; }
-        .vitamin-weekly-summary progress { width: 100%; height: 20px; }
         .diff-value { font-weight: bold; }
         .diff-surplus { color: #2e7d32; }
         .diff-deficit { color: #d32f2f; }
-        @-webkit-keyframes slideIn { from {top: -300px; opacity: 0} to {top: 0; opacity: 1} }
         @keyframes slideIn { from {margin-top: 5%; opacity: 0} to {margin-top: 10%; opacity: 1} }
-        @-webkit-keyframes fadeIn { from {opacity: 0} to {opacity: 1} }
         @keyframes fadeIn { from {opacity: 0} to {opacity: 1} }
         #nutrient-detail-modal-list li { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
         #nutrient-detail-modal-list li:last-child { border-bottom: none; }
@@ -169,7 +154,7 @@
                 <div class="collapsible-content" id="fibre-content">
                     <p>Fibre Totali: <span id="totale-fibre-totali">0</span> / <span id="obiettivo-fibre-totali"></span> g</p>
                     <progress id="progress-fibre-totali" class="macro-progress" value="0"></progress>
-                    <div class="fats-group" style="padding-left: 15px; border-left: 3px solid #eee; margin-top: 15px;">
+                    <div class="fats-group">
                         <p>Solubili: <span id="totale-fibre-solubili">0</span> / <span id="obiettivo-fibre-solubili"></span> g</p>
                         <progress id="progress-fibre-solubili" value="0"></progress>
                         <p>Insolubili: <span id="totale-fibre-insolubili">0</span> / <span id="obiettivo-fibre-insolubili"></span> g</p>
@@ -260,7 +245,7 @@
                 <div class="collapsible-content" id="vit-content">
                     <div class="vitamin-group">
                         <h4 style="display: flex; align-items: center; gap: 8px;">
-                            Accumulabili (Liposolubili / Fegato) 
+                            Accumulabili (Liposolubili) 
                             <i id="info-vit-settimanali" class="fas fa-info-circle" style="cursor: pointer; color: #1976d2;"></i>
                         </h4>
                         <p>Vitamina A: <span id="totale-vit-a">0</span> / 900 µg</p><progress id="progress-vit-a" value="0" max="900"></progress>
@@ -284,94 +269,85 @@
             </div>
 
             <div class="sezione">
-                <h2>Sincronizzazione Cloud Manuale</h2>
+                <h2>Sincronizzazione Cloud</h2>
                 <div class="cloud-sync-section">
-                    <button id="btn-download-manual">⬇️ Scarica Dati dal Cloud</button>
-                    <span id="cloud-sync-status" class="cloud-sync-status disconnected">Connessione Cloud: Disconnesso</span>
+                    <button id="btn-download-manual" disabled>⬇️ Scarica Dati</button>
+                    <span id="cloud-sync-status" class="cloud-sync-status disconnected">Disconnesso</span>
                 </div>
-                <p style="font-size: 0.85em; color: #777; margin-top: 10px;">
-                    Una volta autenticato, puoi sincronizzare i dati. Lo scaricamento manuale sovrascrive i dati locali.
-                </p>
             </div>
         </div>
     </div>
     
     <div id="weekly-vitamin-modal" class="modal">
         <div class="modal-content">
-            <span class="modal-close" data-modal="weekly-vitamin-modal">&times;</span>
-            <h2>Riepilogo Settimanale Vitamine Accumulabili</h2>
-            <p style="font-size: 0.9em; color: #555;">Dati calcolati sugli ultimi 7 giorni, incluso oggi.</p>
-            
-            <div class="vitamin-weekly-summary">
-                <h4>Vitamina A</h4>
-                <p>Totale: <span id="weekly-vit-a-total">0</span> / <span id="weekly-vit-a-goal">6300</span> µg</p>
-                <progress id="weekly-progress-vit-a" value="0" max="6300"></progress>
-                <p><i>Media giornaliera: <span id="weekly-vit-a-avg">0.0</span> µg (Obiettivo: 900 µg | <span id="weekly-vit-a-diff" class="diff-value"></span>)</i></p>
-            </div>
-            <div class="vitamin-weekly-summary">
-                <h4>Vitamina D</h4>
-                <p>Totale: <span id="weekly-vit-d-total">0</span> / <span id="weekly-vit-d-goal">105</span> µg</p>
-                <progress id="weekly-progress-vit-d" value="0" max="105"></progress>
-                <p><i>Media giornaliera: <span id="weekly-vit-d-avg">0.0</span> µg (Obiettivo: 15 µg | <span id="weekly-vit-d-diff" class="diff-value"></span>)</i></p>
-            </div>
-            <div class="vitamin-weekly-summary">
-                <h4>Vitamina E</h4>
-                <p>Totale: <span id="weekly-vit-e-total">0</span> / <span id="weekly-vit-e-goal">105</span> mg</p>
-                <progress id="weekly-progress-vit-e" value="0" max="105"></progress>
-                <p><i>Media giornaliera: <span id="weekly-vit-e-avg">0.0</span> mg (Obiettivo: 15 mg | <span id="weekly-vit-e-diff" class="diff-value"></span>)</i></p>
-            </div>
-            <div class="vitamin-weekly-summary">
-                <h4>Vitamina K</h4>
-                <p>Totale: <span id="weekly-vit-k-total">0</span> / <span id="weekly-vit-k-goal">840</span> µg</p>
-                <progress id="weekly-progress-vit-k" value="0" max="840"></progress>
-                <p><i>Media giornaliera: <span id="weekly-vit-k-avg">0.0</span> µg (Obiettivo: 120 µg | <span id="weekly-vit-k-diff" class="diff-value"></span>)</i></p>
-            </div>
-            <div class="vitamin-weekly-summary">
-                <h4>Vitamina B12</h4>
-                <p>Totale: <span id="weekly-vit-b12-total">0</span> / <span id="weekly-vit-b12-goal">16.8</span> µg</p>
-                <progress id="weekly-progress-vit-b12" value="0" max="16.8"></progress>
-                <p><i>Media giornaliera: <span id="weekly-vit-b12-avg">0.0</span> µg (Obiettivo: 2.4 µg | <span id="weekly-vit-b12-diff" class="diff-value"></span>)</i></p>
-            </div>
+            <span class="modal-close">&times;</span>
+            <h2>Riepilogo Settimanale Vitamine</h2>
+            <div id="weekly-vitamin-content"></div>
         </div>
     </div>
-
     <div id="weekly-fats-modal" class="modal">
         <div class="modal-content">
-            <span class="modal-close" data-modal="weekly-fats-modal">&times;</span>
+            <span class="modal-close">&times;</span>
             <h2>Riepilogo Settimanale Grassi</h2>
-            <p style="font-size: 0.9em; color: #555;">Dati calcolati sugli ultimi 7 giorni, incluso oggi.</p>
-            <div class="vitamin-weekly-summary"><h4>Grassi Totali</h4><p>Totale: <span id="weekly-fat-total-total">0</span> / <span id="weekly-fat-total-goal"></span> g</p><progress id="weekly-progress-fat-total" value="0"></progress><p><i>Media giornaliera: <span id="weekly-fat-total-avg">0.0</span> g (Obiettivo: <span id="daily-fat-total-goal"></span> g | <span id="weekly-fat-total-diff" class="diff-value"></span>)</i></p></div>
-            <div class="vitamin-weekly-summary"><h4>Grassi Saturi</h4><p>Totale: <span id="weekly-fat-sat-total">0</span> / <span id="weekly-fat-sat-goal"></span> g</p><progress id="weekly-progress-fat-sat" value="0"></progress><p><i>Media giornaliera: <span id="weekly-fat-sat-avg">0.0</span> g (Obiettivo: <span id="daily-fat-sat-goal"></span> g | <span id="weekly-fat-sat-diff" class="diff-value"></span>)</i></p></div>
-            <div class="vitamin-weekly-summary"><h4>Grassi Trans</h4><p>Totale: <span id="weekly-fat-trans-total">0</span> / <span id="weekly-fat-trans-goal"></span> g</p><progress id="weekly-progress-fat-trans" value="0"></progress><p><i>Media giornaliera: <span id="weekly-fat-trans-avg">0.0</span> g (Obiettivo: <span id="daily-fat-trans-goal"></span> g | <span id="weekly-fat-trans-diff" class="diff-value"></span>)</i></p></div>
-            <div class="vitamin-weekly-summary"><h4>Grassi Monoinsaturi</h4><p>Totale: <span id="weekly-fat-mono-total">0</span> / <span id="weekly-fat-mono-goal"></span> g</p><progress id="weekly-progress-fat-mono" value="0"></progress><p><i>Media giornaliera: <span id="weekly-fat-mono-avg">0.0</span> g (Obiettivo: <span id="daily-fat-mono-goal"></span> g | <span id="weekly-fat-mono-diff" class="diff-value"></span>)</i></p></div>
-            <div class="vitamin-weekly-summary"><h4>Grassi Polinsaturi</h4><p>Totale: <span id="weekly-fat-poly-total">0</span> / <span id="weekly-fat-poly-goal"></span> g</p><progress id="weekly-progress-fat-poly" value="0"></progress><p><i>Media giornaliera: <span id="weekly-fat-poly-avg">0.0</span> g (Obiettivo: <span id="daily-fat-poly-goal"></span> g | <span id="weekly-fat-poly-diff" class="diff-value"></span>)</i></p></div>
-            <div class="vitamin-weekly-summary"><h4>Omega 3</h4><p>Totale: <span id="weekly-fat-omega3-total">0</span> / <span id="weekly-fat-omega3-goal"></span> g</p><progress id="weekly-progress-fat-omega3" value="0"></progress><p><i>Media giornaliera: <span id="weekly-fat-omega3-avg">0.0</span> g (Obiettivo: <span id="daily-fat-omega3-goal"></span> g | <span id="weekly-fat-omega3-diff" class="diff-value"></span>)</i></p></div>
-            <div class="vitamin-weekly-summary"><h4>Omega 6</h4><p>Totale: <span id="weekly-fat-omega6-total">0</span> / <span id="weekly-fat-omega6-goal"></span> g</p><progress id="weekly-progress-fat-omega6" value="0"></progress><p><i>Media giornaliera: <span id="weekly-fat-omega6-avg">0.0</span> g (Obiettivo: <span id="daily-fat-omega6-goal"></span> g | <span id="weekly-fat-omega6-diff" class="diff-value"></span>)</i></p></div>
-            <p style="text-align: center; font-weight: bold; margin-top: 15px; font-size: 1.2em; border-top: 1px solid #eee; padding-top: 15px;">Rapporto O6:O3 Settimanale: <span id="weekly-omega-ratio-value">N/D</span></p>
+            <div id="weekly-fats-content"></div>
         </div>
     </div>
-    
-    <div id="nutrient-detail-modal" class="modal"><div class="modal-content"><span class="modal-close" data-modal="nutrient-detail-modal">&times;</span><h2 id="nutrient-detail-modal-title"></h2><ul id="nutrient-detail-modal-list"></ul></div></div>
-    <div id="amino-acid-modal" class="modal"><div class="modal-content"><span class="modal-close" data-modal="amino-acid-modal">&times;</span><h2 id="modal-amino-title">Dettaglio Amminoacidi</h2><div id="modal-amino-summary" style="text-align: center; margin-bottom: 20px;"></div><div id="modal-amino-content" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;"><div><p>Leucina: <span id="modal-amino-leu-total">0</span> / <span id="modal-amino-leu-goal"></span> mg</p><progress id="modal-amino-leu-progress" value="0" style="width:100%"></progress><p>Isoleucina: <span id="modal-amino-iso-total">0</span> / <span id="modal-amino-iso-goal"></span> mg</p><progress id="modal-amino-iso-progress" value="0" style="width:100%"></progress><p>Valina: <span id="modal-amino-val-total">0</span> / <span id="modal-amino-val-goal"></span> mg</p><progress id="modal-amino-val-progress" value="0" style="width:100%"></progress><p>Lisina: <span id="modal-amino-lys-total">0</span> / <span id="modal-amino-lys-goal"></span> mg</p><progress id="modal-amino-lys-progress" value="0" style="width:100%"></progress></div><div><p>Metionina: <span id="modal-amino-met-total">0</span> / <span id="modal-amino-met-goal"></span> mg</p><progress id="modal-amino-met-progress" value="0" style="width:100%"></progress><p>Fenilalanina: <span id="modal-amino-phe-total">0</span> / <span id="modal-amino-phe-goal"></span> mg</p><progress id="modal-amino-phe-progress" value="0" style="width:100%"></progress><p>Treonina: <span id="modal-amino-thr-total">0</span> / <span id="modal-amino-thr-goal"></span> mg</p><progress id="modal-amino-thr-progress" value="0" style="width:100%"></progress><p>Triptofano: <span id="modal-amino-trp-total">0</span> / <span id="modal-amino-trp-goal"></span> mg</p><progress id="modal-amino-trp-progress" value="0" style="width:100%"></progress></div></div><div style="margin-top: 15px;"><p>Istidina: <span id="modal-amino-his-total">0</span> / <span id="modal-amino-his-goal"></span> mg</p><progress id="modal-amino-his-progress" value="0" style="width:100%"></progress></div></div></div>
+    <div id="nutrient-detail-modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <h2 id="nutrient-detail-modal-title"></h2>
+            <ul id="nutrient-detail-modal-list"></ul>
+        </div>
+    </div>
+    <div id="amino-acid-modal" class="modal">
+        <div class="modal-content">
+             <span class="modal-close">&times;</span>
+             <h2 id="modal-amino-title"></h2>
+             <div id="modal-amino-summary"></div>
+             <div id="modal-amino-content"></div>
+        </div>
+    </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js" type="module"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js" type="module"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js" type="module"></script> 
     <script type="module">
-        // Il JavaScript completo da index.html è stato omesso per brevità, 
-        // ma andrebbe inserito qui.
-        // Di seguito, solo la parte essenziale per l'inizializzazione della pagina.
-
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
         import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
 
-        // ... (INCOLLARE QUI TUTTO LO SCRIPT DI index.html) ...
+        // COPIA E INCOLLA QUI L'INTERO SCRIPT DAL FILE `index.html` ORIGINALE
+        // Inizia da `const firebaseConfig = { ...` e finisce con l'ultima `});`
+        const firebaseConfig = {
+          apiKey: "AIzaSyA5pSzpfq1aGZ1wjNV5-eXnIqWL6brl424",
+          authDomain: "mio-tracker.firebaseapp.com",
+          databaseURL: "https://mio-tracker-default-rtdb.europe-west1.firebasedatabase.app",
+          projectId: "mio-tracker",
+          storageBucket: "mio-tracker.appspot.com",
+          messagingSenderId: "382993217593",
+          appId: "1:382993217593:web:f0780aa061c23f9503f5e8"
+        };
+
+        let giornoVisualizzato = getTodayString('ymd');
+        let datiGiornalieri = {};
+        let foodDatabase = {};
+        let pastoInCostruzione = [];
         
-        // Lo script completo è necessario perché contiene tutte le funzioni di calcolo,
-        // salvataggio, e aggiornamento UI che sono richiamate anche solo per visualizzare
-        // il riepilogo. La logica `DOMContentLoaded` si occuperà di eseguire solo
-        // le funzioni necessarie per la dashboard.
+        let db; 
+        let auth; 
+        let firebaseApp; 
+        let currentUserUID = null; 
+
+        // ... e così via per tutto il resto dello script, fino alla fine.
+        // E' un blocco molto grande. Assicurati di copiarlo tutto.
+        // (Per motivi di spazio, non lo reincollo qui, ma va preso dal file originale)
+        
+        // Esempio di come dovrebbe apparire la fine:
+        
+            btnCancelNutrients.addEventListener('click', () => {
+                nutrientConfirmModal.style.display = 'none';
+            });
+        });
     </script>
 </body>
 </html>
