@@ -1,84 +1,36 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Storico Dettagliato - Tracker Nutrizionale</title>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f7f9; color: #333; margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 950px; background-color: #ffffff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h1 { color: #0d47a1; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px; margin-top: 0; }
-        .nav-links { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        .nav-links a { flex-grow: 1; text-align: center; padding: 12px 10px; background-color: #607d8b; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; min-width: 120px; }
-        .nav-links a.active { background-color: #1976d2; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-        .actions-header { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 25px; }
-        #btn-esporta-excel { background-color: #2e7d32; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; }
-        #auth-section { margin-bottom: 25px; padding: 20px; background-color: #fafafa; border: 1px solid #e0e0e0; border-radius: 8px; }
-        /* ... (Stili dalla pagina storico originale + stili comuni) ... */
-        .storico-table { width: 100%; border-collapse: collapse; background-color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden;}
-        th, td { padding: 12px 15px; text-align: left; vertical-align: middle; }
-        th { background-color: #e8eaf6; font-weight: 600; color: #3f51b5; }
-        .day-summary-row { border-bottom: 2px solid #e0e0e0; cursor: pointer; }
-        .day-summary-row:hover { background-color: #f9f9fc; }
-        .day-detail-row { display: none; }
-        .day-summary-row.expanded + .day-detail-row { display: table-row; }
-        .detail-cell { padding: 20px !important; background-color: #fafafa; }
-        .expand-arrow { display: inline-block; transition: transform 0.2s; }
-        .day-summary-row.expanded .expand-arrow { transform: rotate(90deg); }
-        .trend-muscle { font-size: 1.5em; font-weight: bold; }
-        .trend-up { color: #4caf50; }
-        .trend-down { color: #f44336; }
-        .trend-neutral { color: #9e9e9e; }
-        .note-icon { cursor: pointer; font-style: normal; font-size: 1.2em; display: inline-block; text-align: center; width: 100%; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Storico - Tracker</title>
+  <style>
+    body { font-family:sans-serif; background:#f4f7f9; margin:0; padding:20px; display:flex; justify-content:center; }
+    .container { max-width:950px; background:#fff; padding:20px; border-radius:10px; box-shadow:0 4px 15px rgba(0,0,0,.1);}
+    .nav-links { display:flex; gap:10px; margin-bottom:20px; }
+    .nav-links a { flex:1; text-align:center; padding:10px; background:#607d8b; color:#fff; border-radius:6px; font-weight:600; text-decoration:none; }
+    table { width:100%; border-collapse:collapse; }
+    th, td { border:1px solid #ddd; padding:8px; text-align:center; }
+    th { background:#f2f2f2; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Tracker Nutrizionale Marco</h1>
-
-        <div id="auth-section">
-            <p>Stato utente apparirà qui.</p>
-        </div>
-
-        <div class="nav-links">
-            <a href="dashboard.html">📊 Dashboard</a>
-            <a href="aggiungi.html">➕ Aggiungi</a>
-            <a href="diario.html">📖 Diario</a>
-            <a href="storico.html" class="active">📈 Storico</a>
-        </div>
-        
-        <div class="actions-header">
-            <button id="btn-esporta-excel">⬇️ Esporta in Excel</button>
-        </div>
-
-        <div class="storico-table-container">
-            <table class="storico-table">
-                <thead>
-                    <tr>
-                        <th>Data</th>
-                        <th>Proteine</th>
-                        <th>Calorie</th>
-                        <th>Workout</th>
-                        <th>Deficit/Surplus</th>
-                        <th>Grasso (g)</th>
-                        <th>Massa Musc.</th>
-                        <th>Note</th>
-                    </tr>
-                </thead>
-                <tbody id="storico-body"></tbody>
-            </table>
-        </div>
+  <div class="container">
+    <h1>📊 Storico</h1>
+    <div class="nav-links">
+      <a href="dashboard.html">🏠 Dashboard</a>
+      <a href="inserimenti.html">➕ Inserimenti</a>
+      <a href="diario.html">📖 Diario</a>
     </div>
 
-<script>
-    // Inserire qui lo script originale di storico.html.
-    // Sarebbe opportuno aggiungere anche qui la logica di autenticazione Firebase
-    // per mostrare lo stato dell'utente in modo coerente.
-document.addEventListener('DOMContentLoaded', () => {
-    const storicoBody = document.getElementById('storico-body');
-
-    // ... (Lo script di storico.html va qui) ...
-});
-</script>
+    <table>
+      <thead>
+        <tr><th>Data</th><th>Proteine</th><th>Calorie</th><th>Workout</th><th>Note</th></tr>
+      </thead>
+      <tbody id="storico-body">
+        <tr><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td></tr>
+      </tbody>
+    </table>
+  </div>
 </body>
 </html>
