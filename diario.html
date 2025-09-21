@@ -1,82 +1,42 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Diario Giornaliero - Tracker Nutrizionale</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f7f9; color: #333; margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 1200px; background-color: #ffffff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h1, h2 { color: #0d47a1; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px; margin-top: 0; }
-        .sezione { margin-bottom: 25px; padding: 20px; background-color: #fafafa; border: 1px solid #e0e0e0; border-radius: 8px; }
-        label { display: block; margin-bottom: 8px; font-weight: 600; color: #555; }
-        input[type="date"], button { padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 6px; font-size: 1em; }
-        button { background-color: #1976d2; color: white; border: none; cursor: pointer; }
-        .nav-links { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        .nav-links a { flex-grow: 1; text-align: center; padding: 12px 10px; background-color: #607d8b; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; min-width: 120px; }
-        .nav-links a.active { background-color: #1976d2; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-        table { border-collapse: collapse; margin-top: 15px; font-size: 0.9em; width:100%;}
-        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; vertical-align: middle; }
-        th { background-color: #f2f2f2; font-weight: 600; }
-        #auth-section { margin-bottom: 25px; padding: 20px; background-color: #fafafa; border: 1px solid #e0e0e0; border-radius: 8px; border-left-width: 5px; border-left-color: #673ab7; }
-        #auth-section h2 { margin-top: 0; }
-        /* ... (stili per auth, tabelle, modals ecc. da index.html) ... */
-        .diary-table-container { overflow-x: auto; }
-        #log-pasti th, #log-pasti td { min-width: 60px; text-align: right; white-space: nowrap; }
-        #log-pasti th:nth-child(1), #log-pasti td:nth-child(1) { min-width: 150px; text-align: left; position: sticky; left: 0; z-index: 2; border-right: 2px solid #e0e0e0; }
-        .meal-group-row { background-color: #f0f4f8; font-weight: bold; }
-        .expand-arrow { cursor: pointer; display: inline-block; width: 20px; }
-        .sub-item-row td { padding-left: 25px !important; background-color: #fff; font-style: italic; }
-        .action-buttons { display: flex; justify-content: center; align-items: center; gap: 8px; }
-        .action-buttons button { background: none; border: none; padding: 4px; font-size: 1.3em; cursor: pointer; }
-        .edit-btn { color: #1976d2; }
-        .delete-btn { color: #d32f2f; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diario - Tracker</title>
+  <style>
+    body { font-family:sans-serif; background:#f4f7f9; margin:0; padding:20px; display:flex; justify-content:center; }
+    .container { max-width:900px; background:#fff; padding:20px; border-radius:10px; box-shadow:0 4px 15px rgba(0,0,0,.1);}
+    .nav-links { display:flex; gap:10px; margin-bottom:20px; }
+    .nav-links a { flex:1; text-align:center; padding:10px; background:#607d8b; color:#fff; border-radius:6px; font-weight:600; text-decoration:none; }
+    table { border-collapse:collapse; width:100%; }
+    th, td { border:1px solid #ddd; padding:8px; text-align:center; }
+    th { background:#f2f2f2; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Tracker Nutrizionale Marco</h1>
-
-        <div id="auth-section" class="sezione" style="max-width: 800px; margin: 0 auto 25px auto;">
-             </div>
-
-        <div id="main-tracker-content">
-            <div class="nav-links" style="max-width: 800px; margin: 0 auto 25px auto;">
-                <a href="dashboard.html">📊 Dashboard</a>
-                <a href="aggiungi.html">➕ Aggiungi</a>
-                <a href="diario.html" class="active">📖 Diario</a>
-                <a href="storico.html">📈 Storico</a>
-            </div>
-
-            <div class="sezione">
-                <h2>Diario Giornaliero</h2>
-                <div class="diary-table-container">
-                    <table id="log-pasti">
-                        <thead>
-                            <tr>
-                                <th>Descrizione</th><th>(g)</th><th>Prot</th><th>Qualità</th><th>Kcal</th><th>...</th><th>Azione</th>
-                            </tr>
-                        </thead>
-                        <tbody id="log-body"></tbody>
-                    </table>
-                </div>
-                <div id="caricamento-manuale" class="sezione" style="padding:15px; margin-top:20px; border-width:1px;">
-                    <h3 style="margin:0 0 10px 0; font-size:1em;">Visualizza un Altro Giorno</h3>
-                    <div style="display:flex; gap:10px;">
-                        <input type="date" id="data-caricamento" style="margin-bottom:0;">
-                        <button id="btn-vai-a-oggi" style="margin-bottom:0;">Oggi</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+  <div class="container">
+    <h1>📖 Diario Giornaliero</h1>
+    <div class="nav-links">
+      <a href="dashboard.html">🏠 Dashboard</a>
+      <a href="inserimenti.html">➕ Inserimenti</a>
+      <a href="storico.html">📊 Storico</a>
     </div>
-    
-     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js" type="module"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js" type="module"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js" type="module"></script> 
-    <script type="module">
-        // ... (INCOLLARE QUI TUTTO LO SCRIPT DI index.html) ...
-    </script>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Descrizione</th><th>(g)</th><th>Proteine</th><th>Kcal</th>
+        </tr>
+      </thead>
+      <tbody id="log-body">
+        <tr><td>--</td><td>--</td><td>--</td><td>--</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Visualizza un altro giorno</h3>
+    <input type="date" id="data-caricamento">
+    <button>Oggi</button>
+  </div>
 </body>
 </html>
