@@ -1,54 +1,52 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Diario Giornaliero - Tracker Nutrizionale</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <style>
-        /* INCOLLA QUI TUTTO LO STILE, IDENTICO A dashboard.html */
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f7f9; color: #333; margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 1200px; background-color: #ffffff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h1, h2, h3 { color: #0d47a1; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px; margin-top: 0; }
-        .nav-links { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        .nav-links a { flex-grow: 1; text-align: center; padding: 12px 10px; background-color: #607d8b; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; min-width: 120px; }
-        .nav-links a.active { background-color: #1976d2; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-         /* ... E TUTTI GLI ALTRI STILI ... */
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Tracker Nutrizionale</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <style>
+    body { font-family: sans-serif; background:#f4f7f9; margin:0; padding:20px; display:flex; justify-content:center; }
+    .container { max-width:800px; background:#fff; padding:20px; border-radius:10px; box-shadow:0 4px 15px rgba(0,0,0,.1);}
+    .nav-links { display:flex; gap:10px; margin:20px 0; }
+    .nav-links a { flex:1; text-align:center; padding:10px; background:#607d8b; color:#fff; text-decoration:none; border-radius:6px; font-weight:600; }
+    h1 { color:#0d47a1; margin-top:0; }
+    progress { width:100%; height:20px; border-radius:5px; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Tracker Nutrizionale Marco</h1>
-        <div id="auth-section" class="sezione" style="max-width: 800px; margin: 0 auto 25px auto;">
-             </div>
+  <div class="container">
+    <h1>Tracker Nutrizionale</h1>
 
-        <div id="main-tracker-content">
-            <div class="nav-links" style="max-width: 800px; margin: 0 auto 25px auto;">
-                <a href="dashboard.html">📊 Dashboard</a>
-                <a href="aggiungi.html">➕ Aggiungi</a>
-                <a href="diario.html" class="active">📖 Diario</a>
-                <a href="storico.html">📈 Storico</a>
-            </div>
-
-            <div class="sezione">
-                <h2>Diario Giornaliero</h2>
-                <div class="diary-table-container">
-                    <table id="log-pasti">
-                        <thead></thead>
-                        <tbody id="log-body"></tbody>
-                    </table>
-                </div>
-                <div id="caricamento-manuale" class="sezione">
-                    </div>
-            </div>
-        </div>
+    <!-- 🔐 Login solo qui -->
+    <div id="auth-section">
+      <h2>Accedi / Registrati</h2>
+      <div>
+        <label>Email</label><input type="email" id="user-email">
+        <label>Password</label><input type="password" id="user-password">
+        <button id="btn-register">Registrati</button>
+        <button id="btn-login">Accedi</button>
+        <button id="btn-sign-out" style="display:none;">Esci</button>
+      </div>
+      <p id="auth-status"></p>
     </div>
-    
-     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js" type="module"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js" type="module"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js" type="module"></script> 
-    <script type="module">
-        // INCOLLA QUI LO STESSO, IDENTICO, SCRIPT COMPLETO DI dashboard.html
-    </script>
+
+    <!-- 🔗 Navigazione -->
+    <div class="nav-links">
+      <a href="inserimenti.html">➕ Inserimenti</a>
+      <a href="diario.html">📖 Diario</a>
+      <a href="storico.html">📊 Storico</a>
+    </div>
+
+    <!-- 📊 Riepilogo giornaliero -->
+    <h2>Riepilogo Oggi</h2>
+    <p>Proteine: <span id="totale-proteine">0</span>/<span id="obiettivo-proteine">150</span> g</p>
+    <progress id="progress-proteine" value="0" max="150"></progress>
+
+    <p>Calorie: <span id="totale-calorie">0</span>/<span id="obiettivo-calorie">2300</span> kcal</p>
+    <progress id="progress-calorie" value="0" max="2300"></progress>
+
+    <p>Workout: <span id="workout-calories-totali">0</span> kcal</p>
+  </div>
 </body>
 </html>
