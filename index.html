@@ -1004,10 +1004,11 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js" type="module"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js" type="module"></script> 
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-functions.js" type="module"></script> <script type="module">
+        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-functions.js";
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
         import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-
+let functions; // <-- AGGIUNGI
         const firebaseConfig = {
           apiKey: "AIzaSyA5pSzpfq1aGZ1wjNV5-eXnIqWL6brl424",
           authDomain: "mio-tracker.firebaseapp.com",
@@ -2744,6 +2745,7 @@ try {
                 if (!getApps().some(app => app.name === "globalTrackerApp")) { firebaseApp = initializeApp(firebaseConfig, "globalTrackerApp"); } else { firebaseApp = getApp("globalTrackerApp"); }
                 db = getDatabase(firebaseApp);
                 auth = getAuth(firebaseApp);
+                functions = getFunctions(firebaseApp, 'europe-west1');
                 console.log("Firebase inizializzato.");
 
                 onAuthStateChanged(auth, async (user) => {
@@ -3123,6 +3125,7 @@ try {
     </script>
 </body>
 </html>
+
 
 
 
