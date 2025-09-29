@@ -2122,7 +2122,7 @@ let functions; // <-- AGGIUNGI
                 const prompt = `Analizza il seguente testo estratto da una tabella nutrizionale: "${ocrText}". Estrai i valori per 100g (o 100ml), ignorando le colonne "per porzione". Restituisci ESCLUSIVAMENTE un oggetto JSON. Le chiavi devono essere i nomi dei nutrienti in italiano (es. "Energia", "Grassi", "di cui acidi grassi saturi"). Se un valore non è presente, omettilo.`;
                 
 try {
-    const callGemini = httpsCallable(functions, 'callGemini');
+    const callGemini = httpsCallable(functions, 'callOpenAI');
     const result = await callGemini({ prompt: promptText });
     const data = result.data; // La risposta di Gemini è in result.data
     
@@ -2680,7 +2680,7 @@ try {
                     }
                     let promptText = `Fornisci ESATTAMENTE questo oggetto JSON (senza altro testo) con i valori nutrizionali medi per 100 g di "${nome}". ${ingredientiInfo} ${AI_INSTRUCTION}. ${GEMINI_PROMPT_FORMAT}`;
                     
-const callGemini = httpsCallable(functions, 'callGemini');
+const callGemini = httpsCallable(functions, 'callOpenAI');
 const result = await callGemini({ prompt: promptText });
 const data = result.data;
 const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
@@ -3031,7 +3031,7 @@ const newData = JSON.parse(raw.replace(/```json|```/g, '').trim());
                     }
 
 // NUOVO BLOCCO CORRETTO
-const callGemini = httpsCallable(functions, 'callGemini');
+const callGemini = httpsCallable(functions, 'callOpenAI');
 const result = await callGemini({ prompt: prompt });
 const data = result.data;
 const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Nessuna risposta dall\'AI.';
@@ -3120,6 +3120,7 @@ const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Nessuna rispost
     </script>
 </body>
 </html>
+
 
 
 
