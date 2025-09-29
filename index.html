@@ -3034,13 +3034,12 @@ try {
                         prompt = `Agisci come un esperto di etichette alimentari. Genera una lista di ingredienti per il prodotto commerciale "${foodName}". Rispondi ESCLUSIVAMENTE con la lista, senza frasi introduttive o conclusive. Il formato deve essere un elenco puntato, un ingrediente per riga. È FONDAMENTALE che la lista rifletta il contenuto di un PRODOTTO CONFEZIONATO (es. un sacchetto di minestrone surgelato), NON una ricetta per prepararlo. Pertanto, NON includere ingredienti come acqua aggiunta in cottura, olio, sale o pasta, a meno che non siano specificati come pre-inseriti nel prodotto. Se non conosci l'etichetta esatta, basati su prodotti concorrenti simili dei supermercati.`;
                     }
 
-                    const res = await fetch(GEMINI_ENDPOINT, {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                    });
-                    if (!res.ok) throw new Error(`Errore AI: ${res.statusText}`);
-                    const data = await res.json();
-                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Nessuna risposta dall\'AI.';
+// NUOVO BLOCCO CORRETTO
+const callGemini = httpsCallable(functions, 'callGemini');
+const result = await callGemini({ prompt: prompt });
+const data = result.data;
+const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Nessuna risposta dall\'AI.';
+
                     ingredientModalTextarea.value = text.replace(/[\*]/g, '-').trim();
 
                 } catch (err) {
@@ -3125,6 +3124,7 @@ try {
     </script>
 </body>
 </html>
+
 
 
 
