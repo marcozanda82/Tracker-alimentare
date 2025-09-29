@@ -2680,15 +2680,11 @@ try {
                     }
                     let promptText = `Fornisci ESATTAMENTE questo oggetto JSON (senza altro testo) con i valori nutrizionali medi per 100 g di "${nome}". ${ingredientiInfo} ${AI_INSTRUCTION}. ${GEMINI_PROMPT_FORMAT}`;
                     
-                    const res = await fetch(GEMINI_ENDPOINT, {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
-                    });
-                    if (!res.ok) throw new Error(`Errore dal server AI: ${res.statusText}`);
-                    
-                    const data = await res.json();
-                    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-                    const newData = JSON.parse(raw.replace(/```json|```/g, '').trim());
+const callGemini = httpsCallable(functions, 'callGemini');
+const result = await callGemini({ prompt: promptText });
+const data = result.data;
+const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+const newData = JSON.parse(raw.replace(/```json|```/g, '').trim());
 
                     const oldData = {};
                     let isAnyFieldPopulated = false;
@@ -3124,6 +3120,7 @@ const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Nessuna rispost
     </script>
 </body>
 </html>
+
 
 
 
