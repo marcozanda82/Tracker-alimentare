@@ -72,6 +72,7 @@
         #calorie-adjuster { display: flex; align-items: center; justify-content: center; margin-top: 10px; margin-bottom: 20px; gap: 10px; }
         #calorie-adjuster button { padding: 5px 12px; font-size: 1.2em; border-radius: 5px; background-color: #4CAF50; color: white; border: none; cursor: pointer; }
         #calorie-adjuster button.minus { background-color: #f44336; }
+        #calorie-adjuster button.preset { padding: 8px 10px; font-size: 1em; line-height: 1.2; width: 90px; }
         #calorie-adjuster input[type="number"] { width: 80px; text-align: center; font-size: 1.1em; padding: 8px; border: 1px solid #ccc; border-radius: 5px; }
         #calorie-adjuster label { margin-bottom: 0; font-weight: normal; color: #333; }
         .cloud-sync-section { display: flex; gap: 10px; margin-top: 20px; padding: 15px; background-color: #e0f2f7; border: 1px solid #b2ebf2; border-radius: 8px; flex-wrap: wrap; }
@@ -458,8 +459,11 @@
 
                 <div id="calorie-adjuster">
                     <label for="calorie-adjustment-input">Correzione Obiettivo:</label>
+                    <button id="btn-set-cardio-deficit" class="preset" style="background-color: #1e88e5;">🏃 -400</button>
                     <button id="btn-calorie-minus" class="minus">-</button>
-                    <input type="number" id="calorie-adjustment-input" value="0"> <button id="btn-calorie-plus">+</button>
+                    <input type="number" id="calorie-adjustment-input" value="0">
+                    <button id="btn-calorie-plus">+</button>
+                    <button id="btn-set-forza-surplus" class="preset" style="background-color: #e64a19;">🔥 +100</button>
                     <span>kcal</span>
                 </div>
 
@@ -611,13 +615,6 @@
                     <input type="text" id="workout-desc" placeholder="es. Corsa 30 min, Pesistica">
                     <label for="workout-calories">Calorie Bruciate (kcal)</label>
                     <input type="number" id="workout-calories" min="0">
-                    <div style="margin-top: 15px; margin-bottom: 15px;">
-                        <label>Tipo di Allenamento (imposta il target calorico):</label>
-                        <div style="display: flex; gap: 20px; margin-top: 8px;">
-                            <label style="font-weight: normal; display: flex; align-items: center; gap: 5px;"><input type="radio" name="workout-type" value="forza"> 🔥 Forza (+100 kcal)</label>
-                            <label style="font-weight: normal; display: flex; align-items: center; gap: 5px;"><input type="radio" name="workout-type" value="cardio"> 🏃 Cardio (-400 kcal)</label>
-                        </div>
-                    </div>
                     <button id="btn-add-workout">Aggiungi Allenamento</button>
                 </div>
             </div>
@@ -1046,8 +1043,6 @@ let functions; // <-- AGGIUNGI
             6: { tipo: '🥗 Mantenimento (Deficit)', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 }
         };
 
-        const DEFICIT_PREIMPOSTATO_SETTIMANALE = { 0: -250, 1: +300, 2: +300, 3: -250, 4: +300, 5: +300, 6: -250 };
-
         const OBIETTIVI_MICRO = { mg: 420, k: 3400, vitc: 90, ca: 1000, fe: 18, zn: 11, cu: 0.9, p: 700 };
         const OBIETTIVI_FAT = { 
             fatTotal: 85, fatSat: 20, fatTrans: 2, 
@@ -1113,6 +1108,8 @@ let functions; // <-- AGGIUNGI
         const calorieAdjustmentInput = document.getElementById('calorie-adjustment-input');
         const btnCalorieMinus = document.getElementById('btn-calorie-minus');
         const btnCaloriePlus = document.getElementById('btn-calorie-plus');
+        const btnSetCardioDeficit = document.getElementById('btn-set-cardio-deficit');
+        const btnSetForzaSurplus = document.getElementById('btn-set-forza-surplus');
         const btnDownloadManual = document.getElementById('btn-download-manual');
         const cloudSyncStatusSpan = document.getElementById('cloud-sync-status');
         const cloudSyncSection = document.querySelector('.cloud-sync-section');
@@ -1330,12 +1327,8 @@ let functions; // <-- AGGIUNGI
             if (!datiGiornalieri.log) datiGiornalieri.log = [];
             if (typeof datiGiornalieri.workoutCalorie === 'undefined') datiGiornalieri.workoutCalorie = 0;
 
-            const dataCorrente = new Date(data);
-            const giornoSettimana = dataCorrente.getDay(); 
-            const valorePreimpostatoPerGiorno = DEFICIT_PREIMPOSTATO_SETTIMANALE[giornoSettimana] || 0;
-
-            if (typeof datiGiornalieri.calorieAdjustment === 'undefined' || datiGiornalieri.calorieAdjustment === 0) {
-                datiGiornalieri.calorieAdjustment = valorePreimpostatoPerGiorno;
+            if (typeof datiGiornalieri.calorieAdjustment === 'undefined') {
+                datiGiornalieri.calorieAdjustment = 0;
             }
             
             aggiornaUI();
@@ -2513,35 +2506,15 @@ try {
             });
 
             btnAddWorkout.addEventListener('click', () => {
-                const desc = workoutDescInput.value.trim();
-                const calories = parseFloat(workoutCaloriesInput.value);
-                if (!desc || isNaN(calories) || calories <= 0) {
-                    alert('Dati allenamento non validi.');
-                    return;
-                }
-
-                const selectedWorkoutType = document.querySelector('input[name="workout-type"]:checked');
-                if (selectedWorkoutType) {
-                    if (selectedWorkoutType.value === 'forza') {
-                        datiGiornalieri.calorieAdjustment = 100;
-                    } else if (selectedWorkoutType.value === 'cardio') {
-                        datiGiornalieri.calorieAdjustment = -400;
-                    }
-                }
-
+                const desc = workoutDescInput.value.trim(), calories = parseFloat(workoutCaloriesInput.value);
+                if (!desc || isNaN(calories) || calories <= 0) { alert('Dati allenamento non validi.'); return; }
                 if (!datiGiornalieri.log) datiGiornalieri.log = [];
                 datiGiornalieri.log.push({ type: 'workout', desc: desc, kcal: calories });
                 datiGiornalieri.workoutCalorie = (datiGiornalieri.workoutCalorie || 0) + calories;
-                
                 aggiornaUI();
-                salvaGiorno(giornoVisualizzato, datiGiornalieri);
-                
-                workoutDescInput.value = '';
-                workoutCaloriesInput.value = '';
-                if (selectedWorkoutType) {
-                    selectedWorkoutType.checked = false;
-                }
-                renderMealBuilder();
+                salvaGiorno(giornoVisualizzato, datiGiornalieri); 
+                workoutDescInput.value = ''; workoutCaloriesInput.value = '';
+                renderMealBuilder(); 
             });
 
            btnAggiungiSingolo.addEventListener('click', () => handleAlimentoAddition(false));
@@ -2743,26 +2716,30 @@ const newData = JSON.parse(raw.replace(/```json|```/g, '').trim());
             
             dataCaricamentoInput.value = getTodayString('ymd');
 
-            const handleCalorieAdjustment = (increment) => {
-                let value = (datiGiornalieri.calorieAdjustment || 0) + increment;
-                datiGiornalieri.calorieAdjustment = Math.max(-500, Math.min(500, value));
+            function setCalorieAdjustment(value) {
+                datiGiornalieri.calorieAdjustment = value;
                 aggiornaUI();
                 salvaGiorno(giornoVisualizzato, datiGiornalieri);
-                renderMealBuilder(); 
+                renderMealBuilder();
+            }
+
+            const handleCalorieAdjustment = (increment) => {
+                let value = (datiGiornalieri.calorieAdjustment || 0) + increment;
+                setCalorieAdjustment(value);
             };
+
             calorieAdjustmentInput.addEventListener('input', () => {
                  let value = parseFloat(calorieAdjustmentInput.value);
                  if (isNaN(value)) {
-                     const dataCorrente = new Date(giornoVisualizzato);
-                     value = DEFICIT_PREIMPOSTATO_SETTIMANALE[dataCorrente.getDay()] || 0;
+                     value = 0;
                  }
-                 datiGiornalieri.calorieAdjustment = Math.max(-500, Math.min(500, value));
-                 aggiornaUI();
-                 salvaGiorno(giornoVisualizzato, datiGiornalieri);
-                 renderMealBuilder();
+                 setCalorieAdjustment(value);
             });
+
             btnCalorieMinus.addEventListener('click', () => handleCalorieAdjustment(-10));
             btnCaloriePlus.addEventListener('click', () => handleCalorieAdjustment(10));
+            btnSetCardioDeficit.addEventListener('click', () => setCalorieAdjustment(-400));
+            btnSetForzaSurplus.addEventListener('click', () => setCalorieAdjustment(100));
 
             try {
                 if (!getApps().some(app => app.name === "globalTrackerApp")) { firebaseApp = initializeApp(firebaseConfig, "globalTrackerApp"); } else { firebaseApp = getApp("globalTrackerApp"); }
