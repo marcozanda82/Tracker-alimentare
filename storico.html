@@ -399,8 +399,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     document.getElementById('btn-esporta-excel').addEventListener('click', esportaInExcel);
-// --- INIZIO CODICE EXPORT STORICO AI ---
-    document.getElementById('btn-esporta-storico-ai').addEventListener('click', async () => {
+// --- INIZIO CODICE EXPORT STORICO AI (VERSIONE FILE) ---
+    document.getElementById('btn-esporta-storico-ai').addEventListener('click', () => {
         const storicoGrezzo = caricaTuttoLoStorico(); // Usa la funzione già esistente
         
         if (storicoGrezzo.length === 0) {
@@ -408,39 +408,32 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Rielaboriamo i dati per renderli "digeribili" all'AI
-        // Aggiungiamo contesto (giorno settimana, obiettivi) e totali pre-calcolati
+        // Rielaborazione dati per l'AI
         const storicoArricchito = storicoGrezzo.map(giorno => {
             const dataObj = new Date(giorno.data);
             const dayIndex = dataObj.getDay();
             const piano = PIANO_SETTIMANALE[dayIndex] || PIANO_SETTIMANALE[1];
             
-            // Calcolo totali giornalieri per facilitare l'AI
             let stats = { prot: 0, kcal: 0, carb: 0, fat: 0, zuccheri: 0, fibre: 0 };
             let workoutKcal = 0;
 
             const logPulito = (giorno.log || []).map(entry => {
-                // Calcola macro dell'entry
                 if (entry.type === 'workout') {
                     workoutKcal += (entry.kcal || entry.cal || 0);
                     return { tipo: 'WORKOUT', desc: entry.desc, kcal: (entry.kcal || entry.cal || 0) };
                 } 
                 
-                // Gestione Pasti e Singoli
                 const items = entry.type === 'meal' ? entry.items : [entry];
                 let entryKcal = 0;
                 
                 const itemsDetails = items.map(i => {
-                    // Somma ai totali del giorno
                     stats.prot += (i.prot || 0);
                     stats.kcal += (i.kcal || i.cal || 0);
                     stats.carb += (i.carb || 0);
                     stats.fat += (i.fatTotal || 0);
                     stats.zuccheri += (i.zuccheri || 0);
                     stats.fibre += (i.fibreTotali || 0);
-                    
                     entryKcal += (i.kcal || i.cal || 0);
-
                     return `${i.desc} (${i.qta}g)`;
                 });
 
@@ -475,19 +468,24 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         const jsonExport = {
-            descrizione: "Storico completo abitudini alimentari",
+            descrizione: "Storico completo abitudini alimentari per Analisi AI",
             generato_il: new Date().toISOString(),
             numero_giorni: storicoArricchito.length,
             dati: storicoArricchito
         };
 
-        try {
-            await navigator.clipboard.writeText(JSON.stringify(jsonExport, null, 2));
-            alert("✅ Storico COMPLETO copiato negli appunti!\n\nVai su ChatGPT/Gemini e incolla. Esempi di prompt:\n- 'Analizza i miei trend: mangio abbastanza proteine nei giorni di allenamento?'\n- 'Identifica i 3 alimenti che consumo più spesso e valuta la loro qualità.'\n- 'Creo un grafico del mio deficit calorico nell'ultimo mese?'");
-        } catch (err) {
-            console.error(err);
-            alert("Errore copia (file troppo grande?): " + err.message);
-        }
+        // --- SALVATAGGIO FILE JSON ---
+        const jsonString = JSON.stringify(jsonExport, null, 2);
+        const blob = new Blob([jsonString], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        // Nome del file con la data di oggi
+        link.download = `storico_tracker_ai_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
     });
     // --- FINE CODICE EXPORT STORICO AI ---
     renderStorico();
@@ -495,5 +493,6 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
+
 
 
