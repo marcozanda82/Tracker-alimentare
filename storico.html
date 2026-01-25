@@ -399,10 +399,101 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     document.getElementById('btn-esporta-excel').addEventListener('click', esportaInExcel);
+// --- INIZIO CODICE EXPORT STORICO AI ---
+    document.getElementById('btn-esporta-storico-ai').addEventListener('click', async () => {
+        const storicoGrezzo = caricaTuttoLoStorico(); // Usa la funzione già esistente
+        
+        if (storicoGrezzo.length === 0) {
+            alert("Nessun dato nello storico.");
+            return;
+        }
 
+        // Rielaboriamo i dati per renderli "digeribili" all'AI
+        // Aggiungiamo contesto (giorno settimana, obiettivi) e totali pre-calcolati
+        const storicoArricchito = storicoGrezzo.map(giorno => {
+            const dataObj = new Date(giorno.data);
+            const dayIndex = dataObj.getDay();
+            const piano = PIANO_SETTIMANALE[dayIndex] || PIANO_SETTIMANALE[1];
+            
+            // Calcolo totali giornalieri per facilitare l'AI
+            let stats = { prot: 0, kcal: 0, carb: 0, fat: 0, zuccheri: 0, fibre: 0 };
+            let workoutKcal = 0;
+
+            const logPulito = (giorno.log || []).map(entry => {
+                // Calcola macro dell'entry
+                if (entry.type === 'workout') {
+                    workoutKcal += (entry.kcal || entry.cal || 0);
+                    return { tipo: 'WORKOUT', desc: entry.desc, kcal: (entry.kcal || entry.cal || 0) };
+                } 
+                
+                // Gestione Pasti e Singoli
+                const items = entry.type === 'meal' ? entry.items : [entry];
+                let entryKcal = 0;
+                
+                const itemsDetails = items.map(i => {
+                    // Somma ai totali del giorno
+                    stats.prot += (i.prot || 0);
+                    stats.kcal += (i.kcal || i.cal || 0);
+                    stats.carb += (i.carb || 0);
+                    stats.fat += (i.fatTotal || 0);
+                    stats.zuccheri += (i.zuccheri || 0);
+                    stats.fibre += (i.fibreTotali || 0);
+                    
+                    entryKcal += (i.kcal || i.cal || 0);
+
+                    return `${i.desc} (${i.qta}g)`;
+                });
+
+                return {
+                    pasto: entry.desc || "Alimento Singolo",
+                    kcal_totali: entryKcal.toFixed(0),
+                    dettaglio: itemsDetails.join(", ")
+                };
+            });
+
+            return {
+                data: giorno.data,
+                giorno_settimana: dataObj.toLocaleDateString('it-IT', { weekday: 'long' }),
+                contesto: {
+                    tipo_giornata: piano.tipo,
+                    obiettivo_kcal_base: piano.cal,
+                    obiettivo_prot: piano.prot,
+                    allenamento_kcal: workoutKcal
+                },
+                totali_raggiunti: {
+                    kcal: stats.kcal.toFixed(0),
+                    prot: stats.prot.toFixed(1),
+                    carb: stats.carb.toFixed(1),
+                    grassi: stats.fat.toFixed(1),
+                    zuccheri: stats.zuccheri.toFixed(1),
+                    fibre: stats.fibre.toFixed(1)
+                },
+                bilancio_calorico: (stats.kcal - (piano.cal + workoutKcal + (giorno.calorieAdjustment || 0))).toFixed(0),
+                note_utente: giorno.note || "",
+                diario_alimentare: logPulito
+            };
+        });
+
+        const jsonExport = {
+            descrizione: "Storico completo abitudini alimentari",
+            generato_il: new Date().toISOString(),
+            numero_giorni: storicoArricchito.length,
+            dati: storicoArricchito
+        };
+
+        try {
+            await navigator.clipboard.writeText(JSON.stringify(jsonExport, null, 2));
+            alert("✅ Storico COMPLETO copiato negli appunti!\n\nVai su ChatGPT/Gemini e incolla. Esempi di prompt:\n- 'Analizza i miei trend: mangio abbastanza proteine nei giorni di allenamento?'\n- 'Identifica i 3 alimenti che consumo più spesso e valuta la loro qualità.'\n- 'Creo un grafico del mio deficit calorico nell'ultimo mese?'");
+        } catch (err) {
+            console.error(err);
+            alert("Errore copia (file troppo grande?): " + err.message);
+        }
+    });
+    // --- FINE CODICE EXPORT STORICO AI ---
     renderStorico();
 });
 </script>
 </body>
 </html>
+
 
