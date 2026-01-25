@@ -450,112 +450,12 @@
                 <a href="stima_grassi.html">🫙 Stima Grassi</a>
             </div>
             <div id="riepilogo" class="sezione">
-                <div class="summary-header-row">
-                    <h2>Riepilogo di Oggi</h2>
-                    // --- INIZIO CODICE EXPORT AI (VERSIONE COMPLETA) ---
-    const btnExportAi = document.getElementById('btn-export-json-ai');
-    if (btnExportAi) {
-        btnExportAi.addEventListener('click', async () => {
-            // 1. Recupera Obiettivi e Contesto
-            const dataRef = new Date(giornoVisualizzato);
-            const piano = PIANO_SETTIMANALE[dataRef.getDay()] || PIANO_SETTIMANALE[1];
-            
-            // Calcolo obiettivi dinamici
-            const targetKcal = piano.cal_base + (datiGiornalieri.workoutCalorie || 0) + (datiGiornalieri.calorieAdjustment || 0);
-            
-            // Lista completa delle chiavi nutrizionali monitorate
-            const allNutrientKeys = [
-                'prot', 'kcal', 'carb', 'zuccheri', 'fatTotal', 'fatSat', 'fatTrans', 
-                'fatMono', 'fatPoly', 'omega3', 'omega6', 'fibreTotali', 'fibreSolubili', 'fibreInsolubili',
-                'mg', 'k', 'vitc', 'ca', 'fe', 'zn', 'cu', 'p', 
-                'vitA', 'vitB12', 'vitD', 'vitE', 'vitK', 'b9', 'b2', 'b6',
-                'leu', 'iso', 'val', 'lys', 'met', 'phe', 'thr', 'trp', 'his'
-            ];
-
-            // 2. Calcola i Totali Effettivi (Sommando il log)
-            let dailyTotals = {};
-            allNutrientKeys.forEach(k => dailyTotals[k] = 0);
-
-            // Struttura per il log dettagliato
-            const logDettagliato = [];
-
-            (datiGiornalieri.log || []).forEach(entry => {
-                if (entry.type === 'workout') return; // Saltiamo i workout qui, li mettiamo a parte
-
-                const items = entry.type === 'meal' ? entry.items : [entry];
-                const itemsExport = items.map(item => {
-                    // Pulisci l'oggetto item per l'export (rimuovi chiavi interne inutili)
-                    const cleanItem = {
-                        alimento: item.desc,
-                        qta_g: item.qta
-                    };
-                    
-                    // Aggiungi tutti i nutrienti presenti nell'alimento
-                    allNutrientKeys.forEach(key => {
-                        const val = item[key];
-                        // Includiamo il valore se esiste ed è maggiore di 0, oppure se è calorie/proteine (sempre)
-                        if (val !== undefined && val !== null && (val > 0 || key === 'kcal' || key === 'prot')) {
-                            cleanItem[key] = Number(val.toFixed(2)); // Arrotonda per pulizia
-                            dailyTotals[key] += val;
-                        }
-                    });
-                    
-                    // Segnala se mancano dati importanti (anomalie potenziali a livello di item)
-                    if (!item.kcal && !item.cal) cleanItem._WARNING = "Kcal a 0 o mancanti";
-                    
-                    return cleanItem;
-                });
-
-                logDettagliato.push({
-                    tipo: entry.type === 'meal' ? `Pasto: ${entry.desc}` : 'Alimento Singolo',
-                    dettagli: itemsExport
-                });
-            });
-
-            // 3. Costruisci l'Oggetto JSON Finale
-            const fullExportData = {
-                meta: {
-                    data: giornoVisualizzato,
-                    giorno_tipo: piano.tipo,
-                    note_utente: datiGiornalieri.note || "Nessuna nota"
-                },
-                cruscotto_totali: {
-                    // Confronto Totali vs Obiettivi
-                    MACROS: {
-                        Kcal: { consumate: dailyTotals.kcal.toFixed(0), target: targetKcal },
-                        Proteine: { consumate: dailyTotals.prot.toFixed(1), target: piano.prot },
-                        Carboidrati: { consumate: dailyTotals.carb.toFixed(1), target: piano.carb },
-                        Grassi: { consumate: dailyTotals.fatTotal.toFixed(1), target: OBIETTIVI_FAT.fatTotal }
-                    },
-                    MICROS_CRITICI: {
-                        Fibre: dailyTotals.fibreTotali.toFixed(1),
-                        Zuccheri: dailyTotals.zuccheri.toFixed(1),
-                        Grassi_Saturi: dailyTotals.fatSat.toFixed(1),
-                        Sodio_K: dailyTotals.k.toFixed(0) // Usiamo K come proxy minerali
-                    },
-                    // Aggiungiamo eventuali squilibri nel ratio Omega
-                    OMEGA_RATIO: (dailyTotals.omega3 > 0) ? `1:${(dailyTotals.omega6/dailyTotals.omega3).toFixed(1)}` : "N/D"
-                },
-                allenamento: {
-                    descrizione: (datiGiornalieri.log || []).filter(e => e.type === 'workout').map(e => e.desc).join(", ") || "Riposo",
-                    kcal_bruciate: datiGiornalieri.workoutCalorie || 0
-                },
-                diario_alimentare_completo: logDettagliato
-            };
-
-            // 4. Copia negli appunti
-            try {
-                const jsonString = JSON.stringify(fullExportData, null, 2);
-                await navigator.clipboard.writeText(jsonString);
-                alert("✅ Dati COMPLETI copiati (Nutrienti, Micros, Log)!\n\nIncolla su ChatGPT/Gemini e chiedi:\n'Analizza questo JSON. Cerca anomalie nei dati (es. cibi con calorie a zero) e dammi un parere nutrizionale.'");
-            } catch (err) {
-                console.error("Errore copia:", err);
-                alert("Errore nella copia automatica. Controlla la console.");
-            }
-        });
-    }
-    // --- FINE CODICE EXPORT AI ---
-                </div>
+               <div class="summary-header-row">
+    <h2>Riepilogo di Oggi</h2>
+    <button id="btn-export-json-ai" title="Copia TUTTI i dati per analisi profonda" style="background-color: #673ab7; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 600;">
+        <i class="fas fa-database"></i> Dati Completi AI
+    </button>
+</div>
                 
                 <span id="calorie-balance-text"></span>
 
@@ -3223,6 +3123,7 @@ const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Nessuna rispost
     </script>
 </body>
 </html>
+
 
 
 
