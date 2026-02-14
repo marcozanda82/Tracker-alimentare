@@ -503,12 +503,6 @@
                 
                 <span id="calorie-balance-text"></span>
 
-                <div id="calorie-adjuster">
-                    <label for="calorie-adjustment-input">Correzione Obiettivo:</label>
-                    <button id="btn-calorie-minus" class="minus">-</button>
-                    <input type="number" id="calorie-adjustment-input" value="0"> <button id="btn-calorie-plus">+</button>
-                    <span>kcal</span>
-                </div>
 
                 <p style="display: flex; align-items: center; gap: 10px;">
                     <span>Proteine: <span id="totale-proteine">0</span> / <span id="obiettivo-proteine"></span> g</span>
@@ -1207,10 +1201,6 @@
             const giornoSettimana = dataCorrente.getDay(); 
             const valorePreimpostatoPerGiorno = DEFICIT_PREIMPOSTATO_SETTIMANALE[giornoSettimana] || 0;
 
-            if (typeof datiGiornalieri.calorieAdjustment === 'undefined' || datiGiornalieri.calorieAdjustment === 0) {
-                datiGiornalieri.calorieAdjustment = valorePreimpostatoPerGiorno;
-            }
-            
             aggiornaUI();
             console.log(`Caricato il giorno: ${giornoVisualizzato} da localStorage`); 
         }
@@ -1220,7 +1210,7 @@
             const giornoSettimana = dataVisualizzata.getDay();
             const pianoDelGiorno = PIANO_SETTIMANALE[giornoSettimana] || PIANO_SETTIMANALE[1];
 
-            const obiettivoCalTotaleGiornaliero = pianoDelGiorno.cal_base + (datiGiornalieri.workoutCalorie || 0) + (datiGiornalieri.calorieAdjustment || 0);
+            const obiettivoCalTotaleGiornaliero = pianoDelGiorno.cal_base + (datiGiornalieri.workoutCalorie || 0);
             const obiettivoProtTotaleGiornaliero = pianoDelGiorno.prot;
 
             let obiettivoPastoProt = 0, obiettivoPastoCal = 0;
@@ -1278,7 +1268,7 @@
             const dataVisualizzata = new Date(giornoVisualizzato);
             const pianoDelGiorno = PIANO_SETTIMANALE[dataVisualizzata.getDay()] || PIANO_SETTIMANALE[1];
             
-            const obiettivoCalorieTotale = pianoDelGiorno.cal_base + (datiGiornalieri.workoutCalorie || 0) + (datiGiornalieri.calorieAdjustment || 0);
+            const obiettivoCalorieTotale = pianoDelGiorno.cal_base + (datiGiornalieri.workoutCalorie || 0);
             const OBIETTIVI = { 
                 prot: pianoDelGiorno.prot, kcal: obiettivoCalorieTotale, carb: pianoDelGiorno.carb, zuccheri: pianoDelGiorno.zuccheri, 
                 ...OBIETTIVI_MICRO, ...OBIETTIVI_FAT, ...OBIETTIVI_VIT, ...OBIETTIVI_AMINO, ...OBIETTIVI_FIBRE
@@ -2636,8 +2626,6 @@
                  salvaGiorno(giornoVisualizzato, datiGiornalieri);
                  renderMealBuilder();
             });
-            btnCalorieMinus.addEventListener('click', () => handleCalorieAdjustment(-10));
-            btnCaloriePlus.addEventListener('click', () => handleCalorieAdjustment(10));
 
             try {
                 if (!getApps().some(app => app.name === "globalTrackerApp")) { firebaseApp = initializeApp(firebaseConfig, "globalTrackerApp"); } else { firebaseApp = getApp("globalTrackerApp"); }
@@ -3110,4 +3098,5 @@
     </script>
 </body>
 </html>
+
 
