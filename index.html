@@ -493,18 +493,6 @@
         </div>
         <div id="main-tracker-content">
             <h2 id="titolo-giornata"></h2>
-            <div class="sezione" style="text-align: center; border-left-color: #ff8f00; background-color: #fff9f0;">
-    <label for="tipo-giorno-selector" style="color: #e64a19;">🎯 Cosa alleniamo oggi?</label>
-    <select id="tipo-giorno-selector" style="max-width: 350px; margin: 10px auto; border: 2px solid #ff8f00; font-weight: bold;">
-        <option value="riposo">💧 Riposo (Deficit)</option>
-        <option value="bicipiti">🔥 Bicipiti</option>
-        <option value="gambe">💪 Gambe</option>
-        <option value="spalle">🏃 Spalle</option>
-        <option value="addominali">🏋️ Addominali</option>
-        <option value="schiena">🏃 Schiena</option>
-        <option value="total_body">🥗 Total body leggero</option>
-    </select>
-</div>
 <div class="nav-links">
     <a href="storico.html">📊 Storico</a>
     
@@ -920,15 +908,15 @@
         let firebaseApp; 
         let currentUserUID = null; 
 
-        const OPZIONI_ALLENAMENTO = {
-    'riposo': { tipo: '💧 Riposo (Deficit)', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
-    'bicipiti': { tipo: '🔥 Bicipiti', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
-    'gambe': { tipo: '💪 Gambe', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
-    'spalle': { tipo: '🏃 Spalle', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
-    'addominali': { tipo: '🏋️ Addominali', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
-    'schiena': { tipo: '🏃 Schiena', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
-    'total_body': { tipo: '🥗 Total body leggero o cardio', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 }
-};
+        const PIANO_SETTIMANALE = {
+            0: { tipo: '💧 Riposo (Deficit)', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
+            1: { tipo: '🔥 Bicipiti', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
+            2: { tipo: '💪 Gambe', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
+            3: { tipo: '🏃 Spalle', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
+            4: { tipo: '🏋️ Addominali', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
+            5: { tipo: '🏃 Schiena', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
+            6: { tipo: '🥗 Total body leggero o cardio', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 }
+        };
 
         const DEFICIT_PREIMPOSTATO_SETTIMANALE = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
 
@@ -1286,16 +1274,9 @@
             console.log("Interfaccia app avviata con successo con dati locali.");
         }
 
-function aggiornaUI() {
-    const dataVisualizzata = new Date(giornoVisualizzato);
-    
-    // LEGGI DAL SELETTORE INVECE CHE DAL CALENDARIO
-    const selettore = document.getElementById('tipo-giorno-selector');
-    const sceltaEffettuata = selettore.value;
-    const pianoDelGiorno = OPZIONI_ALLENAMENTO[sceltaEffettuata] || OPZIONI_ALLENAMENTO['riposo'];
-    
-    // Salva la scelta nei dati giornalieri
-    datiGiornalieri.tipoGiornoScelto = sceltaEffettuata;
+        function aggiornaUI() {
+            const dataVisualizzata = new Date(giornoVisualizzato);
+            const pianoDelGiorno = PIANO_SETTIMANALE[dataVisualizzata.getDay()] || PIANO_SETTIMANALE[1];
             
             const obiettivoCalorieTotale = pianoDelGiorno.cal_base + (datiGiornalieri.workoutCalorie || 0) + (datiGiornalieri.calorieAdjustment || 0);
             const OBIETTIVI = { 
@@ -2224,11 +2205,6 @@ function aggiornaUI() {
         document.addEventListener('DOMContentLoaded', () => {
             eseguiMigrazioneStorico(); 
             initAppUI(); 
-
-document.getElementById('tipo-giorno-selector').addEventListener('change', () => {
-                aggiornaUI();
-                salvaGiorno(giornoVisualizzato, datiGiornalieri); 
-            });
             
             btnScanBarcode.addEventListener('click', startBarcodeScanner);
             const barcodeModalCloseBtn = barcodeScannerModal.querySelector('.modal-close');
@@ -3134,7 +3110,6 @@ document.getElementById('tipo-giorno-selector').addEventListener('change', () =>
     </script>
 </body>
 </html>
-
 
 
 
