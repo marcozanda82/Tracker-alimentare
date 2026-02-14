@@ -877,15 +877,17 @@
     <div id="barcode-scanner-modal" class="modal"><div class="modal-content"><span class="modal-close" data-modal="barcode-scanner-modal">&times;</span><h2>Scansiona Codice a Barre</h2><p style="text-align: center;">Inquadra il codice a barre del prodotto.</p><div id="scanner-container" style="position: relative; width: 100%; padding-top: 75%;"><video id="barcode-scanner-video" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 1px solid #ccc; border-radius: 8px;"></video><div id="scanner-overlay" style="position: absolute; top: 50%; left: 50%; width: 80%; height: 2px; background-color: red; transform: translate(-50%, -50%); box-shadow: 0 0 10px red;"></div></div><p id="barcode-scanner-status" style="text-align: center; margin-top: 15px; font-weight: bold; min-height: 20px;"></p></div></div>
     <div id="diff-modal" class="modal"><div class="modal-content"><span class="modal-close" data-modal="diff-modal">&times;</span><h2 id="diff-modal-title">Confronta Valori Nutrizionali</h2><p>Sono state trovate differenze significative. Scegli quali valori mantenere per ogni nutriente.</p><div id="diff-modal-list" style="max-height: 50vh; overflow-y: auto; padding: 10px; border: 1px solid #eee; border-radius: 8px; margin-top: 15px;"></div><div class="nutrient-confirm-buttons" style="margin-top: 20px;"><button id="btn-cancel-diff" style="background-color: #607d8b;">Annulla</button><button id="btn-apply-diff" style="background-color: #2e7d32;">Applica Modifiche</button></div></div></div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js" type="module"></script>
+   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js" type="module"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js" type="module"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js" type="module"></script> 
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-functions.js" type="module"></script> <script type="module">
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-functions.js" type="module"></script> 
+    <script type="module">
         import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-functions.js";
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
         import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-let functions;
+        
+        let functions;
         const firebaseConfig = {
           apiKey: "AIzaSyA5pSzpfq1aGZ1wjNV5-eXnIqWL6brl424",
           authDomain: "mio-tracker.firebaseapp.com",
@@ -918,7 +920,7 @@ let functions;
 
         const DEFICIT_PREIMPOSTATO_SETTIMANALE = { 0: -250, 1: +300, 2: +300, 3: -250, 4: +300, 5: +300, 6: -250 };
 
-        const OBIETTIVI_MICRO = { mg: 420, k: 3400, vitc: 90, ca: 1000, fe: 18, zn: 11, cu: 0.9, p: 700, na: 2000 }; // ADDED NA
+        const OBIETTIVI_MICRO = { mg: 420, k: 3400, vitc: 90, ca: 1000, fe: 18, zn: 11, cu: 0.9, p: 700, na: 2000 };
         const OBIETTIVI_FAT = { 
             fatTotal: 85, fatSat: 20, fatTrans: 2, 
             fatUnsat: 65, fatMono: 45, fatPoly: 20, 
@@ -955,9 +957,9 @@ let functions;
         const LOCAL_LAST_UPDATE_KEY = 'lastLocalUpdateTimestamp';
         const CLOUD_LAST_UPDATE_PATH = 'lastCloudUpdateTimestamp';
 
-        // AGGIUNTO 'na' (sodio) AL PROMPT FORMAT
+        // AGGIORNATO: Aggiunto "na" (sodio) al prompt
         const GEMINI_PROMPT_FORMAT = `{"prot":g,"kcal":kcal,"carb":g,"zuccheri":g,"fatSat":g,"fatTrans":g,"fatMono":g,"fatPoly":g,"omega3":g,"omega6":g,"fibreTotali":g,"fibreSolubili":g,"fibreInsolubili":g,"na":mg,"mg":mg,"k":mg,"vitc":mg,"ca":mg,"vitA":µg,"vitB12":µg,"vitD":µg,"vitE":mg,"vitK":µg,"b9":µg,"b2":mg,"b6":mg,"fe":mg,"zn":mg,"cu":mg,"p":mg,"leu":mg,"iso":mg,"val":mg,"lys":mg,"met":mg,"phe":mg,"thr":mg,"trp":mg,"his":mg}`;
-        const AI_INSTRUCTION = "Agisci come un esperto nutrizionista. Basa le tue risposte su database nutrizionali affidabili (come IEO, USDA, CREA). Se un valore non è disponibile, fornisci una stima scientificamente plausibile. Devi rispondere OBBLIGATORIAMENTE in formato JSON valido, perché la richiesta è impostata con 'response_format: json_object'. Per gli amminoacidi, fornisci un profilo specifico per la fonte proteica dell'alimento. Assicurati che le unità di misura siano corrette come specificato nel formato JSON richiesto.";
+        const AI_INSTRUCTION = "Agisci come un esperto nutrizionista. Basa le tue risposte su database nutrizionali affidabili (come IEO, USDA, CREA). Se un valore non è disponibile, fornisci una stima scientificamente plausibile. Devi rispondere OBBLIGATORIAMENTE in formato JSON valido, perché la richiesta è impostata con 'response_format: json_object'. Per gli amminoacidi, fornisci un profilo specifico per la fonte proteica dell'alimento. Assicurati che le unità di misura siano corrette come specificato nel formato JSON richiesto. Se trovi sale o sodio, usa la chiave 'na' in mg.";
 
         const authSection = document.getElementById('auth-section');
         const userEmailInput = document.getElementById('user-email');
@@ -1057,7 +1059,7 @@ let functions;
             fibreTotali: { el: builderFibreTotali, label: 'Fibre Totali/100g' },
             fibreSolubili: { el: builderFibreSolubili, label: 'Fibre Solubili/100g' },
             fibreInsolubili: { el: builderFibreInsolubili, label: 'Fibre Insolubili/100g' },
-            na: { el: builderNa, label: 'Sodio (mg)/100g' }, // NEW
+            na: { el: builderNa, label: 'Sodio (mg)/100g' }, 
             mg: { el: builderMg, label: 'Magnesio (mg)/100g' },
             k: { el: builderK, label: 'Potassio (mg)/100g' },
             vitc: { el: builderVitC, label: 'Vitamina C (mg)/100g' },
@@ -1316,14 +1318,10 @@ let functions;
             let balancePercentage = 50; 
 
             if (sodiumVal + potassiumVal > 0) {
-                // Calcoliamo la % relativa di Potassio sul totale Na+K
-                // Se K è alto, % sale verso 100 -> cursore a destra (Verde)
-                // Se Na è alto, % scende verso 0 -> cursore a sinistra (Rosso)
                 const kRatio = potassiumVal / (sodiumVal + potassiumVal);
                 balancePercentage = kRatio * 100;
             }
             
-            // Limitiamo il movimento del marker tra 5% e 95% per estetica
             balancePercentage = Math.max(5, Math.min(95, balancePercentage));
             balanceMarker.style.left = `${balancePercentage}%`;
 
@@ -2000,7 +1998,7 @@ let functions;
                 return 'fatTotal';
             }
             if (k.includes('fibr')) return 'fibreTotali';
-            if (k.includes('sale') || k.includes('sodio')) return 'na'; // FIXED
+            if (k.includes('sale') || k.includes('sodio') || k.includes('sodium') || k.includes('na')) return 'na';
             return null;
         }
         
@@ -2022,15 +2020,9 @@ let functions;
                 photoOcrStatus.textContent = 'Fase 2/2: Analisi AI...';
                 const prompt = `Analizza il seguente testo estratto da una tabella nutrizionale: "${ocrText}". Estrai i valori per 100g (o 100ml), ignorando le colonne "per porzione". Restituisci ESCLUSIVAMENTE un oggetto JSON. Le chiavi devono essere i nomi dei nutrienti in italiano (es. "Energia", "Grassi", "di cui acidi grassi saturi"). Se un valore non è presente, omettilo.`;
                 
-try {
-    const callGemini = httpsCallable(functions, 'callOpenAI');
-    const result = await callGemini({ prompt: promptText });
-    const data = result.data;
-    
-} catch (error) {
-    console.error("Errore chiamata Cloud Function:", error);
-    alert('Errore compilazione AI: ' + error.message);
-}
+                const callGemini = httpsCallable(functions, 'callOpenAI');
+                const result = await callGemini({ prompt: prompt });
+                const data = result.data;
                 const rawJson = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
                 const nutrientDataFromAI = JSON.parse(rawJson.replace(/```json|```/g, '').trim());
                 
@@ -2159,8 +2151,8 @@ try {
                 'trans-fat_100g': inputFields.fatTrans.el, 'monounsaturated-fat_100g': inputFields.fatMono.el,
                 'polyunsaturated-fat_100g': inputFields.fatPoly.el, 'omega-3-fat_100g': inputFields.omega3.el,
                 'omega-6-fat_100g': inputFields.omega6.el, 'fiber_100g': inputFields.fibreTotali.el,
-                'salt_100g': inputFields.na.el, // FIXED salt mapping
-                'sodium_100g': inputFields.na.el, // Fallback
+                'salt_100g': inputFields.na.el,
+                'sodium_100g': inputFields.na.el,
                 'calcium_100g': inputFields.ca.el, 'iron_100g': inputFields.fe.el,
                 'magnesium_100g': inputFields.mg.el, 'potassium_100g': inputFields.k.el,
                 'zinc_100g': inputFields.zn.el, 'phosphorus_100g': inputFields.p.el,
@@ -2182,9 +2174,9 @@ try {
                         value *= 1000;
                     } else if (['vitamin-a_100g', 'vitamin-d_100g', 'vitamin-k_100g', 'vitamin-b9_100g', 'vitamin-b12_100g'].includes(key)) {
                         value *= 1000000;
-                    } else if (key === 'salt_100g') { // Convert Salt (g) to Sodium (mg)
+                    } else if (key === 'salt_100g') {
                         value = (value / 2.5) * 1000;
-                    } else if (key === 'sodium_100g') { // Sodium is usually in g in OFF, convert to mg
+                    } else if (key === 'sodium_100g') {
                          value *= 1000;
                     }
                     
@@ -2206,8 +2198,8 @@ try {
             aggiornaColoreNutrienti();
             builderProt.dispatchEvent(new Event('input'));
 
-            builderDesc.readOnly = true; // Blocca il campo nome
-            btnEditName.style.display = 'inline-block'; // Mostra la matita
+            builderDesc.readOnly = true;
+            btnEditName.style.display = 'inline-block';
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -2224,9 +2216,9 @@ try {
             });
             
             btnEditName.addEventListener('click', () => {
-                builderDesc.readOnly = false; // Sblocca il campo
-                builderDesc.focus(); // Mette il focus per la modifica immediata
-                btnEditName.style.display = 'none'; // Nasconde la matita, non serve più
+                builderDesc.readOnly = false;
+                builderDesc.focus();
+                btnEditName.style.display = 'none';
             });
 
             const btnVaiAOggi = document.getElementById('btn-vai-a-oggi');
@@ -2584,11 +2576,11 @@ try {
                     }
                     let promptText = `Fornisci ESATTAMENTE questo oggetto JSON (senza altro testo) con i valori nutrizionali medi per 100 g di "${nome}". ${ingredientiInfo} ${AI_INSTRUCTION}. ${GEMINI_PROMPT_FORMAT}`;
                     
-const callGemini = httpsCallable(functions, 'callOpenAI');
-const result = await callGemini({ prompt: promptText });
-const data = result.data;
-const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-const newData = JSON.parse(raw.replace(/```json|```/g, '').trim());
+                    const callGemini = httpsCallable(functions, 'callOpenAI');
+                    const result = await callGemini({ prompt: promptText });
+                    const data = result.data;
+                    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                    const newData = JSON.parse(raw.replace(/```json|```/g, '').trim());
 
                     const oldData = {};
                     let isAnyFieldPopulated = false;
@@ -2598,10 +2590,15 @@ const newData = JSON.parse(raw.replace(/```json|```/g, '').trim());
                         oldData[key] = val || null;
                     }
                     
+                    // FIX: Mapping manuale se AI usa chiavi italiane per il sodio
+                    if(newData.sale) newData.na = newData.sale * 1000 / 2.5; 
+                    if(newData.sodio) newData.na = newData.sodio;
+                    
                     if (!isAnyFieldPopulated) {
                         for (const key in newData) {
-                            if (inputFields[key] && inputFields[key].el.value === '') {
-                                inputFields[key].el.value = newData[key];
+                            const normalizedKey = normalizeNutrientKey(key) || key;
+                            if (inputFields[normalizedKey] && inputFields[normalizedKey].el.value === '') {
+                                inputFields[normalizedKey].el.value = newData[key];
                             }
                         }
                         alert("Campi vuoti compilati con successo dall'AI.");
@@ -2612,6 +2609,7 @@ const newData = JSON.parse(raw.replace(/```json|```/g, '').trim());
 
                 } catch (err) { 
                     alert('Errore compilazione AI: ' + err.message);
+                    console.error(err);
                 } finally { 
                     button.disabled = false; 
                     button.textContent = 'Compila AI'; 
@@ -3020,7 +3018,6 @@ const newData = JSON.parse(raw.replace(/```json|```/g, '').trim());
                 nutrientConfirmModal.style.display = 'none';
             });
             
-            // --- EXPORT AI AGGIORNATO ---
             const btnExportAi = document.getElementById('btn-export-json-ai');
             if (btnExportAi) {
                 btnExportAi.addEventListener('click', async () => {
@@ -3031,7 +3028,7 @@ const newData = JSON.parse(raw.replace(/```json|```/g, '').trim());
                     const allNutrientKeys = [
                         'prot', 'kcal', 'carb', 'zuccheri', 'fatTotal', 'fatSat', 'fatTrans', 
                         'fatMono', 'fatPoly', 'omega3', 'omega6', 'fibreTotali', 'fibreSolubili', 'fibreInsolubili',
-                        'na', 'mg', 'k', 'vitc', 'ca', 'fe', 'zn', 'cu', 'p',  // ADDED 'na'
+                        'na', 'mg', 'k', 'vitc', 'ca', 'fe', 'zn', 'cu', 'p', 
                         'vitA', 'vitB12', 'vitD', 'vitE', 'vitK', 'b9', 'b2', 'b6',
                         'leu', 'iso', 'val', 'lys', 'met', 'phe', 'thr', 'trp', 'his'
                     ];
@@ -3046,15 +3043,21 @@ const newData = JSON.parse(raw.replace(/```json|```/g, '').trim());
 
                         const items = entry.type === 'meal' ? entry.items : [entry];
                         const itemsExport = items.map(item => {
-                            const cleanItem = { alimento: item.desc, qta_g: item.qta };
+                            const cleanItem = {
+                                alimento: item.desc,
+                                qta_g: item.qta
+                            };
+                            
                             allNutrientKeys.forEach(key => {
                                 const val = item[key];
                                 if (val !== undefined && val !== null && (val > 0 || key === 'kcal' || key === 'prot')) {
-                                    cleanItem[key] = Number(val.toFixed(2)); 
+                                    cleanItem[key] = Number(val.toFixed(2));
                                     dailyTotals[key] += val;
                                 }
                             });
+                            
                             if (!item.kcal && !item.cal) cleanItem._WARNING = "Kcal a 0 o mancanti";
+                            
                             return cleanItem;
                         });
 
@@ -3081,8 +3084,8 @@ const newData = JSON.parse(raw.replace(/```json|```/g, '').trim());
                                 Fibre: dailyTotals.fibreTotali.toFixed(1),
                                 Zuccheri: dailyTotals.zuccheri.toFixed(1),
                                 Grassi_Saturi: dailyTotals.fatSat.toFixed(1),
-                                Sodio: dailyTotals.na.toFixed(0), // SODIO REALE
-                                Potassio: dailyTotals.k.toFixed(0) // POTASSIO REALE
+                                Sodio: dailyTotals.na.toFixed(0),
+                                Potassio: dailyTotals.k.toFixed(0)
                             },
                             OMEGA_RATIO: (dailyTotals.omega3 > 0) ? `1:${(dailyTotals.omega6/dailyTotals.omega3).toFixed(1)}` : "N/D"
                         },
@@ -3105,14 +3108,6 @@ const newData = JSON.parse(raw.replace(/```json|```/g, '').trim());
             }
         });
     </script>
-    <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js')
-        .then(reg => console.log('App registrata', reg.scope))
-        .catch(err => console.log('Errore App', err));
-    });
-  }
-</script>
 </body>
 </html>
+
