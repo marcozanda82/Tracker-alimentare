@@ -493,6 +493,18 @@
         </div>
         <div id="main-tracker-content">
             <h2 id="titolo-giornata"></h2>
+            <div class="sezione" style="text-align: center; border-left-color: #ff8f00; background-color: #fff9f0;">
+    <label for="tipo-giorno-selector" style="color: #e64a19;">🎯 Cosa vuoi allenare oggi?</label>
+    <select id="tipo-giorno-selector" style="max-width: 350px; margin: 10px auto; border: 2px solid #ff8f00; font-weight: bold;">
+        <option value="riposo">💧 Riposo (Deficit)</option>
+        <option value="bicipiti">🔥 Bicipiti</option>
+        <option value="gambe">💪 Gambe</option>
+        <option value="spalle">🏃 Spalle</option>
+        <option value="addominali">🏋️ Addominali</option>
+        <option value="schiena">🏃 Schiena</option>
+        <option value="total_body">🥗 Total body leggero</option>
+    </select>
+</div>
 <div class="nav-links">
     <a href="storico.html">📊 Storico</a>
     
@@ -908,15 +920,15 @@
         let firebaseApp; 
         let currentUserUID = null; 
 
-        const PIANO_SETTIMANALE = {
-            0: { tipo: '💧 Riposo (Deficit)', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
-            1: { tipo: '🔥 Bicipiti', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
-            2: { tipo: '💪 Gambe', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
-            3: { tipo: '🏃 Spalle', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
-            4: { tipo: '🏋️ Addominali', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
-            5: { tipo: '🏃 Schiena', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
-            6: { tipo: '🥗 Total body leggero o cardio', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 }
-        };
+const OPZIONI_ALLENAMENTO = {
+    'riposo': { tipo: '💧 Riposo (Deficit)', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
+    'bicipiti': { tipo: '🔥 Bicipiti', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
+    'gambe': { tipo: '💪 Gambe', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
+    'spalle': { tipo: '🏃 Spalle', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
+    'addominali': { tipo: '🏋️ Addominali', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
+    'schiena': { tipo: '🏃 Schiena', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
+    'total_body': { tipo: '🥗 Total body leggero o cardio', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 }
+};
 
         const DEFICIT_PREIMPOSTATO_SETTIMANALE = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
 
@@ -1199,6 +1211,7 @@
             }
             
             datiGiornalieri = datiTrovati || { log: [], workoutCalorie: 0, note: '' };
+            document.getElementById('tipo-giorno-selector').value = datiGiornalieri.tipoGiornoScelto || 'riposo';
             dailyNotesTextarea.value = datiGiornalieri.note || '';
             if (!datiGiornalieri.log) datiGiornalieri.log = [];
             if (typeof datiGiornalieri.workoutCalorie === 'undefined') datiGiornalieri.workoutCalorie = 0;
@@ -1275,14 +1288,20 @@
         }
 
         function aggiornaUI() {
-            const dataVisualizzata = new Date(giornoVisualizzato);
-            const pianoDelGiorno = PIANO_SETTIMANALE[dataVisualizzata.getDay()] || PIANO_SETTIMANALE[1];
-            
-            const obiettivoCalorieTotale = pianoDelGiorno.cal_base + (datiGiornalieri.workoutCalorie || 0) + (datiGiornalieri.calorieAdjustment || 0);
-            const OBIETTIVI = { 
-                prot: pianoDelGiorno.prot, kcal: obiettivoCalorieTotale, carb: pianoDelGiorno.carb, zuccheri: pianoDelGiorno.zuccheri, 
-                ...OBIETTIVI_MICRO, ...OBIETTIVI_FAT, ...OBIETTIVI_VIT, ...OBIETTIVI_AMINO, ...OBIETTIVI_FIBRE
-            };
+    const dataVisualizzata = new Date(giornoVisualizzato);
+    
+    // LEGGI DALLA SELEZIONE MANUALE INVECE CHE DAL GIORNO DELLA SETTIMANA
+    const selettore = document.getElementById('tipo-giorno-selector');
+    const sceltaEffettuata = selettore.value;
+    const pianoDelGiorno = OPZIONI_ALLENAMENTO[sceltaEffettuata] || OPZIONI_ALLENAMENTO['riposo'];
+    
+    // Salva la scelta nei dati giornalieri per la persistenza
+    datiGiornalieri.tipoGiornoScelto = sceltaEffettuata;
+
+    // Il resto della funzione (calcolo calorie, proteine, etc.) rimarrà identico
+    // perché userà 'pianoDelGiorno' che ora punta alla tua scelta manuale.
+    // ...
+}
             
             titoloGiornataEl.textContent = `${pianoDelGiorno.tipo} - ${dataVisualizzata.toLocaleDateString('it-IT', {day: 'numeric', month: 'long', year: 'numeric'})}`;
             
@@ -3104,12 +3123,17 @@
                         console.error("Errore copia:", err);
                         alert("Errore nella copia automatica. Controlla la console.");
                     }
+                    document.getElementById('tipo-giorno-selector').addEventListener('change', () => {
+    aggiornaUI();
+    salvaGiorno(giornoVisualizzato, datiGiornalieri); 
+});
                 });
             }
         });
     </script>
 </body>
 </html>
+
 
 
 
