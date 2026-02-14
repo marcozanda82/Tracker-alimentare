@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tracker Nutrizionale Definitivo</title>
+    <title>Tracker Nutrizionale Definitivo v6</title>
     <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0d47a1">
-<link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="theme-color" content="#0d47a1">
+    <link rel="apple-touch-icon" href="icon-192.png">
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
@@ -426,11 +426,56 @@
         .diff-item-choices input[type="radio"] { margin: 0; }
         .diff-item-choices .current-value { color: #1976d2; }
         .diff-item-choices .new-value { color: #2e7d32; }
+        
+        /* BILANCIA IDRICA STYLES */
+        .balance-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            position: relative;
+            background: #eee;
+            height: 30px;
+            border-radius: 15px;
+            overflow: hidden;
+            border: 1px solid #ccc;
+        }
+        .balance-bar-left {
+            height: 100%;
+            background: linear-gradient(to right, #ff5252, #ffcc80);
+            width: 50%;
+            transition: width 0.5s ease;
+        }
+        .balance-bar-right {
+            height: 100%;
+            background: linear-gradient(to right, #a5d6a7, #4caf50);
+            width: 50%;
+            transition: width 0.5s ease;
+        }
+        .balance-marker {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background-color: #333;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2;
+            transition: left 0.5s ease;
+        }
+        .balance-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9em;
+            margin-top: 5px;
+            color: #555;
+        }
+        .balance-value { font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Tracker Nutrizionale Marco</h1>
+        <h1>Tracker Nutrizionale Definitivo v6</h1>
         
         <div id="auth-section" class="sezione">
             <h2 id="auth-header">Accedi / Registrati</h2>
@@ -557,6 +602,24 @@
                     Micronutrienti <span class="arrow">▶</span>
                 </h3>
                 <div class="collapsible-content" id="micro-content">
+                    
+                    <div style="margin-bottom: 20px; padding: 10px; background-color: #f1f8e9; border: 1px solid #c8e6c9; border-radius: 8px;">
+                        <h4 style="margin-top:0; text-align: center; color: #2e7d32;">Bilancia Idrica (Anti-Cortisolo)</h4>
+                        <div class="balance-labels">
+                            <span style="color: #d32f2f;">SODIO (Na)</span>
+                            <span style="color: #388e3c;">POTASSIO (K)</span>
+                        </div>
+                        <div class="balance-container">
+                            <div class="balance-bar-left"></div>
+                            <div class="balance-bar-right"></div>
+                            <div id="balance-marker" class="balance-marker"></div>
+                        </div>
+                        <div class="balance-labels">
+                            <span class="balance-value" id="valore-sodio">0 mg</span>
+                            <span class="balance-value" id="valore-potassio">0 mg</span>
+                        </div>
+                        <p style="text-align: center; font-size: 0.85em; margin: 5px 0 0 0; color: #555;">Obiettivo: Cursore a destra (Zona Verde)</p>
+                    </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
                         <div>
                             <p>Magnesio: <span id="totale-mg">0</span> / 420 mg</p><progress id="progress-mg" value="0"></progress>
@@ -654,6 +717,8 @@
                 </h2>
                 <div class="collapsible-content" id="nutrients-content">
                     <div class="builder-grid">
+                        <div><label style="color:#d32f2f;">Sodio (mg)/100g</label><input type="number" id="builder-na" min="0" step="1"></div>
+                        
                         <div><label>Fibre Solubili/100g</label><input type="number" id="builder-fibre-solubili" step="0.1"></div>
                         <div><label>Fibre Insolubili/100g</label><input type="number" id="builder-fibre-insolubili" step="0.1"></div>
                         <div><label>Gr. Trans/100g</label><input type="number" id="builder-fat-trans" min="0" step="0.1"></div>
@@ -742,7 +807,7 @@
                             <th>Prot</th>
                             <th>Qualità</th>
                             <th>Kcal</th>
-                            <th>Fibre Tot</th>
+                            <th>Sodio</th> <th>Fibre Tot</th>
                             <th>Fibre Sol</th>
                             <th>Fibre Ins</th>
                             <th>Leu</th>
@@ -803,204 +868,14 @@
         </div>
     </div>
     
-    <div id="weekly-vitamin-modal" class="modal">
-        <div class="modal-content">
-            <span class="modal-close" data-modal="weekly-vitamin-modal">&times;</span>
-            <h2>Riepilogo Settimanale Vitamine Accumulabili</h2>
-            <p style="font-size: 0.9em; color: #555;">Dati calcolati sugli ultimi 7 giorni, incluso oggi.</p>
-            
-            <div class="vitamin-weekly-summary">
-                <h4>Vitamina A</h4>
-                <p>Totale: <span id="weekly-vit-a-total">0</span> / <span id="weekly-vit-a-goal">6300</span> µg</p>
-                <progress id="weekly-progress-vit-a" value="0" max="6300"></progress>
-                <p><i>Media giornaliera: <span id="weekly-vit-a-avg">0.0</span> µg (Obiettivo: 900 µg | <span id="weekly-vit-a-diff" class="diff-value"></span>)</i></p>
-            </div>
-            <div class="vitamin-weekly-summary">
-                <h4>Vitamina D</h4>
-                <p>Totale: <span id="weekly-vit-d-total">0</span> / <span id="weekly-vit-d-goal">105</span> µg</p>
-                <progress id="weekly-progress-vit-d" value="0" max="105"></progress>
-                <p><i>Media giornaliera: <span id="weekly-vit-d-avg">0.0</span> µg (Obiettivo: 15 µg | <span id="weekly-vit-d-diff" class="diff-value"></span>)</i></p>
-            </div>
-            <div class="vitamin-weekly-summary">
-                <h4>Vitamina E</h4>
-                <p>Totale: <span id="weekly-vit-e-total">0</span> / <span id="weekly-vit-e-goal">105</span> mg</p>
-                <progress id="weekly-progress-vit-e" value="0" max="105"></progress>
-                <p><i>Media giornaliera: <span id="weekly-vit-e-avg">0.0</span> mg (Obiettivo: 15 mg | <span id="weekly-vit-e-diff" class="diff-value"></span>)</i></p>
-            </div>
-            <div class="vitamin-weekly-summary">
-                <h4>Vitamina K</h4>
-                <p>Totale: <span id="weekly-vit-k-total">0</span> / <span id="weekly-vit-k-goal">840</span> µg</p>
-                <progress id="weekly-progress-vit-k" value="0" max="840"></progress>
-                <p><i>Media giornaliera: <span id="weekly-vit-k-avg">0.0</span> µg (Obiettivo: 120 µg | <span id="weekly-vit-k-diff" class="diff-value"></span>)</i></p>
-            </div>
-            <div class="vitamin-weekly-summary">
-                <h4>Vitamina B12</h4>
-                <p>Totale: <span id="weekly-vit-b12-total">0</span> / <span id="weekly-vit-b12-goal">16.8</span> µg</p>
-                <progress id="weekly-progress-vit-b12" value="0" max="16.8"></progress>
-                <p><i>Media giornaliera: <span id="weekly-vit-b12-avg">0.0</span> µg (Obiettivo: 2.4 µg | <span id="weekly-vit-b12-diff" class="diff-value"></span>)</i></p>
-            </div>
-        </div>
-    </div>
-
-    <div id="weekly-fats-modal" class="modal">
-        <div class="modal-content">
-            <span class="modal-close" data-modal="weekly-fats-modal">&times;</span>
-            <h2>Riepilogo Settimanale Grassi</h2>
-            <p style="font-size: 0.9em; color: #555;">Dati calcolati sugli ultimi 7 giorni, incluso oggi.</p>
-            
-            <div class="vitamin-weekly-summary">
-                <h4>Grassi Totali</h4>
-                <p>Totale: <span id="weekly-fat-total-total">0</span> / <span id="weekly-fat-total-goal"></span> g</p>
-                <progress id="weekly-progress-fat-total" value="0"></progress>
-                <p><i>Media giornaliera: <span id="weekly-fat-total-avg">0.0</span> g (Obiettivo: <span id="daily-fat-total-goal"></span> g | <span id="weekly-fat-total-diff" class="diff-value"></span>)</i></p>
-            </div>
-            <div class="vitamin-weekly-summary">
-                <h4>Grassi Saturi</h4>
-                <p>Totale: <span id="weekly-fat-sat-total">0</span> / <span id="weekly-fat-sat-goal"></span> g</p>
-                <progress id="weekly-progress-fat-sat" value="0"></progress>
-                <p><i>Media giornaliera: <span id="weekly-fat-sat-avg">0.0</span> g (Obiettivo: <span id="daily-fat-sat-goal"></span> g | <span id="weekly-fat-sat-diff" class="diff-value"></span>)</i></p>
-            </div>
-            <div class="vitamin-weekly-summary">
-                <h4>Grassi Trans</h4>
-                <p>Totale: <span id="weekly-fat-trans-total">0</span> / <span id="weekly-fat-trans-goal"></span> g</p>
-                <progress id="weekly-progress-fat-trans" value="0"></progress>
-                <p><i>Media giornaliera: <span id="weekly-fat-trans-avg">0.0</span> g (Obiettivo: <span id="daily-fat-trans-goal"></span> g | <span id="weekly-fat-trans-diff" class="diff-value"></span>)</i></p>
-            </div>
-            <div class="vitamin-weekly-summary">
-                <h4>Grassi Monoinsaturi</h4>
-                <p>Totale: <span id="weekly-fat-mono-total">0</span> / <span id="weekly-fat-mono-goal"></span> g</p>
-                <progress id="weekly-progress-fat-mono" value="0"></progress>
-                <p><i>Media giornaliera: <span id="weekly-fat-mono-avg">0.0</span> g (Obiettivo: <span id="daily-fat-mono-goal"></span> g | <span id="weekly-fat-mono-diff" class="diff-value"></span>)</i></p>
-            </div>
-            <div class="vitamin-weekly-summary">
-                <h4>Grassi Polinsaturi</h4>
-                <p>Totale: <span id="weekly-fat-poly-total">0</span> / <span id="weekly-fat-poly-goal"></span> g</p>
-                <progress id="weekly-progress-fat-poly" value="0"></progress>
-                <p><i>Media giornaliera: <span id="weekly-fat-poly-avg">0.0</span> g (Obiettivo: <span id="daily-fat-poly-goal"></span> g | <span id="weekly-fat-poly-diff" class="diff-value"></span>)</i></p>
-            </div>
-             <div class="vitamin-weekly-summary">
-                <h4>Omega 3</h4>
-                <p>Totale: <span id="weekly-fat-omega3-total">0</span> / <span id="weekly-fat-omega3-goal"></span> g</p>
-                <progress id="weekly-progress-fat-omega3" value="0"></progress>
-                <p><i>Media giornaliera: <span id="weekly-fat-omega3-avg">0.0</span> g (Obiettivo: <span id="daily-fat-omega3-goal"></span> g | <span id="weekly-fat-omega3-diff" class="diff-value"></span>)</i></p>
-            </div>
-             <div class="vitamin-weekly-summary">
-                <h4>Omega 6</h4>
-                <p>Totale: <span id="weekly-fat-omega6-total">0</span> / <span id="weekly-fat-omega6-goal"></span> g</p>
-                <progress id="weekly-progress-fat-omega6" value="0"></progress>
-                <p><i>Media giornaliera: <span id="weekly-fat-omega6-avg">0.0</span> g (Obiettivo: <span id="daily-fat-omega6-goal"></span> g | <span id="weekly-fat-omega6-diff" class="diff-value"></span>)</i></p>
-            </div>
-            <p style="text-align: center; font-weight: bold; margin-top: 15px; font-size: 1.2em; border-top: 1px solid #eee; padding-top: 15px;">
-                Rapporto O6:O3 Settimanale: <span id="weekly-omega-ratio-value">N/D</span>
-            </p>
-        </div>
-    </div>
-
-    <div id="nutrient-detail-modal" class="modal">
-        <div class="modal-content">
-            <span class="modal-close" data-modal="nutrient-detail-modal">&times;</span>
-            <h2 id="nutrient-detail-modal-title"></h2>
-            <ul id="nutrient-detail-modal-list"></ul>
-        </div>
-    </div>
-
-    <div id="amino-acid-modal" class="modal">
-        <div class="modal-content">
-            <span class="modal-close" data-modal="amino-acid-modal">&times;</span>
-            <h2 id="modal-amino-title">Dettaglio Amminoacidi</h2>
-            
-            <div id="modal-amino-summary" style="text-align: center; margin-bottom: 20px;"></div>
-
-            <div id="modal-amino-content" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                <div>
-                    <p>Leucina: <span id="modal-amino-leu-total">0</span> / <span id="modal-amino-leu-goal"></span> mg</p>
-                    <progress id="modal-amino-leu-progress" value="0" style="width:100%"></progress>
-                    <p>Isoleucina: <span id="modal-amino-iso-total">0</span> / <span id="modal-amino-iso-goal"></span> mg</p>
-                    <progress id="modal-amino-iso-progress" value="0" style="width:100%"></progress>
-                    <p>Valina: <span id="modal-amino-val-total">0</span> / <span id="modal-amino-val-goal"></span> mg</p>
-                    <progress id="modal-amino-val-progress" value="0" style="width:100%"></progress>
-                    <p>Lisina: <span id="modal-amino-lys-total">0</span> / <span id="modal-amino-lys-goal"></span> mg</p>
-                    <progress id="modal-amino-lys-progress" value="0" style="width:100%"></progress>
-                </div>
-                <div>
-                    <p>Metionina: <span id="modal-amino-met-total">0</span> / <span id="modal-amino-met-goal"></span> mg</p>
-                    <progress id="modal-amino-met-progress" value="0" style="width:100%"></progress>
-                    <p>Fenilalanina: <span id="modal-amino-phe-total">0</span> / <span id="modal-amino-phe-goal"></span> mg</p>
-                    <progress id="modal-amino-phe-progress" value="0" style="width:100%"></progress>
-                    <p>Treonina: <span id="modal-amino-thr-total">0</span> / <span id="modal-amino-thr-goal"></span> mg</p>
-                    <progress id="modal-amino-thr-progress" value="0" style="width:100%"></progress>
-                    <p>Triptofano: <span id="modal-amino-trp-total">0</span> / <span id="modal-amino-trp-goal"></span> mg</p>
-                    <progress id="modal-amino-trp-progress" value="0" style="width:100%"></progress>
-                </div>
-            </div>
-            <div style="margin-top: 15px;">
-                 <p>Istidina: <span id="modal-amino-his-total">0</span> / <span id="modal-amino-his-goal"></span> mg</p>
-                 <progress id="modal-amino-his-progress" value="0" style="width:100%"></progress>
-            </div>
-        </div>
-    </div>
-    
-    <div id="ingredient-modal" class="modal">
-        <div class="modal-content">
-            <span class="modal-close" data-modal="ingredient-modal">&times;</span>
-            <div id="ingredient-modal-header">
-                <h2 id="ingredient-modal-title"></h2>
-                <div id="ingredient-modal-actions">
-                    <button id="btn-clear-ingredients" title="Cancella tutto"><i class="fas fa-eraser"></i></button>
-                    <button id="btn-photo-ingredients" title="Acquisisci da foto"><i class="fas fa-camera"></i></button>
-                    <button id="btn-generate-ingredients-ai" title="Genera o Pulisci con AI">🪄</button>
-                    <button id="btn-copy-ingredients-prompt" title="Copia prompt per AI">📋</button>
-                </div>
-            </div>
-            <input type="file" id="ingredient-photo-input" accept="image/*" style="display: none;">
-            <p id="ocr-status-ingredients" style="text-align: center; color: #888; display: none;"></p>
-            <textarea id="ingredient-modal-textarea" placeholder="Inserisci o fotografa la lista ingredienti qui..."></textarea>
-            <button id="btn-save-ingredients" style="width: 100%; margin-top: 15px; background-color: #2e7d32;">Salva Ingredienti</button>
-        </div>
-    </div>
-
-    <div id="nutrient-confirm-modal" class="modal">
-        <div class="modal-content">
-            <span class="modal-close" data-modal="nutrient-confirm-modal">&times;</span>
-            <h2>Conferma Dati Nutrizionali</h2>
-            <p>Controlla e correggi i valori estratti dalla foto prima di confermare.</p>
-            <div id="nutrient-confirm-list">
-                 <p id="ocr-status-nutrients" style="text-align: center; color: #888; display: block;">In attesa di una foto...</p>
-            </div>
-            <div class="nutrient-confirm-buttons">
-                <button id="btn-cancel-nutrients" style="background-color: #607d8b;">Annulla</button>
-                <button id="btn-confirm-nutrients" style="background-color: #2e7d32;">Conferma e Compila</button>
-            </div>
-        </div>
-    </div>
-    <input type="file" id="nutrient-photo-input" accept="image/*" style="display: none;">
-
-    <div id="barcode-scanner-modal" class="modal">
-        <div class="modal-content">
-            <span class="modal-close" data-modal="barcode-scanner-modal">&times;</span>
-            <h2>Scansiona Codice a Barre</h2>
-            <p style="text-align: center;">Inquadra il codice a barre del prodotto.</p>
-            <div id="scanner-container" style="position: relative; width: 100%; padding-top: 75%;">
-                <video id="barcode-scanner-video" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 1px solid #ccc; border-radius: 8px;"></video>
-                <div id="scanner-overlay" style="position: absolute; top: 50%; left: 50%; width: 80%; height: 2px; background-color: red; transform: translate(-50%, -50%); box-shadow: 0 0 10px red;"></div>
-            </div>
-            <p id="barcode-scanner-status" style="text-align: center; margin-top: 15px; font-weight: bold; min-height: 20px;"></p>
-        </div>
-    </div>
-
-    <div id="diff-modal" class="modal">
-        <div class="modal-content">
-            <span class="modal-close" data-modal="diff-modal">&times;</span>
-            <h2 id="diff-modal-title">Confronta Valori Nutrizionali</h2>
-            <p>Sono state trovate differenze significative. Scegli quali valori mantenere per ogni nutriente.</p>
-            <div id="diff-modal-list" style="max-height: 50vh; overflow-y: auto; padding: 10px; border: 1px solid #eee; border-radius: 8px; margin-top: 15px;">
-                </div>
-            <div class="nutrient-confirm-buttons" style="margin-top: 20px;">
-                <button id="btn-cancel-diff" style="background-color: #607d8b;">Annulla</button>
-                <button id="btn-apply-diff" style="background-color: #2e7d32;">Applica Modifiche</button>
-            </div>
-        </div>
-    </div>
+    <div id="weekly-vitamin-modal" class="modal"><div class="modal-content"><span class="modal-close" data-modal="weekly-vitamin-modal">&times;</span><h2>Riepilogo Settimanale Vitamine Accumulabili</h2><p style="font-size: 0.9em; color: #555;">Dati calcolati sugli ultimi 7 giorni, incluso oggi.</p><div class="vitamin-weekly-summary"><h4>Vitamina A</h4><p>Totale: <span id="weekly-vit-a-total">0</span> / <span id="weekly-vit-a-goal">6300</span> µg</p><progress id="weekly-progress-vit-a" value="0" max="6300"></progress><p><i>Media giornaliera: <span id="weekly-vit-a-avg">0.0</span> µg (Obiettivo: 900 µg | <span id="weekly-vit-a-diff" class="diff-value"></span>)</i></p></div><div class="vitamin-weekly-summary"><h4>Vitamina D</h4><p>Totale: <span id="weekly-vit-d-total">0</span> / <span id="weekly-vit-d-goal">105</span> µg</p><progress id="weekly-progress-vit-d" value="0" max="105"></progress><p><i>Media giornaliera: <span id="weekly-vit-d-avg">0.0</span> µg (Obiettivo: 15 µg | <span id="weekly-vit-d-diff" class="diff-value"></span>)</i></p></div><div class="vitamin-weekly-summary"><h4>Vitamina E</h4><p>Totale: <span id="weekly-vit-e-total">0</span> / <span id="weekly-vit-e-goal">105</span> mg</p><progress id="weekly-progress-vit-e" value="0" max="105"></progress><p><i>Media giornaliera: <span id="weekly-vit-e-avg">0.0</span> mg (Obiettivo: 15 mg | <span id="weekly-vit-e-diff" class="diff-value"></span>)</i></p></div><div class="vitamin-weekly-summary"><h4>Vitamina K</h4><p>Totale: <span id="weekly-vit-k-total">0</span> / <span id="weekly-vit-k-goal">840</span> µg</p><progress id="weekly-progress-vit-k" value="0" max="840"></progress><p><i>Media giornaliera: <span id="weekly-vit-k-avg">0.0</span> µg (Obiettivo: 120 µg | <span id="weekly-vit-k-diff" class="diff-value"></span>)</i></p></div><div class="vitamin-weekly-summary"><h4>Vitamina B12</h4><p>Totale: <span id="weekly-vit-b12-total">0</span> / <span id="weekly-vit-b12-goal">16.8</span> µg</p><progress id="weekly-progress-vit-b12" value="0" max="16.8"></progress><p><i>Media giornaliera: <span id="weekly-vit-b12-avg">0.0</span> µg (Obiettivo: 2.4 µg | <span id="weekly-vit-b12-diff" class="diff-value"></span>)</i></p></div></div></div>
+    <div id="weekly-fats-modal" class="modal"><div class="modal-content"><span class="modal-close" data-modal="weekly-fats-modal">&times;</span><h2>Riepilogo Settimanale Grassi</h2><p style="font-size: 0.9em; color: #555;">Dati calcolati sugli ultimi 7 giorni, incluso oggi.</p><div class="vitamin-weekly-summary"><h4>Grassi Totali</h4><p>Totale: <span id="weekly-fat-total-total">0</span> / <span id="weekly-fat-total-goal"></span> g</p><progress id="weekly-progress-fat-total" value="0"></progress><p><i>Media giornaliera: <span id="weekly-fat-total-avg">0.0</span> g (Obiettivo: <span id="daily-fat-total-goal"></span> g | <span id="weekly-fat-total-diff" class="diff-value"></span>)</i></p></div><div class="vitamin-weekly-summary"><h4>Grassi Saturi</h4><p>Totale: <span id="weekly-fat-sat-total">0</span> / <span id="weekly-fat-sat-goal"></span> g</p><progress id="weekly-progress-fat-sat" value="0"></progress><p><i>Media giornaliera: <span id="weekly-fat-sat-avg">0.0</span> g (Obiettivo: <span id="daily-fat-sat-goal"></span> g | <span id="weekly-fat-sat-diff" class="diff-value"></span>)</i></p></div><div class="vitamin-weekly-summary"><h4>Grassi Trans</h4><p>Totale: <span id="weekly-fat-trans-total">0</span> / <span id="weekly-fat-trans-goal"></span> g</p><progress id="weekly-progress-fat-trans" value="0"></progress><p><i>Media giornaliera: <span id="weekly-fat-trans-avg">0.0</span> g (Obiettivo: <span id="daily-fat-trans-goal"></span> g | <span id="weekly-fat-trans-diff" class="diff-value"></span>)</i></p></div><div class="vitamin-weekly-summary"><h4>Grassi Monoinsaturi</h4><p>Totale: <span id="weekly-fat-mono-total">0</span> / <span id="weekly-fat-mono-goal"></span> g</p><progress id="weekly-progress-fat-mono" value="0"></progress><p><i>Media giornaliera: <span id="weekly-fat-mono-avg">0.0</span> g (Obiettivo: <span id="daily-fat-mono-goal"></span> g | <span id="weekly-fat-mono-diff" class="diff-value"></span>)</i></p></div><div class="vitamin-weekly-summary"><h4>Grassi Polinsaturi</h4><p>Totale: <span id="weekly-fat-poly-total">0</span> / <span id="weekly-fat-poly-goal"></span> g</p><progress id="weekly-progress-fat-poly" value="0"></progress><p><i>Media giornaliera: <span id="weekly-fat-poly-avg">0.0</span> g (Obiettivo: <span id="daily-fat-poly-goal"></span> g | <span id="weekly-fat-poly-diff" class="diff-value"></span>)</i></p></div><div class="vitamin-weekly-summary"><h4>Omega 3</h4><p>Totale: <span id="weekly-fat-omega3-total">0</span> / <span id="weekly-fat-omega3-goal"></span> g</p><progress id="weekly-progress-fat-omega3" value="0"></progress><p><i>Media giornaliera: <span id="weekly-fat-omega3-avg">0.0</span> g (Obiettivo: <span id="daily-fat-omega3-goal"></span> g | <span id="weekly-fat-omega3-diff" class="diff-value"></span>)</i></p></div><div class="vitamin-weekly-summary"><h4>Omega 6</h4><p>Totale: <span id="weekly-fat-omega6-total">0</span> / <span id="weekly-fat-omega6-goal"></span> g</p><progress id="weekly-progress-fat-omega6" value="0"></progress><p><i>Media giornaliera: <span id="weekly-fat-omega6-avg">0.0</span> g (Obiettivo: <span id="daily-fat-omega6-goal"></span> g | <span id="weekly-fat-omega6-diff" class="diff-value"></span>)</i></p></div><p style="text-align: center; font-weight: bold; margin-top: 15px; font-size: 1.2em; border-top: 1px solid #eee; padding-top: 15px;">Rapporto O6:O3 Settimanale: <span id="weekly-omega-ratio-value">N/D</span></p></div></div>
+    <div id="nutrient-detail-modal" class="modal"><div class="modal-content"><span class="modal-close" data-modal="nutrient-detail-modal">&times;</span><h2 id="nutrient-detail-modal-title"></h2><ul id="nutrient-detail-modal-list"></ul></div></div>
+    <div id="amino-acid-modal" class="modal"><div class="modal-content"><span class="modal-close" data-modal="amino-acid-modal">&times;</span><h2 id="modal-amino-title">Dettaglio Amminoacidi</h2><div id="modal-amino-summary" style="text-align: center; margin-bottom: 20px;"></div><div id="modal-amino-content" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;"><div><p>Leucina: <span id="modal-amino-leu-total">0</span> / <span id="modal-amino-leu-goal"></span> mg</p><progress id="modal-amino-leu-progress" value="0" style="width:100%"></progress><p>Isoleucina: <span id="modal-amino-iso-total">0</span> / <span id="modal-amino-iso-goal"></span> mg</p><progress id="modal-amino-iso-progress" value="0" style="width:100%"></progress><p>Valina: <span id="modal-amino-val-total">0</span> / <span id="modal-amino-val-goal"></span> mg</p><progress id="modal-amino-val-progress" value="0" style="width:100%"></progress><p>Lisina: <span id="modal-amino-lys-total">0</span> / <span id="modal-amino-lys-goal"></span> mg</p><progress id="modal-amino-lys-progress" value="0" style="width:100%"></progress></div><div><p>Metionina: <span id="modal-amino-met-total">0</span> / <span id="modal-amino-met-goal"></span> mg</p><progress id="modal-amino-met-progress" value="0" style="width:100%"></progress><p>Fenilalanina: <span id="modal-amino-phe-total">0</span> / <span id="modal-amino-phe-goal"></span> mg</p><progress id="modal-amino-phe-progress" value="0" style="width:100%"></progress><p>Treonina: <span id="modal-amino-thr-total">0</span> / <span id="modal-amino-thr-goal"></span> mg</p><progress id="modal-amino-thr-progress" value="0" style="width:100%"></progress><p>Triptofano: <span id="modal-amino-trp-total">0</span> / <span id="modal-amino-trp-goal"></span> mg</p><progress id="modal-amino-trp-progress" value="0" style="width:100%"></progress></div></div><div style="margin-top: 15px;"><p>Istidina: <span id="modal-amino-his-total">0</span> / <span id="modal-amino-his-goal"></span> mg</p><progress id="modal-amino-his-progress" value="0" style="width:100%"></progress></div></div></div>
+    <div id="ingredient-modal" class="modal"><div class="modal-content"><span class="modal-close" data-modal="ingredient-modal">&times;</span><div id="ingredient-modal-header"><h2 id="ingredient-modal-title"></h2><div id="ingredient-modal-actions"><button id="btn-clear-ingredients" title="Cancella tutto"><i class="fas fa-eraser"></i></button><button id="btn-photo-ingredients" title="Acquisisci da foto"><i class="fas fa-camera"></i></button><button id="btn-generate-ingredients-ai" title="Genera o Pulisci con AI">🪄</button><button id="btn-copy-ingredients-prompt" title="Copia prompt per AI">📋</button></div></div><input type="file" id="ingredient-photo-input" accept="image/*" style="display: none;"><p id="ocr-status-ingredients" style="text-align: center; color: #888; display: none;"></p><textarea id="ingredient-modal-textarea" placeholder="Inserisci o fotografa la lista ingredienti qui..."></textarea><button id="btn-save-ingredients" style="width: 100%; margin-top: 15px; background-color: #2e7d32;">Salva Ingredienti</button></div></div>
+    <div id="nutrient-confirm-modal" class="modal"><div class="modal-content"><span class="modal-close" data-modal="nutrient-confirm-modal">&times;</span><h2>Conferma Dati Nutrizionali</h2><p>Controlla e correggi i valori estratti dalla foto prima di confermare.</p><div id="nutrient-confirm-list"><p id="ocr-status-nutrients" style="text-align: center; color: #888; display: block;">In attesa di una foto...</p></div><div class="nutrient-confirm-buttons"><button id="btn-cancel-nutrients" style="background-color: #607d8b;">Annulla</button><button id="btn-confirm-nutrients" style="background-color: #2e7d32;">Conferma e Compila</button></div></div></div><input type="file" id="nutrient-photo-input" accept="image/*" style="display: none;">
+    <div id="barcode-scanner-modal" class="modal"><div class="modal-content"><span class="modal-close" data-modal="barcode-scanner-modal">&times;</span><h2>Scansiona Codice a Barre</h2><p style="text-align: center;">Inquadra il codice a barre del prodotto.</p><div id="scanner-container" style="position: relative; width: 100%; padding-top: 75%;"><video id="barcode-scanner-video" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 1px solid #ccc; border-radius: 8px;"></video><div id="scanner-overlay" style="position: absolute; top: 50%; left: 50%; width: 80%; height: 2px; background-color: red; transform: translate(-50%, -50%); box-shadow: 0 0 10px red;"></div></div><p id="barcode-scanner-status" style="text-align: center; margin-top: 15px; font-weight: bold; min-height: 20px;"></p></div></div>
+    <div id="diff-modal" class="modal"><div class="modal-content"><span class="modal-close" data-modal="diff-modal">&times;</span><h2 id="diff-modal-title">Confronta Valori Nutrizionali</h2><p>Sono state trovate differenze significative. Scegli quali valori mantenere per ogni nutriente.</p><div id="diff-modal-list" style="max-height: 50vh; overflow-y: auto; padding: 10px; border: 1px solid #eee; border-radius: 8px; margin-top: 15px;"></div><div class="nutrient-confirm-buttons" style="margin-top: 20px;"><button id="btn-cancel-diff" style="background-color: #607d8b;">Annulla</button><button id="btn-apply-diff" style="background-color: #2e7d32;">Applica Modifiche</button></div></div></div>
 
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js" type="module"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js" type="module"></script>
@@ -1010,7 +885,7 @@
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
         import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-let functions; // <-- AGGIUNGI
+let functions;
         const firebaseConfig = {
           apiKey: "AIzaSyA5pSzpfq1aGZ1wjNV5-eXnIqWL6brl424",
           authDomain: "mio-tracker.firebaseapp.com",
@@ -1043,7 +918,7 @@ let functions; // <-- AGGIUNGI
 
         const DEFICIT_PREIMPOSTATO_SETTIMANALE = { 0: -250, 1: +300, 2: +300, 3: -250, 4: +300, 5: +300, 6: -250 };
 
-        const OBIETTIVI_MICRO = { mg: 420, k: 3400, vitc: 90, ca: 1000, fe: 18, zn: 11, cu: 0.9, p: 700 };
+        const OBIETTIVI_MICRO = { mg: 420, k: 3400, vitc: 90, ca: 1000, fe: 18, zn: 11, cu: 0.9, p: 700, na: 2000 }; // ADDED NA
         const OBIETTIVI_FAT = { 
             fatTotal: 85, fatSat: 20, fatTrans: 2, 
             fatUnsat: 65, fatMono: 45, fatPoly: 20, 
@@ -1080,8 +955,8 @@ let functions; // <-- AGGIUNGI
         const LOCAL_LAST_UPDATE_KEY = 'lastLocalUpdateTimestamp';
         const CLOUD_LAST_UPDATE_PATH = 'lastCloudUpdateTimestamp';
 
-
-        const GEMINI_PROMPT_FORMAT = `{"prot":g,"kcal":kcal,"carb":g,"zuccheri":g,"fatSat":g,"fatTrans":g,"fatMono":g,"fatPoly":g,"omega3":g,"omega6":g,"fibreTotali":g,"fibreSolubili":g,"fibreInsolubili":g,"mg":mg,"k":mg,"vitc":mg,"ca":mg,"vitA":µg,"vitB12":µg,"vitD":µg,"vitE":mg,"vitK":µg,"b9":µg,"b2":mg,"b6":mg,"fe":mg,"zn":mg,"cu":mg,"p":mg,"leu":mg,"iso":mg,"val":mg,"lys":mg,"met":mg,"phe":mg,"thr":mg,"trp":mg,"his":mg}`;
+        // AGGIUNTO 'na' (sodio) AL PROMPT FORMAT
+        const GEMINI_PROMPT_FORMAT = `{"prot":g,"kcal":kcal,"carb":g,"zuccheri":g,"fatSat":g,"fatTrans":g,"fatMono":g,"fatPoly":g,"omega3":g,"omega6":g,"fibreTotali":g,"fibreSolubili":g,"fibreInsolubili":g,"na":mg,"mg":mg,"k":mg,"vitc":mg,"ca":mg,"vitA":µg,"vitB12":µg,"vitD":µg,"vitE":mg,"vitK":µg,"b9":µg,"b2":mg,"b6":mg,"fe":mg,"zn":mg,"cu":mg,"p":mg,"leu":mg,"iso":mg,"val":mg,"lys":mg,"met":mg,"phe":mg,"thr":mg,"trp":mg,"his":mg}`;
         const AI_INSTRUCTION = "Agisci come un esperto nutrizionista. Basa le tue risposte su database nutrizionali affidabili (come IEO, USDA, CREA). Se un valore non è disponibile, fornisci una stima scientificamente plausibile. Devi rispondere OBBLIGATORIAMENTE in formato JSON valido, perché la richiesta è impostata con 'response_format: json_object'. Per gli amminoacidi, fornisci un profilo specifico per la fonte proteica dell'alimento. Assicurati che le unità di misura siano corrette come specificato nel formato JSON richiesto.";
 
         const authSection = document.getElementById('auth-section');
@@ -1130,7 +1005,7 @@ let functions; // <-- AGGIUNGI
         const builderFibreSolubili = document.getElementById('builder-fibre-solubili');
         const builderFibreInsolubili = document.getElementById('builder-fibre-insolubili');
         const builderFatSat = document.getElementById('builder-fat-sat'), builderFatTrans = document.getElementById('builder-fat-trans'), builderFatMono = document.getElementById('builder-fat-mono'), builderFatPoly = document.getElementById('builder-fat-poly'), builderOmega3 = document.getElementById('builder-omega3'), builderOmega6 = document.getElementById('builder-omega6');
-        const builderMg = document.getElementById('builder-mg'), builderK = document.getElementById('builder-k'), builderVitC = document.getElementById('builder-vitc'), builderCa = document.getElementById('builder-ca');
+        const builderNa = document.getElementById('builder-na'), builderMg = document.getElementById('builder-mg'), builderK = document.getElementById('builder-k'), builderVitC = document.getElementById('builder-vitc'), builderCa = document.getElementById('builder-ca');
         const builderVitA = document.getElementById('builder-vit-a'), builderVitB12 = document.getElementById('builder-vit-b12'), builderVitD = document.getElementById('builder-vit-d');
         const builderVitE = document.getElementById('builder-vit-e'), builderVitK = document.getElementById('builder-vit-k'), builderB9 = document.getElementById('builder-b9');
         const builderB2 = document.getElementById('builder-b2'), builderB6 = document.getElementById('builder-b6');
@@ -1182,6 +1057,7 @@ let functions; // <-- AGGIUNGI
             fibreTotali: { el: builderFibreTotali, label: 'Fibre Totali/100g' },
             fibreSolubili: { el: builderFibreSolubili, label: 'Fibre Solubili/100g' },
             fibreInsolubili: { el: builderFibreInsolubili, label: 'Fibre Insolubili/100g' },
+            na: { el: builderNa, label: 'Sodio (mg)/100g' }, // NEW
             mg: { el: builderMg, label: 'Magnesio (mg)/100g' },
             k: { el: builderK, label: 'Potassio (mg)/100g' },
             vitc: { el: builderVitC, label: 'Vitamina C (mg)/100g' },
@@ -1410,7 +1286,7 @@ let functions; // <-- AGGIUNGI
             
             let totali = { 
                 prot: 0, kcal: 0, carb: 0, zuccheri: 0, fatTotal: 0, fatSat: 0, fatTrans: 0, fatMono: 0, fatPoly: 0, omega3: 0, omega6: 0, 
-                mg: 0, k: 0, vitc: 0, ca: 0, fe: 0, zn: 0, cu: 0, p: 0, vitA: 0, vitB12: 0, vitD: 0, vitE: 0, vitK: 0, b9: 0, b2: 0, b6: 0,
+                na: 0, mg: 0, k: 0, vitc: 0, ca: 0, fe: 0, zn: 0, cu: 0, p: 0, vitA: 0, vitB12: 0, vitD: 0, vitE: 0, vitK: 0, b9: 0, b2: 0, b6: 0,
                 leu: 0, iso: 0, val: 0, lys: 0, met: 0, phe: 0, thr: 0, trp: 0, his: 0,
                 fibreTotali: 0, fibreSolubili: 0, fibreInsolubili: 0
             };
@@ -1428,6 +1304,29 @@ let functions; // <-- AGGIUNGI
             });
 
             totali.fatUnsat = totali.fatMono + totali.fatPoly;
+
+            // UPDATE BALANCE BAR
+            const sodiumVal = totali.na || 0;
+            const potassiumVal = totali.k || 0;
+            
+            document.getElementById('valore-sodio').textContent = `${sodiumVal.toFixed(0)} mg`;
+            document.getElementById('valore-potassio').textContent = `${potassiumVal.toFixed(0)} mg`;
+
+            const balanceMarker = document.getElementById('balance-marker');
+            let balancePercentage = 50; 
+
+            if (sodiumVal + potassiumVal > 0) {
+                // Calcoliamo la % relativa di Potassio sul totale Na+K
+                // Se K è alto, % sale verso 100 -> cursore a destra (Verde)
+                // Se Na è alto, % scende verso 0 -> cursore a sinistra (Rosso)
+                const kRatio = potassiumVal / (sodiumVal + potassiumVal);
+                balancePercentage = kRatio * 100;
+            }
+            
+            // Limitiamo il movimento del marker tra 5% e 95% per estetica
+            balancePercentage = Math.max(5, Math.min(95, balancePercentage));
+            balanceMarker.style.left = `${balancePercentage}%`;
+
 
             spanObiettivoProteine.textContent = OBIETTIVI.prot; spanTotaleProteine.textContent = totali.prot.toFixed(1); progressProteine.max = OBIETTIVI.prot; progressProteine.value = totali.prot;
             spanObiettivoCalorie.textContent = OBIETTIVI.kcal; spanTotaleCalorie.textContent = totali.kcal.toFixed(0); progressCalorie.max = OBIETTIVI.kcal; progressCalorie.value = totali.kcal;
@@ -1491,10 +1390,10 @@ let functions; // <-- AGGIUNGI
             document.getElementById('vit-header').classList.toggle('nutrients-warning', Object.keys(OBIETTIVI_VIT).some(k => totali[k] < OBIETTIVI_VIT[k] * 0.5));
             
             logBody.innerHTML = ''; 
-            const nutrientKeys = ['kcal', 'fibreTotali', 'fibreSolubili', 'fibreInsolubili', ...Object.keys(OBIETTIVI_AMINO), 'fatSat', 'fatTrans', 'fatMono', 'fatPoly', 'omega3', 'omega6', 'mg', 'k', 'vitc', 'ca', 'fe', 'zn', 'cu', 'vitA', 'vitB12', 'vitD', 'vitE', 'vitK', 'b9', 'b2', 'b6', 'p'];
+            const nutrientKeys = ['kcal', 'na', 'fibreTotali', 'fibreSolubili', 'fibreInsolubili', ...Object.keys(OBIETTIVI_AMINO), 'fatSat', 'fatTrans', 'fatMono', 'fatPoly', 'omega3', 'omega6', 'mg', 'k', 'vitc', 'ca', 'fe', 'zn', 'cu', 'vitA', 'vitB12', 'vitD', 'vitE', 'vitK', 'b9', 'b2', 'b6', 'p'];
             const formatNumber = (key, value) => {
                 const val = value || 0;
-                if (Object.keys(OBIETTIVI_AMINO).includes(key)) return val.toFixed(0);
+                if (Object.keys(OBIETTIVI_AMINO).includes(key) || key === 'na') return val.toFixed(0);
                 return ['cu', 'b2', 'b6'].includes(key) ? val.toFixed(2) : (['kcal', 'k', 'p'].includes(key) ? val.toFixed(0) : val.toFixed(1));
             };
             
@@ -2101,7 +2000,7 @@ let functions; // <-- AGGIUNGI
                 return 'fatTotal';
             }
             if (k.includes('fibr')) return 'fibreTotali';
-            if (k.includes('sale') || k.includes('sodio')) return null;
+            if (k.includes('sale') || k.includes('sodio')) return 'na'; // FIXED
             return null;
         }
         
@@ -2126,11 +2025,8 @@ let functions; // <-- AGGIUNGI
 try {
     const callGemini = httpsCallable(functions, 'callOpenAI');
     const result = await callGemini({ prompt: promptText });
-    const data = result.data; // La risposta di Gemini è in result.data
+    const data = result.data;
     
-    // ... il resto del tuo codice che usa 'data' rimane uguale
-    // es. const raw = data.candidates?.[0]...
-
 } catch (error) {
     console.error("Errore chiamata Cloud Function:", error);
     alert('Errore compilazione AI: ' + error.message);
@@ -2263,6 +2159,8 @@ try {
                 'trans-fat_100g': inputFields.fatTrans.el, 'monounsaturated-fat_100g': inputFields.fatMono.el,
                 'polyunsaturated-fat_100g': inputFields.fatPoly.el, 'omega-3-fat_100g': inputFields.omega3.el,
                 'omega-6-fat_100g': inputFields.omega6.el, 'fiber_100g': inputFields.fibreTotali.el,
+                'salt_100g': inputFields.na.el, // FIXED salt mapping
+                'sodium_100g': inputFields.na.el, // Fallback
                 'calcium_100g': inputFields.ca.el, 'iron_100g': inputFields.fe.el,
                 'magnesium_100g': inputFields.mg.el, 'potassium_100g': inputFields.k.el,
                 'zinc_100g': inputFields.zn.el, 'phosphorus_100g': inputFields.p.el,
@@ -2284,6 +2182,10 @@ try {
                         value *= 1000;
                     } else if (['vitamin-a_100g', 'vitamin-d_100g', 'vitamin-k_100g', 'vitamin-b9_100g', 'vitamin-b12_100g'].includes(key)) {
                         value *= 1000000;
+                    } else if (key === 'salt_100g') { // Convert Salt (g) to Sodium (mg)
+                        value = (value / 2.5) * 1000;
+                    } else if (key === 'sodium_100g') { // Sodium is usually in g in OFF, convert to mg
+                         value *= 1000;
                     }
                     
                     nutrientMap[key].value = value.toFixed(2).replace(/\.00$/, '');
@@ -3032,11 +2934,10 @@ const newData = JSON.parse(raw.replace(/```json|```/g, '').trim());
                         prompt = `Agisci come un esperto di etichette alimentari. Genera una lista di ingredienti per il prodotto commerciale "${foodName}". Rispondi ESCLUSIVAMENTE con la lista, senza frasi introduttive o conclusive. Il formato deve essere un elenco puntato, un ingrediente per riga. È FONDAMENTALE che la lista rifletta il contenuto di un PRODOTTO CONFEZIONATO (es. un sacchetto di minestrone surgelato), NON una ricetta per prepararlo. Pertanto, NON includere ingredienti come acqua aggiunta in cottura, olio, sale o pasta, a meno che non siano specificati come pre-inseriti nel prodotto. Se non conosci l'etichetta esatta, basati su prodotti concorrenti simili dei supermercati.`;
                     }
 
-// NUOVO BLOCCO CORRETTO
-const callGemini = httpsCallable(functions, 'callOpenAI');
-const result = await callGemini({ prompt: prompt });
-const data = result.data;
-const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Nessuna risposta dall\'AI.';
+                    const callGemini = httpsCallable(functions, 'callOpenAI');
+                    const result = await callGemini({ prompt: prompt });
+                    const data = result.data;
+                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Nessuna risposta dall\'AI.';
 
                     ingredientModalTextarea.value = text.replace(/[\*]/g, '-').trim();
 
@@ -3118,109 +3019,90 @@ const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Nessuna rispost
             btnCancelNutrients.addEventListener('click', () => {
                 nutrientConfirmModal.style.display = 'none';
             });
-       // --- INIZIO CODICE EXPORT AI (VERSIONE COMPLETA) ---
-    const btnExportAi = document.getElementById('btn-export-json-ai');
-    if (btnExportAi) {
-        btnExportAi.addEventListener('click', async () => {
-            // 1. Recupera Obiettivi e Contesto
-            const dataRef = new Date(giornoVisualizzato);
-            const piano = PIANO_SETTIMANALE[dataRef.getDay()] || PIANO_SETTIMANALE[1];
             
-            // Calcolo obiettivi dinamici
-            const targetKcal = piano.cal_base + (datiGiornalieri.workoutCalorie || 0) + (datiGiornalieri.calorieAdjustment || 0);
-            
-            // Lista completa delle chiavi nutrizionali monitorate
-            const allNutrientKeys = [
-                'prot', 'kcal', 'carb', 'zuccheri', 'fatTotal', 'fatSat', 'fatTrans', 
-                'fatMono', 'fatPoly', 'omega3', 'omega6', 'fibreTotali', 'fibreSolubili', 'fibreInsolubili',
-                'mg', 'k', 'vitc', 'ca', 'fe', 'zn', 'cu', 'p', 
-                'vitA', 'vitB12', 'vitD', 'vitE', 'vitK', 'b9', 'b2', 'b6',
-                'leu', 'iso', 'val', 'lys', 'met', 'phe', 'thr', 'trp', 'his'
-            ];
-
-            // 2. Calcola i Totali Effettivi (Sommando il log)
-            let dailyTotals = {};
-            allNutrientKeys.forEach(k => dailyTotals[k] = 0);
-
-            // Struttura per il log dettagliato
-            const logDettagliato = [];
-
-            (datiGiornalieri.log || []).forEach(entry => {
-                if (entry.type === 'workout') return; // Saltiamo i workout qui, li mettiamo a parte
-
-                const items = entry.type === 'meal' ? entry.items : [entry];
-                const itemsExport = items.map(item => {
-                    // Pulisci l'oggetto item per l'export (rimuovi chiavi interne inutili)
-                    const cleanItem = {
-                        alimento: item.desc,
-                        qta_g: item.qta
-                    };
+            // --- EXPORT AI AGGIORNATO ---
+            const btnExportAi = document.getElementById('btn-export-json-ai');
+            if (btnExportAi) {
+                btnExportAi.addEventListener('click', async () => {
+                    const dataRef = new Date(giornoVisualizzato);
+                    const piano = PIANO_SETTIMANALE[dataRef.getDay()] || PIANO_SETTIMANALE[1];
+                    const targetKcal = piano.cal_base + (datiGiornalieri.workoutCalorie || 0) + (datiGiornalieri.calorieAdjustment || 0);
                     
-                    // Aggiungi tutti i nutrienti presenti nell'alimento
-                    allNutrientKeys.forEach(key => {
-                        const val = item[key];
-                        // Includiamo il valore se esiste ed è maggiore di 0, oppure se è calorie/proteine (sempre)
-                        if (val !== undefined && val !== null && (val > 0 || key === 'kcal' || key === 'prot')) {
-                            cleanItem[key] = Number(val.toFixed(2)); // Arrotonda per pulizia
-                            dailyTotals[key] += val;
-                        }
+                    const allNutrientKeys = [
+                        'prot', 'kcal', 'carb', 'zuccheri', 'fatTotal', 'fatSat', 'fatTrans', 
+                        'fatMono', 'fatPoly', 'omega3', 'omega6', 'fibreTotali', 'fibreSolubili', 'fibreInsolubili',
+                        'na', 'mg', 'k', 'vitc', 'ca', 'fe', 'zn', 'cu', 'p',  // ADDED 'na'
+                        'vitA', 'vitB12', 'vitD', 'vitE', 'vitK', 'b9', 'b2', 'b6',
+                        'leu', 'iso', 'val', 'lys', 'met', 'phe', 'thr', 'trp', 'his'
+                    ];
+
+                    let dailyTotals = {};
+                    allNutrientKeys.forEach(k => dailyTotals[k] = 0);
+
+                    const logDettagliato = [];
+
+                    (datiGiornalieri.log || []).forEach(entry => {
+                        if (entry.type === 'workout') return;
+
+                        const items = entry.type === 'meal' ? entry.items : [entry];
+                        const itemsExport = items.map(item => {
+                            const cleanItem = { alimento: item.desc, qta_g: item.qta };
+                            allNutrientKeys.forEach(key => {
+                                const val = item[key];
+                                if (val !== undefined && val !== null && (val > 0 || key === 'kcal' || key === 'prot')) {
+                                    cleanItem[key] = Number(val.toFixed(2)); 
+                                    dailyTotals[key] += val;
+                                }
+                            });
+                            if (!item.kcal && !item.cal) cleanItem._WARNING = "Kcal a 0 o mancanti";
+                            return cleanItem;
+                        });
+
+                        logDettagliato.push({
+                            tipo: entry.type === 'meal' ? `Pasto: ${entry.desc}` : 'Alimento Singolo',
+                            dettagli: itemsExport
+                        });
                     });
-                    
-                    // Segnala se mancano dati importanti (anomalie potenziali a livello di item)
-                    if (!item.kcal && !item.cal) cleanItem._WARNING = "Kcal a 0 o mancanti";
-                    
-                    return cleanItem;
+
+                    const fullExportData = {
+                        meta: {
+                            data: giornoVisualizzato,
+                            giorno_tipo: piano.tipo,
+                            note_utente: datiGiornalieri.note || "Nessuna nota"
+                        },
+                        cruscotto_totali: {
+                            MACROS: {
+                                Kcal: { consumate: dailyTotals.kcal.toFixed(0), target: targetKcal },
+                                Proteine: { consumate: dailyTotals.prot.toFixed(1), target: piano.prot },
+                                Carboidrati: { consumate: dailyTotals.carb.toFixed(1), target: piano.carb },
+                                Grassi: { consumate: dailyTotals.fatTotal.toFixed(1), target: OBIETTIVI_FAT.fatTotal }
+                            },
+                            MICROS_CRITICI: {
+                                Fibre: dailyTotals.fibreTotali.toFixed(1),
+                                Zuccheri: dailyTotals.zuccheri.toFixed(1),
+                                Grassi_Saturi: dailyTotals.fatSat.toFixed(1),
+                                Sodio: dailyTotals.na.toFixed(0), // SODIO REALE
+                                Potassio: dailyTotals.k.toFixed(0) // POTASSIO REALE
+                            },
+                            OMEGA_RATIO: (dailyTotals.omega3 > 0) ? `1:${(dailyTotals.omega6/dailyTotals.omega3).toFixed(1)}` : "N/D"
+                        },
+                        allenamento: {
+                            descrizione: (datiGiornalieri.log || []).filter(e => e.type === 'workout').map(e => e.desc).join(", ") || "Riposo",
+                            kcal_bruciate: datiGiornalieri.workoutCalorie || 0
+                        },
+                        diario_alimentare_completo: logDettagliato
+                    };
+
+                    try {
+                        const jsonString = JSON.stringify(fullExportData, null, 2);
+                        await navigator.clipboard.writeText(jsonString);
+                        alert("✅ Dati COMPLETI copiati (Nutrienti, Micros, Log)!\n\nIncolla su ChatGPT/Gemini e chiedi:\n'Analizza questo JSON. Cerca anomalie nei dati (es. cibi con calorie a zero) e dammi un parere nutrizionale.'");
+                    } catch (err) {
+                        console.error("Errore copia:", err);
+                        alert("Errore nella copia automatica. Controlla la console.");
+                    }
                 });
-
-                logDettagliato.push({
-                    tipo: entry.type === 'meal' ? `Pasto: ${entry.desc}` : 'Alimento Singolo',
-                    dettagli: itemsExport
-                });
-            });
-
-            // 3. Costruisci l'Oggetto JSON Finale
-            const fullExportData = {
-                meta: {
-                    data: giornoVisualizzato,
-                    giorno_tipo: piano.tipo,
-                    note_utente: datiGiornalieri.note || "Nessuna nota"
-                },
-                cruscotto_totali: {
-                    // Confronto Totali vs Obiettivi
-                    MACROS: {
-                        Kcal: { consumate: dailyTotals.kcal.toFixed(0), target: targetKcal },
-                        Proteine: { consumate: dailyTotals.prot.toFixed(1), target: piano.prot },
-                        Carboidrati: { consumate: dailyTotals.carb.toFixed(1), target: piano.carb },
-                        Grassi: { consumate: dailyTotals.fatTotal.toFixed(1), target: OBIETTIVI_FAT.fatTotal }
-                    },
-                    MICROS_CRITICI: {
-                        Fibre: dailyTotals.fibreTotali.toFixed(1),
-                        Zuccheri: dailyTotals.zuccheri.toFixed(1),
-                        Grassi_Saturi: dailyTotals.fatSat.toFixed(1),
-                        Sodio_K: dailyTotals.k.toFixed(0) // Usiamo K come proxy minerali
-                    },
-                    // Aggiungiamo eventuali squilibri nel ratio Omega
-                    OMEGA_RATIO: (dailyTotals.omega3 > 0) ? `1:${(dailyTotals.omega6/dailyTotals.omega3).toFixed(1)}` : "N/D"
-                },
-                allenamento: {
-                    descrizione: (datiGiornalieri.log || []).filter(e => e.type === 'workout').map(e => e.desc).join(", ") || "Riposo",
-                    kcal_bruciate: datiGiornalieri.workoutCalorie || 0
-                },
-                diario_alimentare_completo: logDettagliato
-            };
-
-            // 4. Copia negli appunti
-            try {
-                const jsonString = JSON.stringify(fullExportData, null, 2);
-                await navigator.clipboard.writeText(jsonString);
-                alert("✅ Dati COMPLETI copiati (Nutrienti, Micros, Log)!\n\nIncolla su ChatGPT/Gemini e chiedi:\n'Analizza questo JSON. Cerca anomalie nei dati (es. cibi con calorie a zero) e dammi un parere nutrizionale.'");
-            } catch (err) {
-                console.error("Errore copia:", err);
-                alert("Errore nella copia automatica. Controlla la console.");
             }
-        });
-    }
-    // --- FINE CODICE EXPORT AI ---
         });
     </script>
     <script>
@@ -3234,17 +3116,3 @@ const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Nessuna rispost
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
