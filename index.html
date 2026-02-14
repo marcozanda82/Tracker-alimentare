@@ -908,20 +908,15 @@
         let firebaseApp; 
         let currentUserUID = null; 
 
-        // Database dei profili personalizzati (sostituisce il piano settimanale rigido)
-let profiliGiornata = JSON.parse(localStorage.getItem('trackerProfiliGiornata')) || {
-    "Riposo": { kcal_base: 2300, prot: 140, carb: 300, zuccheri: 25, deficit: -250 },
-    "Allenamento": { kcal_base: 2600, prot: 160, carb: 350, zuccheri: 30, deficit: 0 }
-};
-
-function salvaProfili() {
-    localStorage.setItem('trackerProfiliGiornata', JSON.stringify(profiliGiornata));
-    // Se hai il cloud attivo, salva anche lì
-    if (db && currentUserUID) {
-        set(ref(db, `users/${currentUserUID}/tracker_data/trackerProfiliGiornata`), profiliGiornata);
-    }
-    renderDropdownTipi();
-}
+        const PIANO_SETTIMANALE = {
+            0: { tipo: '💧 Riposo (Deficit)', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
+            1: { tipo: '🔥 Bicipiti', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
+            2: { tipo: '💪 Gambe', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
+            3: { tipo: '🏃 Spalle', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
+            4: { tipo: '🏋️ Addominali', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
+            5: { tipo: '🏃 Schiena', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
+            6: { tipo: '🥗 Total body leggero o cardio', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 }
+        };
 
         const DEFICIT_PREIMPOSTATO_SETTIMANALE = { 0: -250, 1: +300, 2: +300, 3: -250, 4: +300, 5: +300, 6: -250 };
 
@@ -1047,8 +1042,6 @@ function salvaProfili() {
         const barcodeScannerVideo = document.getElementById('barcode-scanner-video');
         const barcodeScannerStatus = document.getElementById('barcode-scanner-status');
         const diffModal = document.getElementById('diff-modal');
-        const selectTipoGiornata = document.getElementById('select-tipo-giornata');
-        const modalProfili = document.getElementById('modal-gestione-profili');
         let videoStream = null;
 
         const inputFields = {
@@ -1182,27 +1175,45 @@ function salvaProfili() {
             saveSingleItemToCloud(key, datiDaSalvare);
         }
         
-function caricaGiorno(data) {
-    giornoVisualizzato = data;
-    dataCaricamentoInput.value = data;
+        function caricaGiorno(data) {
+            giornoVisualizzato = data;
+            dataCaricamentoInput.value = data;
 
-    let datiTrovati = null;
-    try {
-        datiTrovati = JSON.parse(localStorage.getItem(`trackerStorico_${data}`));
-    } catch (e) { console.error("Errore caricamento", e); }
-    
-    // Inizializzazione con tipo predefinito "Riposo" se mancano dati
-    datiGiornalieri = datiTrovati || { log: [], workoutCalorie: 0, note: '', tipoGiornataId: "Riposo" };
-    
-    if (!datiGiornalieri.tipoGiornataId) datiGiornalieri.tipoGiornataId = "Riposo";
-    if (!datiGiornalieri.log) datiGiornalieri.log = [];
+            let datiTrovati = null;
+            let rawDataFromLocalStorage = localStorage.getItem(`trackerStorico_${data}`);
+            try {
+                datiTrovati = JSON.parse(rawDataFromLocalStorage);
+                 if (datiTrovati && datiTrovati.log) {
+                    datiTrovati.log.forEach(entry => {
+                        const items = entry.type === 'meal' ? entry.items : [entry];
+                        items.forEach(item => {
+                            if (item && item.cal && !item.kcal) {
+                                item.kcal = item.cal;
+                                delete item.cal;
+                            }
+                        });
+                    });
+                }
+            } catch (e) {
+                console.error(`Errore nel parsing di trackerStorico_${data}:`, e, "Raw data:", rawDataFromLocalStorage);
+            }
+            
+            datiGiornalieri = datiTrovati || { log: [], workoutCalorie: 0, note: '' };
+            dailyNotesTextarea.value = datiGiornalieri.note || '';
+            if (!datiGiornalieri.log) datiGiornalieri.log = [];
+            if (typeof datiGiornalieri.workoutCalorie === 'undefined') datiGiornalieri.workoutCalorie = 0;
 
-    // Aggiorna il menù a tendina con il valore salvato per quel giorno
-    if (selectTipoGiornata) selectTipoGiornata.value = datiGiornalieri.tipoGiornataId;
+            const dataCorrente = new Date(data);
+            const giornoSettimana = dataCorrente.getDay(); 
+            const valorePreimpostatoPerGiorno = DEFICIT_PREIMPOSTATO_SETTIMANALE[giornoSettimana] || 0;
 
-    dailyNotesTextarea.value = datiGiornalieri.note || '';
-    aggiornaUI();
-}
+            if (typeof datiGiornalieri.calorieAdjustment === 'undefined' || datiGiornalieri.calorieAdjustment === 0) {
+                datiGiornalieri.calorieAdjustment = valorePreimpostatoPerGiorno;
+            }
+            
+            aggiornaUI();
+            console.log(`Caricato il giorno: ${giornoVisualizzato} da localStorage`); 
+        }
 
         function calcolaObiettiviPasto(mealType, giornoCorrenteString) {
             const dataVisualizzata = new Date(giornoCorrenteString);
@@ -1264,25 +1275,8 @@ function caricaGiorno(data) {
         }
 
         function aggiornaUI() {
-            function aggiornaUI() {
-    const dataVisualizzata = new Date(giornoVisualizzato);
-    
-    // Recupera il profilo scelto per QUESTA giornata specifica
-    const profiloCorrente = profiliGiornata[datiGiornalieri.tipoGiornataId] || profiliGiornata["Riposo"];
-    
-    // Calcola l'obiettivo calorie sommando base + workout + correzione manuale
-    const obiettivoCalorieTotale = profiloCorrente.kcal_base + (datiGiornalieri.workoutCalorie || 0) + (datiGiornalieri.calorieAdjustment || 0);
-    
-    const OBIETTIVI = { 
-        prot: profiloCorrente.prot, 
-        kcal: obiettivoCalorieTotale, 
-        carb: profiloCorrente.carb, 
-        zuccheri: profiloCorrente.zuccheri, 
-        ...OBIETTIVI_MICRO, ...OBIETTIVI_FAT, ...OBIETTIVI_VIT, ...OBIETTIVI_AMINO, ...OBIETTIVI_FIBRE
-    };
-    
-    titoloGiornataEl.textContent = `${datiGiornalieri.tipoGiornataId} - ${dataVisualizzata.toLocaleDateString('it-IT', {day: 'numeric', month: 'long', year: 'numeric'})}`;
-    // ... il resto della funzione rimane identico ...
+            const dataVisualizzata = new Date(giornoVisualizzato);
+            const pianoDelGiorno = PIANO_SETTIMANALE[dataVisualizzata.getDay()] || PIANO_SETTIMANALE[1];
             
             const obiettivoCalorieTotale = pianoDelGiorno.cal_base + (datiGiornalieri.workoutCalorie || 0) + (datiGiornalieri.calorieAdjustment || 0);
             const OBIETTIVI = { 
@@ -3112,36 +3106,8 @@ function caricaGiorno(data) {
                     }
                 });
             }
-            // Inizializza il menù a tendina
-    renderDropdownTipi();
-
-    // Listener per il cambio tipo giornata
-    selectTipoGiornata.addEventListener('change', () => {
-        datiGiornalieri.tipoGiornataId = selectTipoGiornata.value;
-        const profilo = profiliGiornata[datiGiornalieri.tipoGiornataId];
-        
-        // Quando cambi tipo, applichiamo il deficit predefinito di quel profilo
-        datiGiornalieri.calorieAdjustment = profilo.deficit || 0;
-        
-        salvaGiorno(giornoVisualizzato, datiGiornalieri);
-        aggiornaUI();
-    });
-
-    // Funzione per popolare il dropdown
-    function renderDropdownTipi() {
-        if(!selectTipoGiornata) return;
-        selectTipoGiornata.innerHTML = '';
-        Object.keys(profiliGiornata).forEach(nome => {
-            const opt = document.createElement('option');
-            opt.value = nome;
-            opt.textContent = nome;
-            selectTipoGiornata.appendChild(opt);
-        });
-        if(datiGiornalieri.tipoGiornataId) selectTipoGiornata.value = datiGiornalieri.tipoGiornataId;
-    }
         });
     </script>
 </body>
 </html>
-
 
