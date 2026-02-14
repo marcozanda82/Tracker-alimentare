@@ -493,31 +493,6 @@
         </div>
         <div id="main-tracker-content">
             <h2 id="titolo-giornata"></h2>
-            <div class="sezione" style="background-color: #e3f2fd; border-left-color: #1976d2;">
-    <label for="select-tipo-giornata">Tipo di Giornata Corrente:</label>
-    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-        <select id="select-tipo-giornata" style="margin-bottom: 0;"></select>
-        <button id="btn-gestisci-profili" style="background-color: #607d8b; padding: 5px 10px;"><i class="fas fa-cog"></i></button>
-    </div>
-</div>
-
-<div id="modal-gestione-profili" class="modal">
-    <div class="modal-content">
-        <span class="modal-close" id="close-profili">&times;</span>
-        <h2>Gestisci Profili Giornata</h2>
-        <div class="builder-grid" style="grid-template-columns: 1fr 1fr;">
-            <div><label>Nome Profilo</label><input type="text" id="prof-nome" placeholder="es. Leg Day"></div>
-            <div><label>Kcal Base</label><input type="number" id="prof-kcal"></div>
-            <div><label>Proteine (g)</label><input type="number" id="prof-prot"></div>
-            <div><label>Carboidrati (g)</label><input type="number" id="prof-carb"></div>
-            <div><label>Zuccheri (g)</label><input type="number" id="prof-zuc"></div>
-            <div><label>Deficit/Surplus (kcal)</label><input type="number" id="prof-def"></div>
-        </div>
-        <button id="btn-salva-nuovo-profilo" style="width: 100%; margin-top: 15px;">Salva / Aggiorna Profilo</button>
-        <hr>
-        <div id="lista-profili-esistenti" style="margin-top:15px;"></div>
-    </div>
-</div>
 <div class="nav-links">
     <a href="storico.html">📊 Storico</a>
     
@@ -933,18 +908,15 @@
         let firebaseApp; 
         let currentUserUID = null; 
 
-        // Database dei profili personalizzati
-let profiliGiornata = JSON.parse(localStorage.getItem('trackerProfiliGiornata')) || {
-    "Riposo": { kcal_base: 2300, prot: 140, carb: 300, zuccheri: 25, deficit: -250 },
-    "Allenamento Pesante": { kcal_base: 2600, prot: 160, carb: 350, zuccheri: 30, deficit: 0 }
-};
-
-// Funzione per salvare i profili
-function salvaProfili() {
-    localStorage.setItem('trackerProfiliGiornata', JSON.stringify(profiliGiornata));
-    saveSingleItemToCloud('trackerProfiliGiornata', profiliGiornata);
-    renderDropdownTipi();
-}
+        const PIANO_SETTIMANALE = {
+            0: { tipo: '💧 Riposo (Deficit)', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
+            1: { tipo: '🔥 Bicipiti', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
+            2: { tipo: '💪 Gambe', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
+            3: { tipo: '🏃 Spalle', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
+            4: { tipo: '🏋️ Addominali', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
+            5: { tipo: '🏃 Schiena', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
+            6: { tipo: '🥗 Total body leggero o cardio', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 }
+        };
 
         const DEFICIT_PREIMPOSTATO_SETTIMANALE = { 0: -250, 1: +300, 2: +300, 3: -250, 4: +300, 5: +300, 6: -250 };
 
@@ -3138,5 +3110,4 @@ function salvaProfili() {
     </script>
 </body>
 </html>
-
 
