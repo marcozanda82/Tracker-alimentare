@@ -3108,7 +3108,24 @@
                     }
                 });
             }
-        });
+        
+        // ESPORTA VARIABILI PER LA CHAT AI
+        window.giornoVisualizzato = giornoVisualizzato;
+        window.datiGiornalieri = datiGiornalieri;
+        window.PIANO_SETTIMANALE = PIANO_SETTIMANALE;
+        window.OBIETTIVI_FAT = OBIETTIVI_FAT;
+        window.OBIETTIVI_MICRO = OBIETTIVI_MICRO;
+        window.OBIETTIVI_VIT = OBIETTIVI_VIT;
+        window.OBIETTIVI_AMINO = OBIETTIVI_AMINO;
+        window.OBIETTIVI_FIBRE = OBIETTIVI_FIBRE;
+        window.PROFILO_AMINOACIDICO_RIFERIMENTO = PROFILO_AMINOACIDICO_RIFERIMENTO;
+        window.salvaGiorno = salvaGiorno;
+        window.aggiornaUI = aggiornaUI;
+        window.foodDatabase = foodDatabase;
+        window.salvaFoodDatabase = salvaFoodDatabase;
+        window.sanitizeFirebaseKey = sanitizeFirebaseKey;
+
+});
     </script>
 
     <!-- CHAT AI INTEGRATA -->
@@ -3443,9 +3460,9 @@
 
             // Preleva dati JSON completi del giorno
             function getDailyDataJSON() {
-                const dataRef = new Date(giornoVisualizzato);
-                const piano = PIANO_SETTIMANALE[dataRef.getDay()] || PIANO_SETTIMANALE[1];
-                const targetKcal = piano.cal_base + (datiGiornalieri.workoutCalorie || 0) + (datiGiornalieri.calorieAdjustment || 0);
+                const dataRef = new Date(window.giornoVisualizzato);
+                const piano = window.PIANO_SETTIMANALE[dataRef.getDay()] || window.PIANO_SETTIMANALE[1];
+                const targetKcal = piano.cal_base + (window.datiGiornalieri.workoutCalorie || 0) + (window.datiGiornalieri.calorieAdjustment || 0);
 
                 const allNutrientKeys = [
                     'prot', 'kcal', 'carb', 'zuccheri', 'fatTotal', 'fatSat', 'fatTrans', 
@@ -3460,7 +3477,7 @@
 
                 const logDettagliato = [];
 
-                (datiGiornalieri.log || []).forEach(function(entry) {
+                (window.datiGiornalieri.log || []).forEach(function(entry) {
                     if (entry.type === 'workout') return;
 
                     const items = entry.type === 'meal' ? entry.items : [entry];
@@ -3489,16 +3506,16 @@
 
                 return {
                     meta: {
-                        data: giornoVisualizzato,
+                        data: window.giornoVisualizzato,
                         giorno_tipo: piano.tipo,
                         ora_corrente: new Date().toLocaleTimeString('it-IT'),
-                        note_utente: datiGiornalieri.note || "Nessuna nota"
+                        note_utente: window.datiGiornalieri.note || "Nessuna nota"
                     },
                     obiettivi: {
                         kcal: targetKcal,
                         proteine: piano.prot,
                         carboidrati: piano.carb,
-                        grassi: OBIETTIVI_FAT.fatTotal
+                        grassi: window.OBIETTIVI_FAT.fatTotal
                     },
                     progresso_attuale: {
                         kcal: dailyTotals.kcal.toFixed(0),
@@ -3511,8 +3528,8 @@
                     },
                     diario_alimentare: logDettagliato,
                     allenamento: {
-                        descrizione: (datiGiornalieri.log || []).filter(function(e) { return e.type === 'workout'; }).map(function(e) { return e.desc; }).join(", ") || "Riposo",
-                        kcal_bruciate: datiGiornalieri.workoutCalorie || 0
+                        descrizione: (window.datiGiornalieri.log || []).filter(function(e) { return e.type === 'workout'; }).map(function(e) { return e.desc; }).join(", ") || "Riposo",
+                        kcal_bruciate: window.datiGiornalieri.workoutCalorie || 0
                     }
                 };
             }
@@ -3637,16 +3654,16 @@
             foodConfirm.addEventListener('click', function() {
                 if (pendingFoodData) {
                     // Aggiungi al diario
-                    if (!datiGiornalieri.log) datiGiornalieri.log = [];
-                    datiGiornalieri.log.push({
+                    if (!window.datiGiornalieri.log) window.datiGiornalieri.log = [];
+                    window.datiGiornalieri.log.push({
                         type: 'single',
                         desc: pendingFoodData.desc,
                         qta: pendingFoodData.qta,
                         prot: pendingFoodData.prot || 0,
                         kcal: pendingFoodData.kcal || 0
                     });
-                    salvaGiorno(giornoVisualizzato, datiGiornalieri);
-                    aggiornaUI();
+                    window.salvaGiorno(window.giornoVisualizzato, window.datiGiornalieri);
+                    window.aggiornaUI();
 
                     addMessage('✅ Aggiunto: ' + pendingFoodData.desc + ' (' + pendingFoodData.qta + 'g)', 'assistant');
                     foodModal.style.display = 'none';
