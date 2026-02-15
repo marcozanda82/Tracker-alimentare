@@ -3135,6 +3135,17 @@
             <span class="ai-chat-toggle-icon">▲</span>
         </div>
         <div class="ai-chat-body" id="ai-chat-body">
+            <!-- Sezione Impostazioni API -->
+            <div class="ai-chat-settings" id="ai-chat-settings">
+                <h4>🔑 Configura API Key</h4>
+                <p>Ottieni una API key gratuita da <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a></p>
+                <input type="password" id="ai-api-key-input" placeholder="Incolla qui la tua API key di Gemini...">
+                <div class="ai-chat-settings-buttons">
+                    <button id="ai-save-api-key">💾 Salva</button>
+                    <button id="ai-toggle-api-key">👁️ Mostra</button>
+                </div>
+                <p id="ai-api-status" class="ai-api-status"></p>
+            </div>
             <div class="ai-chat-messages" id="ai-chat-messages">
                 <div class="ai-message ai-welcome">
                     <strong>Ciao! Sono il tuo assistente nutrizionale.</strong><br><br>
@@ -3143,7 +3154,7 @@
                     • Consigliarti cosa mangiare<br>
                     • Analizzare screenshot del sonno<br>
                     • Compilare automaticamente gli alimenti<br><br>
-                    <em>Scrivi un messaggio o carica uno screenshot del sonno!</em>
+                    <em>⚠️ Inserisci la tua API key di Gemini nelle impostazioni qui sopra per iniziare!</em>
                 </div>
             </div>
             <div class="ai-chat-input-area">
@@ -3152,10 +3163,7 @@
                 <textarea id="ai-chat-input" placeholder="Chiedimi consigli nutrizionali..." rows="2"></textarea>
                 <button id="ai-chat-send" class="ai-chat-send-btn">➤</button>
             </div>
-            <div class="ai-chat-response-area" id="ai-chat-response-area" style="display: none;">
-                <textarea id="ai-chat-response-input" placeholder="Incolla qui la risposta di Gemini/ChatGPT..." rows="3"></textarea>
-                <button id="ai-chat-process-response" class="ai-chat-process-btn">✅ Processa Risposta</button>
-            </div>
+
             <div class="ai-chat-actions">
                 <button id="ai-chat-export-data" class="ai-chat-action-btn">📊 Esporta Dati</button>
                 <button id="ai-chat-clear" class="ai-chat-action-btn">🗑️ Pulisci Chat</button>
@@ -3378,35 +3386,86 @@
             color: #2e7d32;
         }
 
-        .ai-chat-response-area {
-            padding: 10px 15px;
-            background: #fff3e0;
-            border-top: 2px dashed #ff9800;
+        .ai-chat-settings {
+            padding: 15px;
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            border-bottom: 2px solid #4caf50;
         }
 
-        .ai-chat-response-area textarea {
+        .ai-chat-settings h4 {
+            margin: 0 0 10px 0;
+            color: #2e7d32;
+        }
+
+        .ai-chat-settings p {
+            margin: 0 0 10px 0;
+            font-size: 0.9em;
+            color: #555;
+        }
+
+        .ai-chat-settings a {
+            color: #1976d2;
+            text-decoration: none;
+        }
+
+        .ai-chat-settings a:hover {
+            text-decoration: underline;
+        }
+
+        .ai-chat-settings input {
             width: 100%;
-            border: 1px solid #ff9800;
+            padding: 10px;
+            border: 1px solid #4caf50;
             border-radius: 8px;
-            padding: 10px;
-            resize: vertical;
+            margin-bottom: 10px;
             font-family: inherit;
-            margin-bottom: 8px;
         }
 
-        .ai-chat-process-btn {
-            width: 100%;
-            padding: 10px;
-            background: #ff9800;
-            color: white;
+        .ai-chat-settings-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .ai-chat-settings-buttons button {
+            flex: 1;
+            padding: 8px 15px;
             border: none;
             border-radius: 8px;
             cursor: pointer;
             font-weight: 600;
+            transition: all 0.3s;
         }
 
-        .ai-chat-process-btn:hover {
-            background: #f57c00;
+        .ai-chat-settings-buttons button:first-child {
+            background: #4caf50;
+            color: white;
+        }
+
+        .ai-chat-settings-buttons button:first-child:hover {
+            background: #388e3c;
+        }
+
+        .ai-chat-settings-buttons button:last-child {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .ai-chat-settings-buttons button:last-child:hover {
+            background: #bdbdbd;
+        }
+
+        .ai-api-status {
+            margin: 10px 0 0 0;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .ai-api-status.success {
+            color: #2e7d32;
+        }
+
+        .ai-api-status.error {
+            color: #d32f2f;
         }
 
         @media (max-width: 480px) {
@@ -3446,6 +3505,105 @@
     <script>
         // CHAT AI INTEGRATA - GESTIONE
         (function() {
+            // GESTIONE API KEY GEMINI
+            const API_KEY_STORAGE = 'gemini_api_key';
+            let geminiApiKey = localStorage.getItem(API_KEY_STORAGE) || '';
+
+            // Elementi UI
+            const apiKeyInput = document.getElementById('ai-api-key-input');
+            const saveApiKeyBtn = document.getElementById('ai-save-api-key');
+            const toggleApiKeyBtn = document.getElementById('ai-toggle-api-key');
+            const apiStatus = document.getElementById('ai-api-status');
+            const settingsPanel = document.getElementById('ai-chat-settings');
+
+            // Carica API key salvata
+            if (geminiApiKey) {
+                apiKeyInput.value = geminiApiKey;
+                showApiStatus('✅ API key caricata!', 'success');
+                updateWelcomeMessage();
+            }
+
+            // Salva API key
+            saveApiKeyBtn.addEventListener('click', function() {
+                const key = apiKeyInput.value.trim();
+                if (key) {
+                    geminiApiKey = key;
+                    localStorage.setItem(API_KEY_STORAGE, key);
+                    showApiStatus('✅ API key salvata!', 'success');
+                    updateWelcomeMessage();
+                    // Nascondi impostazioni dopo 1 secondo
+                    setTimeout(() => {
+                        settingsPanel.style.display = 'none';
+                    }, 1000);
+                } else {
+                    showApiStatus('❌ Inserisci una API key valida', 'error');
+                }
+            });
+
+            // Mostra/nascondi API key
+            toggleApiKeyBtn.addEventListener('click', function() {
+                if (apiKeyInput.type === 'password') {
+                    apiKeyInput.type = 'text';
+                    toggleApiKeyBtn.textContent = '🙈 Nascondi';
+                } else {
+                    apiKeyInput.type = 'password';
+                    toggleApiKeyBtn.textContent = '👁️ Mostra';
+                }
+            });
+
+            function showApiStatus(message, type) {
+                apiStatus.textContent = message;
+                apiStatus.className = 'ai-api-status ' + type;
+            }
+
+            function updateWelcomeMessage() {
+                const welcomeMsg = chatMessages.querySelector('.ai-welcome');
+                if (welcomeMsg && geminiApiKey) {
+                    welcomeMsg.innerHTML = `
+                        <strong>Ciao! Sono il tuo assistente nutrizionale.</strong><br><br>
+                        Posso aiutarti a:<br>
+                        • Analizzare i tuoi dati giornalieri<br>
+                        • Consigliarti cosa mangiare<br>
+                        • Analizzare screenshot del sonno<br>
+                        • Compilare automaticamente gli alimenti<br><br>
+                        <em>✅ Pronto! Scrivi un messaggio o carica uno screenshot del sonno!</em>
+                    `;
+                }
+            }
+
+            // Chiama Gemini API direttamente
+            async function callGeminiAPI(prompt) {
+                if (!geminiApiKey) {
+                    throw new Error('API key non configurata. Inseriscila nelle impostazioni.');
+                }
+
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: prompt
+                            }]
+                        }],
+                        generationConfig: {
+                            temperature: 0.7,
+                            maxOutputTokens: 2048
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error?.message || 'Errore API Gemini');
+                }
+
+                const data = await response.json();
+                return data.candidates?.[0]?.content?.parts?.[0]?.text || 'Nessuna risposta';
+            }
+
             const chatWidget = document.getElementById('ai-chat-widget');
             const chatToggle = document.getElementById('ai-chat-toggle');
             const chatMessages = document.getElementById('ai-chat-messages');
@@ -3597,6 +3755,12 @@
             // Chiama l'AI
             async function callAI(prompt, includeData) {
                 try {
+                    // Verifica che la API key sia configurata
+                    if (!geminiApiKey) {
+                        settingsPanel.style.display = 'block';
+                        throw new Error('Inserisci la tua API key di Gemini nelle impostazioni qui sopra!');
+                    }
+
                     // Prepara il prompt completo
                     let fullPrompt = prompt;
                     if (includeData) {
@@ -3620,20 +3784,13 @@ ISTRUZIONI IMPORTANTI:
 6. Alla fine della risposta, se ci sono alimenti da aggiungere, includi questa riga esatta: [AGGIUNGI: nome_alimento | quantità_g | pasto]`;
                     }
 
-                    // Copia il prompt negli appunti
-                    await navigator.clipboard.writeText(fullPrompt);
-
-                    // Mostra messaggio con istruzioni
-                    return `📋 **Prompt copiato negli appunti!**
-
-1. Apri Gemini/ChatGPT in un'altra scheda
-2. Incolla il prompt (Ctrl+V)
-3. Copia la risposta dell'AI
-4. Torna qui e incolla la risposta nel campo sotto`;
+                    // Chiama Gemini API direttamente
+                    const response = await callGeminiAPI(fullPrompt);
+                    return response;
 
                 } catch (err) {
-                    console.error('Errore:', err);
-                    return 'Errore nella preparazione del prompt.';
+                    console.error('Errore AI:', err);
+                    return '❌ ' + err.message;
                 }
             }
 
@@ -3656,35 +3813,11 @@ ISTRUZIONI IMPORTANTI:
 
                 addMessage(formattedResponse, 'assistant');
 
-                // Mostra l'area per incollare la risposta
-                document.getElementById('ai-chat-response-area').style.display = 'block';
-                document.getElementById('ai-chat-response-input').focus();
+                // Parsa la risposta per cercare alimenti o allenamenti da aggiungere
+                parseAIResponseForActions(response, message);
             }
 
-            // Processa la risposta incollata dall'AI esterna
-            function processExternalResponse() {
-                const responseInput = document.getElementById('ai-chat-response-input');
-                const response = responseInput.value.trim();
 
-                if (!response) {
-                    alert('Incolla prima la risposta di Gemini/ChatGPT');
-                    return;
-                }
-
-                // Formatta e mostra la risposta
-                let formattedResponse = response
-                    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                    .replace(/\n/g, '<br>');
-
-                addMessage(formattedResponse, 'assistant');
-
-                // Parsa per azioni
-                parseAIResponseForActions(response, '');
-
-                // Pulisci e nascondi
-                responseInput.value = '';
-                document.getElementById('ai-chat-response-area').style.display = 'none';
-            }
 
             // Parsa la risposta dell'AI per trovare alimenti/allenamenti da aggiungere
             function parseAIResponseForActions(response, originalMessage) {
@@ -4057,14 +4190,7 @@ ISTRUZIONI IMPORTANTI:
                 }
             });
 
-            // Bottone processa risposta
-            document.getElementById('ai-chat-process-response').addEventListener('click', processExternalResponse);
-            document.getElementById('ai-chat-response-input').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    processExternalResponse();
-                }
-            });
+
 
             chatSleepBtn.addEventListener('click', function() {
                 chatSleepInput.click();
