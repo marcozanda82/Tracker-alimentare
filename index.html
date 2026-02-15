@@ -3152,6 +3152,10 @@
                 <textarea id="ai-chat-input" placeholder="Chiedimi consigli nutrizionali..." rows="2"></textarea>
                 <button id="ai-chat-send" class="ai-chat-send-btn">➤</button>
             </div>
+            <div class="ai-chat-response-area" id="ai-chat-response-area" style="display: none;">
+                <textarea id="ai-chat-response-input" placeholder="Incolla qui la risposta di Gemini/ChatGPT..." rows="3"></textarea>
+                <button id="ai-chat-process-response" class="ai-chat-process-btn">✅ Processa Risposta</button>
+            </div>
             <div class="ai-chat-actions">
                 <button id="ai-chat-export-data" class="ai-chat-action-btn">📊 Esporta Dati</button>
                 <button id="ai-chat-clear" class="ai-chat-action-btn">🗑️ Pulisci Chat</button>
@@ -3374,6 +3378,37 @@
             color: #2e7d32;
         }
 
+        .ai-chat-response-area {
+            padding: 10px 15px;
+            background: #fff3e0;
+            border-top: 2px dashed #ff9800;
+        }
+
+        .ai-chat-response-area textarea {
+            width: 100%;
+            border: 1px solid #ff9800;
+            border-radius: 8px;
+            padding: 10px;
+            resize: vertical;
+            font-family: inherit;
+            margin-bottom: 8px;
+        }
+
+        .ai-chat-process-btn {
+            width: 100%;
+            padding: 10px;
+            background: #ff9800;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .ai-chat-process-btn:hover {
+            background: #f57c00;
+        }
+
         @media (max-width: 480px) {
             .ai-chat-widget {
                 width: calc(100vw - 20px);
@@ -3562,22 +3597,43 @@
             // Chiama l'AI
             async function callAI(prompt, includeData) {
                 try {
-                    const callGemini = window.httpsCallable(window.functions, 'callOpenAI');
-
+                    // Prepara il prompt completo
                     let fullPrompt = prompt;
                     if (includeData) {
                         const dailyData = getDailyDataJSON();
-                        fullPrompt = `Contesto: Oggi è ${dailyData.meta.data}, giorno di ${dailyData.meta.giorno_tipo}.\n\nI miei dati nutrizionali attuali sono:\n- Calorie: ${dailyData.progresso_attuale.kcal}/${dailyData.obiettivi.kcal} kcal\n- Proteine: ${dailyData.progresso_attuale.proteine}/${dailyData.obiettivi.proteine}g\n- Carboidrati: ${dailyData.progresso_attuale.carboidrati}/${dailyData.obiettivi.carboidrati}g\n- Grassi: ${dailyData.progresso_attuale.grassi}/${dailyData.obiettivi.grassi}g\n\nDomanda dell utente: ${prompt}\n\nISTRUZIONI IMPORTANTI:\n1. Rispondi SEMPRE in italiano in modo naturale e conversazionale\n2. NON usare JSON nella risposta visibile all'utente\n3. Se l'utente dice di aver mangiato qualcosa SENZA specificare la quantità, chiedi gentilmente "Quanti grammi hai mangiato?"\n4. Se l'utente dice di aver mangiato qualcosa SENZA specificare il pasto, chiedi "Era per quale pasto? (merenda AM, pranzo, merenda PM, cena)"\n5. Se l'utente ha già mangiato quell'alimento in passato, puoi suggerire la stessa quantità\n6. Alla fine della risposta, se ci sono alimenti da aggiungere, includi questa riga esatta: [AGGIUNGI: nome_alimento | quantità_g | pasto]`;
+                        fullPrompt = `Contesto: Oggi è ${dailyData.meta.data}, giorno di ${dailyData.meta.giorno_tipo}.
+
+I miei dati nutrizionali attuali sono:
+- Calorie: ${dailyData.progresso_attuale.kcal}/${dailyData.obiettivi.kcal} kcal
+- Proteine: ${dailyData.progresso_attuale.proteine}/${dailyData.obiettivi.proteine}g
+- Carboidrati: ${dailyData.progresso_attuale.carboidrati}/${dailyData.obiettivi.carboidrati}g
+- Grassi: ${dailyData.progresso_attuale.grassi}/${dailyData.obiettivi.grassi}g
+
+Domanda dell utente: ${prompt}
+
+ISTRUZIONI IMPORTANTI:
+1. Rispondi SEMPRE in italiano in modo naturale e conversazionale
+2. NON usare JSON nella risposta visibile all'utente
+3. Se l'utente dice di aver mangiato qualcosa SENZA specificare la quantità, chiedi gentilmente "Quanti grammi hai mangiato?"
+4. Se l'utente dice di aver mangiato qualcosa SENZA specificare il pasto, chiedi "Era per quale pasto? (merenda AM, pranzo, merenda PM, cena)"
+5. Se l'utente ha già mangiato quell'alimento in passato, puoi suggerire la stessa quantità
+6. Alla fine della risposta, se ci sono alimenti da aggiungere, includi questa riga esatta: [AGGIUNGI: nome_alimento | quantità_g | pasto]`;
                     }
 
-                    const result = await callGemini({ prompt: fullPrompt });
-                    const data = result.data;
-                    const response = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Nessuna risposta dall AI.';
+                    // Copia il prompt negli appunti
+                    await navigator.clipboard.writeText(fullPrompt);
 
-                    return response;
+                    // Mostra messaggio con istruzioni
+                    return `📋 **Prompt copiato negli appunti!**
+
+1. Apri Gemini/ChatGPT in un'altra scheda
+2. Incolla il prompt (Ctrl+V)
+3. Copia la risposta dell'AI
+4. Torna qui e incolla la risposta nel campo sotto`;
+
                 } catch (err) {
-                    console.error('Errore AI:', err);
-                    return 'Mi dispiace, si è verificato un errore. Riprova più tardi.';
+                    console.error('Errore:', err);
+                    return 'Errore nella preparazione del prompt.';
                 }
             }
 
@@ -3600,8 +3656,34 @@
 
                 addMessage(formattedResponse, 'assistant');
 
-                // Parsa la risposta per cercare alimenti o allenamenti da aggiungere
-                parseAIResponseForActions(response, message);
+                // Mostra l'area per incollare la risposta
+                document.getElementById('ai-chat-response-area').style.display = 'block';
+                document.getElementById('ai-chat-response-input').focus();
+            }
+
+            // Processa la risposta incollata dall'AI esterna
+            function processExternalResponse() {
+                const responseInput = document.getElementById('ai-chat-response-input');
+                const response = responseInput.value.trim();
+
+                if (!response) {
+                    alert('Incolla prima la risposta di Gemini/ChatGPT');
+                    return;
+                }
+
+                // Formatta e mostra la risposta
+                let formattedResponse = response
+                    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\n/g, '<br>');
+
+                addMessage(formattedResponse, 'assistant');
+
+                // Parsa per azioni
+                parseAIResponseForActions(response, '');
+
+                // Pulisci e nascondi
+                responseInput.value = '';
+                document.getElementById('ai-chat-response-area').style.display = 'none';
             }
 
             // Parsa la risposta dell'AI per trovare alimenti/allenamenti da aggiungere
@@ -3972,6 +4054,15 @@
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
                     sendMessage();
+                }
+            });
+
+            // Bottone processa risposta
+            document.getElementById('ai-chat-process-response').addEventListener('click', processExternalResponse);
+            document.getElementById('ai-chat-response-input').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    processExternalResponse();
                 }
             });
 
