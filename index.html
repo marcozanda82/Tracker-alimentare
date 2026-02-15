@@ -3218,251 +3218,192 @@
     </div>
     <div class="ai-chat-body" style="display: flex; flex-direction: column; height: 450px;">
         <div id="ai-chat-settings" style="display:none; padding:10px; background:#f0f0f0; border-bottom:1px solid #ccc;">
-            <input type="password" id="ai-api-key-input" placeholder="Chiave Gemini..." style="width:70%;">
-            <button id="ai-save-api-key">Salva</button>
-            <button id="ai-close-settings">X</button>
+            <label style="font-size:0.85em; color:#555; margin-bottom:5px; display:block;">Inserisci la tua API Key di Gemini:</label>
+            <input type="password" id="ai-api-key-input" placeholder="Chiave API..." style="width:100%; padding:8px; margin-bottom:8px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box;">
+            <div style="display:flex; gap:8px;">
+                <button id="ai-save-api-key" style="flex:1; padding:8px; background:#4caf50; color:white; border:none; border-radius:4px; cursor:pointer;">Salva</button>
+                <button id="ai-close-settings" style="padding:8px 12px; background:#607d8b; color:white; border:none; border-radius:4px; cursor:pointer;">X</button>
+            </div>
+            <p id="ai-api-status" style="margin:8px 0 0 0; font-size:0.8em; color:#666;"></p>
         </div>
-        <div class="ai-chat-messages" id="ai-chat-messages">
-            <button id="ai-open-settings" title="Configura API" style="float:right; background:none; border:none; cursor:pointer; font-size:1.2em;">⚙️</button>
-            <div class="ai-message assistant">Pronto! Consulta il tuo database e aggiungi alimenti al costruttore pasti.</div>
+        <div class="ai-chat-messages" id="ai-chat-messages" style="flex:1; overflow-y:auto; padding:15px;">
+            <div class="ai-message assistant">Ciao! Sono il tuo assistente nutrizionale. Scrivimi cosa hai mangiato (es. "150g di petto di pollo a pranzo") e lo aggiungerò al tuo diario.</div>
         </div>
-        <div class="ai-chat-input-area">
-            <textarea id="ai-chat-input" placeholder="Cosa hai mangiato?"></textarea>
-            <button id="ai-chat-send" style="margin-left:5px;">➤</button>
+        <div class="ai-chat-input-area" style="display:flex; padding:10px; border-top:1px solid #eee; gap:8px;">
+            <button id="ai-open-settings" title="Configura API Key" style="background:none; border:none; font-size:1.3em; cursor:pointer; padding:5px;">⚙️</button>
+            <textarea id="ai-chat-input" placeholder="Cosa hai mangiato?" style="flex:1; border:1px solid #ddd; border-radius:20px; padding:10px 15px; resize:none; font-family:inherit; height:20px; outline:none;"></textarea>
+            <button id="ai-chat-send" style="width:44px; height:44px; border-radius:50%; border:none; background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:white; font-size:1.2em; cursor:pointer;">➤</button>
         </div>
     </div>
 </div>
 
-    <!-- MODAL PER CONFERMA ALIMENTO DALLA CHAT -->
-    <div id="ai-chat-food-modal" class="modal">
-        <div class="modal-content">
-            <span class="modal-close" data-modal="ai-chat-food-modal">&times;</span>
-            <h2>Conferma Alimento Riconosciuto</h2>
-            <p>L'AI ha riconosciuto questo alimento. Vuoi aggiungerlo al diario?</p>
-            <div id="ai-chat-food-details" style="margin: 15px 0; padding: 15px; background: #f5f5f5; border-radius: 8px;"></div>
-            <div class="button-group">
-                <button id="ai-chat-food-cancel" style="background-color: #607d8b;">Annulla</button>
-                <button id="ai-chat-food-confirm" style="background-color: #2e7d32;">Aggiungi al Diario</button>
-            </div>
-        </div>
-    </div>
-
     <style>
         /* CHAT AI STYLES */
-/* --- COPIA DA QUI --- */
-.ai-chat-widget {
-    position: fixed !important;
-    bottom: 20px !important;
-    right: 20px !important;
-    width: 380px !important;
-    background: white !important;
-    border-radius: 16px !important;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.3) !important;
-    z-index: 99999 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    overflow: hidden !important;
-    transition: all 0.3s ease-in-out !important;
-    border: 1px solid #ddd !important;
-}
+        .ai-chat-widget {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 380px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: all 0.3s ease-in-out;
+            border: 1px solid #ddd;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
 
-.ai-chat-widget.minimized {
-    height: 50px !important;
-}
+        .ai-chat-widget.minimized {
+            height: 50px;
+        }
 
-.ai-chat-widget:not(.minimized) {
-    height: 500px !important;
-}
+        .ai-chat-widget:not(.minimized) {
+            height: 500px;
+        }
 
-.ai-chat-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-    color: white !important;
-    padding: 0 20px !important;
-    height: 50px !important;
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    cursor: pointer !important;
-    font-weight: bold !important;
-}
+        .ai-chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 0 20px;
+            height: 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            font-weight: bold;
+            user-select: none;
+        }
 
-.ai-chat-messages {
-    flex: 1 !important;
-    overflow-y: auto !important;
-    padding: 15px !important;
-    background: #f8f9fa !important;
-}
+        .ai-chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            background: #f8f9fa;
+        }
 
-.ai-chat-input-area {
-    display: flex !important;
-    padding: 10px !important;
-    border-top: 1px solid #eee !important;
-}
-/* --- FINO A QUI --- */
-.ai-chat-input-area textarea {
-    flex: 1 !important;
-    border: 1px solid #ddd !important;
-    border-radius: 20px !important;
-    padding: 10px 15px !important;
-    resize: none !important;
-    font-family: inherit !important;
-    font-size: 0.95em !important;
-    outline: none !important;
-    height: 40px !important;
-}
+        .ai-message {
+            margin-bottom: 12px;
+            padding: 10px 14px;
+            border-radius: 18px;
+            max-width: 85%;
+            word-wrap: break-word;
+            font-size: 0.95em;
+            line-height: 1.4;
+        }
+
+        .ai-message.user {
+            background: #667eea;
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+
+        .ai-message.assistant {
+            background: white;
+            color: #333;
+            margin-right: auto;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .ai-message.loading {
+            background: #e3f2fd;
+            color: #666;
+            font-style: italic;
+        }
+
+        .ai-chat-input-area {
+            display: flex;
+            padding: 10px;
+            border-top: 1px solid #eee;
+            gap: 8px;
+            align-items: center;
+            background: white;
+        }
+
+        .ai-chat-input-area textarea {
+            flex: 1;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            padding: 10px 15px;
+            resize: none;
+            font-family: inherit;
+            font-size: 0.95em;
+            outline: none;
+            height: 20px;
+            min-height: 20px;
+        }
 
         .ai-chat-input-area textarea:focus {
             border-color: #667eea;
         }
 
-        .ai-chat-send-btn, .ai-chat-sleep-btn {
+        #ai-chat-send {
             width: 44px;
             height: 44px;
             border-radius: 50%;
             border: none;
-            cursor: pointer;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
             font-size: 1.2em;
-            transition: all 0.3s;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
-        .ai-chat-send-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .ai-chat-send-btn:hover {
+        #ai-chat-send:hover {
             transform: scale(1.05);
             box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
         }
 
-        .ai-chat-sleep-btn {
-            background: #e3f2fd;
-            font-size: 1.4em;
-        }
-
-        .ai-chat-sleep-btn:hover {
-            background: #bbdefb;
-            transform: scale(1.05);
-        }
-
-        .ai-chat-actions {
-            display: flex;
-            gap: 8px;
-            padding: 0 15px 12px;
-            background: white;
-        }
-
-        .ai-chat-action-btn {
-            flex: 1;
-            padding: 8px 12px;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            background: #f5f5f5;
-            cursor: pointer;
-            font-size: 0.85em;
-            transition: all 0.3s;
-        }
-
-        .ai-chat-action-btn:hover {
-            background: #e0e0e0;
-        }
-
-        .ai-chat-food-preview {
-            background: #e8f5e9;
-            border: 1px solid #4caf50;
-            border-radius: 8px;
-            padding: 10px;
-            margin-top: 10px;
-        }
-
-        .ai-chat-food-preview h4 {
-            margin: 0 0 8px 0;
-            color: #2e7d32;
-        }
-
-        .ai-chat-settings {
-            padding: 15px;
-            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
-            border-bottom: 2px solid #4caf50;
-        }
-
-        .ai-chat-settings h4 {
-            margin: 0 0 10px 0;
-            color: #2e7d32;
-        }
-
-        .ai-chat-settings p {
-            margin: 0 0 10px 0;
-            font-size: 0.9em;
-            color: #555;
-        }
-
-        .ai-chat-settings a {
-            color: #1976d2;
-            text-decoration: none;
-        }
-
-        .ai-chat-settings a:hover {
-            text-decoration: underline;
-        }
-
-        .ai-chat-settings input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #4caf50;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            font-family: inherit;
-        }
-
-        .ai-chat-settings-buttons {
-            display: flex;
-            gap: 10px;
-        }
-
-        .ai-chat-settings-buttons button {
-            flex: 1;
-            padding: 8px 15px;
+        #ai-open-settings {
+            background: none;
             border: none;
-            border-radius: 8px;
+            font-size: 1.3em;
             cursor: pointer;
+            padding: 5px;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        #ai-open-settings:hover {
+            opacity: 1;
+        }
+
+        .ai-chat-meal-buttons {
+            margin-top: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .ai-chat-meal-buttons p {
+            width: 100%;
+            margin: 0 0 8px 0;
+            color: #667eea;
             font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .ai-chat-meal-buttons button {
+            padding: 8px 16px;
+            border: 1px solid #667eea;
+            border-radius: 20px;
+            background: white;
+            color: #667eea;
+            cursor: pointer;
             transition: all 0.3s;
+            font-size: 0.9em;
         }
 
-        .ai-chat-settings-buttons button:first-child {
-            background: #4caf50;
+        .ai-chat-meal-buttons button:hover {
+            background: #667eea;
             color: white;
-        }
-
-        .ai-chat-settings-buttons button:first-child:hover {
-            background: #388e3c;
-        }
-
-        .ai-chat-settings-buttons button:last-child {
-            background: #e0e0e0;
-            color: #333;
-        }
-
-        .ai-chat-settings-buttons button:last-child:hover {
-            background: #bdbdbd;
-        }
-
-        .ai-api-status {
-            margin: 10px 0 0 0;
-            font-size: 0.85em;
-            font-weight: 600;
-        }
-
-        .ai-api-status.success {
-            color: #2e7d32;
-        }
-
-        .ai-api-status.error {
-            color: #d32f2f;
         }
 
         @media (max-width: 480px) {
@@ -3472,227 +3413,340 @@
                 bottom: 10px;
             }
         }
-
-        .ai-chat-meal-buttons {
-            margin-top: 10px;
-        }
-
-        .ai-chat-meal-buttons p {
-            margin-bottom: 10px;
-            color: #667eea;
-        }
-
-        .ai-chat-meal-buttons button {
-            margin: 5px;
-            padding: 8px 15px;
-            border: 1px solid #667eea;
-            border-radius: 20px;
-            background: white;
-            color: #667eea;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .ai-chat-meal-buttons button:hover {
-            background: #667eea;
-            color: white;
-        }
     </style>
 
     <script>
-        // CHAT AI INTEGRATA - GESTIONE
-// ==========================================
-// BLOCCO CHAT AI - POSIZIONE FINALE
-// ==========================================
+        // ==========================================
+        // CHAT AI - VERSIONE CORRETTA E FUNZIONANTE
+        // ==========================================
 
-(function() {
-    // 1. Riferimenti UI Univoci
-    const aiWidget = document.getElementById('ai-chat-widget');
-    const aiMessages = document.getElementById('ai-chat-messages');
-    const aiInput = document.getElementById('ai-chat-input');
-    const aiSendBtn = document.getElementById('ai-chat-send');
-    const aiToggle = document.getElementById('ai-chat-toggle');
-    const aiSettingsIcon = document.querySelector('.ai-chat-header .fa-cog');
+        (function() {
+            // Riferimenti UI
+            const aiWidget = document.getElementById('ai-chat-widget');
+            const aiToggle = document.getElementById('ai-chat-toggle');
+            const aiMessages = document.getElementById('ai-chat-messages');
+            const aiInput = document.getElementById('ai-chat-input');
+            const aiSendBtn = document.getElementById('ai-chat-send');
+            const aiOpenSettings = document.getElementById('ai-open-settings');
+            const aiSettingsPanel = document.getElementById('ai-chat-settings');
+            const aiApiKeyInput = document.getElementById('ai-api-key-input');
+            const aiSaveKeyBtn = document.getElementById('ai-save-api-key');
+            const aiCloseSettingsBtn = document.getElementById('ai-close-settings');
+            const aiApiStatus = document.getElementById('ai-api-status');
 
-    // 2. FUNZIONI DI SERVIZIO
-    function addMessage(text, role) {
-        if (!aiMessages) return;
-        const d = document.createElement('div');
-        d.className = `ai-message ${role}`;
-        d.innerHTML = text.replace(/\n/g, '<br>');
-        aiMessages.appendChild(d);
-        aiMessages.scrollTop = aiMessages.scrollHeight;
-        return d;
-    }
+            // Stato
+            let isSettingsOpen = false;
 
-    function addMessageElement(el) {
-        if (!aiMessages) return;
-        const d = document.createElement('div');
-        d.className = 'ai-message assistant';
-        d.appendChild(el);
-        aiMessages.appendChild(d);
-        aiMessages.scrollTop = aiMessages.scrollHeight;
-        return d;
-    }
-
-    async function callGeminiAPI(prompt) {
-        const key = localStorage.getItem('gemini_api_key') || '';
-        if (!key) throw new Error("Manca API Key");
-        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${key}`;
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-        });
-        if (!response.ok) throw new Error("Errore API o Key non valida");
-        const data = await response.json();
-        return data.candidates[0].content.parts[0].text;
-    }
-
-    // 3. LOGICA DI INSERIMENTO CON REFRESH FORZATO
-    function procediInserimento(data, qta, pasto) {
-        if (!window.pastoInCostruzione) window.pastoInCostruzione = [];
-        
-        let item = { desc: data.desc, qta: qta, selezionato: true };
-        for (const k in data) { 
-            if (!['desc', 'lastQta', 'ingredienti'].includes(k)) item[k] = (data[k] / 100) * qta; 
-        }
-        
-        window.pastoInCostruzione.push(item);
-        localStorage.setItem('trackerPastoInCostruzione', JSON.stringify(window.pastoInCostruzione));
-        
-        if (pasto && document.getElementById('meal-type-selector')) {
-            document.getElementById('meal-type-selector').value = pasto;
-        }
-
-        // AGGIORNAMENTO ISTANTANEO (con piccolo delay per sincronizzazione browser)
-        setTimeout(() => {
-            if (typeof window.renderMealBuilder === 'function') {
-                window.renderMealBuilder();
+            // Funzioni di utilità
+            function addMessage(text, role) {
+                const div = document.createElement('div');
+                div.className = `ai-message ${role}`;
+                div.innerHTML = text.replace(/\n/g, '<br>');
+                aiMessages.appendChild(div);
+                aiMessages.scrollTop = aiMessages.scrollHeight;
+                return div;
             }
-            const builder = document.getElementById('meal-builder-sezione');
-            if (builder) {
-                builder.style.display = 'block';
-                builder.scrollIntoView({ behavior: 'smooth' });
+
+            function addMessageElement(el) {
+                const div = document.createElement('div');
+                div.className = 'ai-message assistant';
+                div.appendChild(el);
+                aiMessages.appendChild(div);
+                aiMessages.scrollTop = aiMessages.scrollHeight;
+                return div;
             }
-        }, 50);
-        
-        addMessage(`✅ <strong>${item.desc}</strong> (${qta}g) aggiunto.`, 'assistant');
-    }
 
-    async function addFoodDirectly(nome, qta, pasto) {
-        const query = window.sanitizeFirebaseKey(nome.toLowerCase());
-        const db = window.foodDatabase || {};
-        const matches = Object.keys(db).filter(k => k.includes(query));
+            async function callGeminiAPI(prompt) {
+                const key = localStorage.getItem('gemini_api_key');
+                if (!key) throw new Error("API Key mancante. Clicca l'ingranaggio per configurarla.");
+                
+                const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${key}`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: { responseMimeType: "application/json" }
+                    })
+                });
+                
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error?.message || "Errore API");
+                }
+                
+                const data = await response.json();
+                return data.candidates[0].content.parts[0].text;
+            }
 
-        if (matches.length > 1) {
-            const div = document.createElement('div');
-            div.className = 'ai-chat-meal-buttons';
-            div.innerHTML = `<p>Quale "<strong>${nome}</strong>"?</p>`;
-            matches.forEach(m => {
-                const btn = document.createElement('button');
-                btn.textContent = db[m].desc;
-                btn.onclick = () => { 
-                    div.parentElement.remove(); 
-                    procediInserimento(db[m], qta || db[m].lastQta || 100, pasto); 
+            // Gestione Settings Panel
+            function toggleSettings() {
+                isSettingsOpen = !isSettingsOpen;
+                aiSettingsPanel.style.display = isSettingsOpen ? 'block' : 'none';
+                if (isSettingsOpen) {
+                    aiApiKeyInput.value = localStorage.getItem('gemini_api_key') || '';
+                    aiApiKeyInput.focus();
+                }
+            }
+
+            function saveApiKey() {
+                const key = aiApiKeyInput.value.trim();
+                if (key) {
+                    localStorage.setItem('gemini_api_key', key);
+                    aiApiStatus.textContent = "✅ Chiave salvata!";
+                    aiApiStatus.style.color = "#2e7d32";
+                    setTimeout(() => {
+                        isSettingsOpen = false;
+                        aiSettingsPanel.style.display = 'none';
+                        aiApiStatus.textContent = "";
+                    }, 1000);
+                } else {
+                    aiApiStatus.textContent = "❌ Inserisci una chiave valida";
+                    aiApiStatus.style.color = "#d32f2f";
+                }
+            }
+
+            // Logica inserimento alimento
+            function procediInserimento(data, qta, pasto) {
+                if (!window.pastoInCostruzione) window.pastoInCostruzione = [];
+                
+                const item = { 
+                    desc: data.desc, 
+                    qta: qta, 
+                    selezionato: true 
                 };
-                div.appendChild(btn);
-            });
-            addMessageElement(div);
-            return;
-        }
+                
+                for (const k in data) { 
+                    if (!['desc', 'lastQta', 'ingredienti'].includes(k)) {
+                        item[k] = (data[k] / 100) * qta; 
+                    }
+                }
+                
+                window.pastoInCostruzione.push(item);
+                localStorage.setItem('trackerPastoInCostruzione', JSON.stringify(window.pastoInCostruzione));
+                
+                if (pasto && document.getElementById('meal-type-selector')) {
+                    document.getElementById('meal-type-selector').value = pasto;
+                    localStorage.setItem('lastMealTypeSelected_' + window.getTodayString(), pasto);
+                }
 
-        const exactKey = window.sanitizeFirebaseKey(nome.toLowerCase());
-        const dbEntry = db[exactKey] || (matches.length === 1 ? db[matches[0]] : null);
-        
-        // MEMORIA QUANTITÀ: Chiede conferma per lastQta se grammi mancano
-        if (dbEntry && (!qta || qta <= 0)) {
-            const lastQta = dbEntry.lastQta || 100;
-            addMessage(`Per <strong>${dbEntry.desc}</strong> uso l'ultima quantità (<strong>${lastQta}g</strong>)?`, 'assistant');
-            const div = document.createElement('div');
-            div.className = 'ai-chat-meal-buttons';
-            const bSi = document.createElement('button'); bSi.textContent = "Sì";
-            bSi.onclick = () => { div.parentElement.remove(); procediInserimento(dbEntry, lastQta, pasto); };
-            const bNo = document.createElement('button'); bNo.textContent = "No, cambia"; bNo.style.background="#666";
-            bNo.onclick = () => { div.parentElement.remove(); addMessage(`Scrivi i grammi per ${dbEntry.desc}`, "assistant"); };
-            div.appendChild(bSi); div.appendChild(bNo);
-            addMessageElement(div);
-            return;
-        }
-
-        if (dbEntry) {
-            procediInserimento(dbEntry, qta || 100, pasto);
-        } else {
-            try {
-                const raw = await callGeminiAPI(`SOLO JSON 100g "${nome}": {"prot":0,"kcal":0,"carb":0,"zuccheri":0,"fatTotal":0}`);
-                const clean = raw.substring(raw.indexOf('{'), raw.lastIndexOf('}') + 1);
-                procediInserimento({ desc: nome, ...JSON.parse(clean) }, qta || 100, pasto);
-            } catch (e) { addMessage(`❌ Errore dati per ${nome}`, "assistant"); }
-        }
-    }
-
-    // 4. GESTIONE EVENTI
-    if (aiToggle) aiToggle.onclick = () => aiWidget.classList.toggle('minimized');
-    
-    if (aiSettingsIcon) {
-        aiSettingsIcon.onclick = (e) => {
-            e.stopPropagation();
-            const modal = document.getElementById('settings-modal');
-            if (modal) modal.style.display = 'block';
-        };
-    }
-
-    aiSendBtn.onclick = async () => {
-        const text = aiInput.value.trim();
-        if (!text) return;
-        addMessage(text, 'user');
-        aiInput.value = '';
-        const loading = addMessage("🤔 Elaboro...", "assistant loading");
-
-        try {
-            const prompt = `Utente: "${text}". Rispondi SOLO comandi: [AGGIUNGI: nome | quantità | pasto]. Se mancano grammi, metti 0. Calcola i totali (es. 56*2 = 112). Sii sintetico.`;
-            const resp = await callGeminiAPI(prompt);
-            if (loading) loading.remove();
-            addMessage(resp, 'assistant');
-
-            const matches = [...resp.matchAll(/\[AGGIUNGI:\s*([^|]+)\s*\|\s*([^|]+)\s*\|\s*([^\]]+)\]/gi)];
-            // Processiamo ogni alimento aspettando che l'UI si aggiorni
-            for (const m of matches) {
-                await addFoodDirectly(m[1].trim(), parseInt(m[2].replace(/\D/g, '')) || 0, m[3].trim().toLowerCase());
+                setTimeout(() => {
+                    if (typeof window.renderMealBuilder === 'function') {
+                        window.renderMealBuilder();
+                    }
+                    const builder = document.getElementById('meal-builder-sezione');
+                    if (builder) {
+                        builder.dataset.visible = 'true';
+                        builder.scrollIntoView({ behavior: 'smooth' });
+                    }
+                }, 50);
+                
+                addMessage(`✅ <strong>${item.desc}</strong> (${qta}g) aggiunto al pasto.`, 'assistant');
             }
-        } catch (e) {
-            if (loading) loading.remove();
-            addMessage("❌ Errore API o Key non valida", "assistant");
-        }
-    };
 
-    aiInput.onkeypress = (e) => { if (e.key === 'Enter') aiSendBtn.click(); };
+            async function addFoodDirectly(nome, qta, pasto) {
+                const query = window.sanitizeFirebaseKey(nome.toLowerCase());
+                const db = window.foodDatabase || {};
+                const matches = Object.keys(db).filter(k => k.includes(query));
 
-})();
+                // Più risultati: chiedi quale
+                if (matches.length > 1) {
+                    const div = document.createElement('div');
+                    div.className = 'ai-chat-meal-buttons';
+                    div.innerHTML = `<p>Quale "<strong>${nome}</strong>" intendi?</p>`;
+                    
+                    matches.forEach(m => {
+                        const btn = document.createElement('button');
+                        btn.textContent = db[m].desc;
+                        btn.onclick = () => { 
+                            div.parentElement.remove(); 
+                            procediInserimento(db[m], qta || db[m].lastQta || 100, pasto); 
+                        };
+                        div.appendChild(btn);
+                    });
+                    addMessageElement(div);
+                    return;
+                }
+
+                // Un risultato esatto o parziale
+                const exactKey = window.sanitizeFirebaseKey(nome.toLowerCase());
+                const dbEntry = db[exactKey] || (matches.length === 1 ? db[matches[0]] : null);
+                
+                // Trovato nel database
+                if (dbEntry) {
+                    // Se manca la quantità, chiedi conferma dell'ultima usata
+                    if (!qta || qta <= 0) {
+                        const lastQta = dbEntry.lastQta || 100;
+                        addMessage(`Per <strong>${dbEntry.desc}</strong> uso l'ultima quantità (<strong>${lastQta}g</strong>)?`, 'assistant');
+                        
+                        const div = document.createElement('div');
+                        div.className = 'ai-chat-meal-buttons';
+                        
+                        const bSi = document.createElement('button'); 
+                        bSi.textContent = `Sì, ${lastQta}g`;
+                        bSi.onclick = () => { div.parentElement.remove(); procediInserimento(dbEntry, lastQta, pasto); };
+                        
+                        const bNo = document.createElement('button'); 
+                        bNo.textContent = "No, specifica"; 
+                        bNo.style.background = "#666";
+                        bNo.style.color = "white";
+                        bNo.style.borderColor = "#666";
+                        bNo.onclick = () => { 
+                            div.parentElement.remove(); 
+                            addMessage(`Scrivi: "${dbEntry.desc} [quantità in g]"`, "assistant"); 
+                        };
+                        
+                        div.appendChild(bSi); 
+                        div.appendChild(bNo);
+                        addMessageElement(div);
+                        return;
+                    }
+                    
+                    procediInserimento(dbEntry, qta, pasto);
+                    return;
+                }
+
+                // Non trovato: chiedi se creare nuovo o cercare simile
+                addMessage(`❓ <strong>${nome}</strong> non è nel database.`, 'assistant');
+                const div = document.createElement('div');
+                div.className = 'ai-chat-meal-buttons';
+                div.innerHTML = `<p>Cosa vuoi fare?</p>`;
+                
+                const bCrea = document.createElement('button');
+                bCrea.textContent = "🆕 Crea con AI";
+                bCrea.onclick = async () => {
+                    div.parentElement.remove();
+                    const loading = addMessage("🔍 Analizzo con AI...", "loading");
+                    try {
+                        const prompt = `Per 100g di "${nome}", restituisci SOLO questo JSON: {"prot":0,"kcal":0,"carb":0,"zuccheri":0,"fatTotal":0,"fatSat":0,"fibreTotali":0,"na":0}`;
+                        const raw = await callGeminiAPI(prompt);
+                        const clean = raw.substring(raw.indexOf('{'), raw.lastIndexOf('}') + 1);
+                        const data = JSON.parse(clean);
+                        data.desc = nome;
+                        
+                        // Salva nel database
+                        const key = window.sanitizeFirebaseKey(nome.toLowerCase());
+                        window.foodDatabase[key] = data;
+                        window.salvaFoodDatabase();
+                        
+                        loading.remove();
+                        procediInserimento(data, qta || 100, pasto);
+                    } catch (e) {
+                        loading.remove();
+                        addMessage(`❌ Errore: ${e.message}`, "assistant");
+                    }
+                };
+                
+                const bManuale = document.createElement('button');
+                bManuale.textContent = "✏️ Inserisci manualmente";
+                bManuale.onclick = () => {
+                    div.parentElement.remove();
+                    document.getElementById('builder-desc').value = nome;
+                    document.getElementById('builder-qta').value = qta || '';
+                    document.getElementById('builder-desc').focus();
+                    addMessage(`✏️ Ho compilato il form. Inserisci i valori nutrizionali e clicca "Aggiungi a Pasto".`, "assistant");
+                };
+                
+                div.appendChild(bCrea);
+                div.appendChild(bManuale);
+                addMessageElement(div);
+            }
+
+            // Event Listeners
+            if (aiToggle) {
+                aiToggle.addEventListener('click', () => {
+                    aiWidget.classList.toggle('minimized');
+                    const icon = document.getElementById('ai-toggle-icon');
+                    if (icon) icon.textContent = aiWidget.classList.contains('minimized') ? '▲' : '▼';
+                });
+            }
+
+            if (aiOpenSettings) {
+                aiOpenSettings.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleSettings();
+                });
+            }
+
+            if (aiSaveKeyBtn) {
+                aiSaveKeyBtn.addEventListener('click', saveApiKey);
+            }
+
+            if (aiCloseSettingsBtn) {
+                aiCloseSettingsBtn.addEventListener('click', () => {
+                    isSettingsOpen = false;
+                    aiSettingsPanel.style.display = 'none';
+                });
+            }
+
+            if (aiApiKeyInput) {
+                aiApiKeyInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') saveApiKey();
+                });
+            }
+
+            if (aiSendBtn) {
+                aiSendBtn.addEventListener('click', async () => {
+                    const text = aiInput.value.trim();
+                    if (!text) return;
+                    
+                    addMessage(text, 'user');
+                    aiInput.value = '';
+                    const loading = addMessage("🤔 Elaboro...", "loading");
+
+                    try {
+                        const prompt = `Utente dice: "${text}". 
+Se vuole aggiungere un alimento, rispondi SOLO con: [AGGIUNGI: nome_alimento | quantità_grammi | pasto].
+Pasti validi: merenda1, pranzo, merenda2, cena.
+Se la quantità è ambigua (es. "una banana"), stima i grammi.
+Se mancano grammi, metti 0.
+Se non è una richiesta di aggiunta alimento, rispondi normalmente in italiano.`;
+                        
+                        const resp = await callGeminiAPI(prompt);
+                        loading.remove();
+                        
+                        // Estrai comandi
+                        const matches = [...resp.matchAll(/\[AGGIUNGI:\s*([^|]+)\s*\|\s*([^|]+)\s*\|\s*([^\]]+)\]/gi)];
+                        
+                        if (matches.length > 0) {
+                            addMessage("🍽️ Aggiungo al diario...", "assistant");
+                            for (const m of matches) {
+                                const nome = m[1].trim();
+                                const qta = parseInt(m[2].replace(/\D/g, '')) || 0;
+                                const pasto = m[3].trim().toLowerCase();
+                                await addFoodDirectly(nome, qta, pasto);
+                            }
+                        } else {
+                            addMessage(resp, 'assistant');
+                        }
+                    } catch (e) {
+                        loading.remove();
+                        addMessage(`❌ ${e.message}`, "assistant");
+                        if (e.message.includes("API Key")) {
+                            setTimeout(() => toggleSettings(), 500);
+                        }
+                    }
+                });
+            }
+
+            if (aiInput) {
+                aiInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        aiSendBtn.click();
+                    }
+                });
+            }
+
+            // Inizializza stato
+            const savedKey = localStorage.getItem('gemini_api_key');
+            if (!savedKey) {
+                setTimeout(() => {
+                    addMessage("⚙️ <em>Clicca l'ingranaggio per configurare la tua API Key Gemini.</em>", "assistant");
+                }, 1000);
+            }
+
+        })();
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
