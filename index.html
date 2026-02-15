@@ -3608,13 +3608,29 @@ async function addFoodDirectly(nome, qta, pasto) {
                 if (!['desc', 'lastQta', 'ingredienti'].includes(k)) item[k] = (data[k] / 100) * qta;
             }
             addMessage(`✅ Usati dati DB: <strong>${data.desc}</strong>`, 'assistant');
-        } else {
-            addMessage(`🔍 "${nome}" non in DB. Chiedo all'AI...`, 'assistant');
-            const raw = await callGeminiAPI(`JSON 100g per "${nome}": {"prot":0,"kcal":0,"carb":0,"zuccheri":0,"fatTotal":0}`);
-            const d100 = JSON.parse(raw.replace(/```json|```/g, '').trim());
-            item = { desc: nome, qta: qta, selezionato: true };
-            for (const k in d100) item[k] = (d100[k] / 100) * qta;
-        }
+ } else {
+    addMessage(`🔍 "${nome}" non in DB. Chiedo all'AI...`, 'assistant');
+    try {
+        const raw = await callGeminiAPI(`Rispondi SOLO con un oggetto JSON per 100g di "${nome}": {"prot":0,"kcal":0,"carb":0,"zuccheri":0,"fatTotal":0}. Non aggiungere testo.`);
+        
+        // PULIZIA: Rimuove eventuali spiegazioni o blocchi ```json prima del parse
+        const jsonCleaned = raw.replace(/```json/g, '').replace(/```/g, '').trim();
+        const startJson = jsonCleaned.indexOf('{');
+        const endJson = jsonCleaned.lastIndexOf('}');
+        
+        if (startJson === -1 || endJson === -1) throw new Error("Risposta AI non valida");
+        
+        const finalJson = jsonCleaned.substring(startJson, endJson + 1);
+        const d100 = JSON.parse(finalJson);
+        
+        item = { desc: nome, qta: qta, selezionato: true };
+        for (const k in d100) item[k] = (d100[k] / 100) * qta;
+    } catch (err) {
+        console.error("Errore parsing AI:", err);
+        addMessage("⚠️ Non sono riuscito a recuperare i dati tecnici. Inserimento fallito.", "assistant");
+        return; // Esce per evitare l'errore undefined
+    }
+}
 
         // 3. FIX ERRORE: Inizializzazione array se undefined
         if (!window.pastoInCostruzione) window.pastoInCostruzione = [];
@@ -3699,6 +3715,7 @@ chatSend.onclick = async () => {
 </script>
 </body>
 </html>
+
 
 
 
