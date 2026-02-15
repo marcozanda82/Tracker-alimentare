@@ -3697,37 +3697,65 @@
     // 3. EVENTI
     toggle.onclick = () => widget.classList.toggle('minimized');
 
-    sendBtn.onclick = async () => {
+sendBtn.onclick = async () => {
         const text = input.value.trim();
         if (!text) return;
+        
         addMessage(text, 'user');
         input.value = '';
         const loading = addMessage("🤔 Elaboro...", "assistant loading");
+
         try {
-           const resp = await callGemini(`Utente: "${text}". 
-REGOLE RIGIDE:
-1. Se mancano i pesi per degli alimenti, fai SOLO un elenco numerato (es: 1. Pasta, 2. Olio) e chiedi i grammi.
-2. NON suggerire condimenti, proteine o verdure mancanti. NON fare commenti salutistici.
-3. Se hai i pesi (o l'utente conferma), scrivi SOLO il comando: [AGGIUNGI: nome | quantità | pasto] per ogni alimento.
-4. Se l'utente risponde con numeri (es: "1. 80g"), esegui l'inserimento degli alimenti corrispondenti.`);
+            // PROMPT AGGRESSIVO: ordiniamo all'AI di essere sintetica
+            const promptAI = `Utente: "${text}". 
+            REGOLE:
+            1. Se mancano i grammi, scrivi SOLO l'elenco (es: 1. Pasta, 2. Olio).
+            2. Se i grammi ci sono, usa SOLO: [AGGIUNGI: nome | quantità | pasto].
+            3. NON suggerire altri cibi. NON fare commenti nutrizionali.
+            4. Se l'utente dà numeri (es: "1. 80g"), esegui l'inserimento.`;
+
+            if (!geminiKey) throw new Error("Manca API Key");
+            
+            const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${geminiKey}`;
+            const resp = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: promptAI }] }] })
+            });
+            
+            const data = await resp.json();
+            
+            // FIX ERRORE 'text' undefined: verifichiamo che la risposta esista
+            if (!data.candidates || !data.candidates[0].content || !data.candidates[0].content.parts) {
+                throw new Error("Risposta AI non valida o vuota");
+            }
+
+            const respText = data.candidates[0].content.parts[0].text;
+            
             if (loading) loading.remove();
-            addMessage(resp, 'assistant');
-            const m = /\[AGGIUNGI:\s*([^|]+)\s*\|\s*([^|]+)\s*\|\s*([^\]]+)\]/i.exec(resp);
-            if (m) {
+            addMessage(respText, 'assistant');
+
+            // Parsing dei comandi AGGIUNGI
+            const matches = [...respText.matchAll(/\[AGGIUNGI:\s*([^|]+)\s*\|\s*([^|]+)\s*\|\s*([^\]]+)\]/gi)];
+            matches.forEach(m => {
                 const nome = m[1].trim();
                 const qta = parseInt(m[2].replace(/\D/g, '')) || 0;
                 const pasto = m[3].trim().toLowerCase();
                 addFoodDirectly(nome, qta, pasto);
-            }
-        } catch (e) { if (loading) loading.remove(); addMessage("❌ Errore API", "assistant"); }
-    };
+            });
 
+        } catch (e) { 
+            if (loading) loading.remove(); 
+            addMessage("❌ Errore: " + e.message, "assistant"); 
+        }
+    };
     input.onkeypress = (e) => { if (e.key === 'Enter') sendBtn.click(); };
 
 })();
 </script>
 </body>
 </html>
+
 
 
 
