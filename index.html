@@ -3620,23 +3620,39 @@
 
     function procediInserimento(data, qta, pasto) {
         if (!window.pastoInCostruzione) window.pastoInCostruzione = [];
+        
+        // Calcoliamo i nutrienti in base alla quantità
         let item = { desc: data.desc, qta: qta, selezionato: true };
         for (const k in data) { 
-            if (!['desc', 'lastQta', 'ingredienti'].includes(k)) item[k] = (data[k] / 100) * qta; 
+            if (!['desc', 'lastQta', 'ingredienti'].includes(k)) {
+                item[k] = (data[k] / 100) * qta; 
+            }
         }
+        
+        // Aggiungiamo all'array globale
         window.pastoInCostruzione.push(item);
+        
+        // Salviamo nel localStorage
         localStorage.setItem('trackerPastoInCostruzione', JSON.stringify(window.pastoInCostruzione));
         
+        // Impostiamo il selettore del pasto se specificato
         if (pasto && document.getElementById('meal-type-selector')) {
             document.getElementById('meal-type-selector').value = pasto;
         }
-        if (typeof window.renderMealBuilder === 'function') window.renderMealBuilder();
-        if (document.getElementById('meal-builder-sezione')) {
-            document.getElementById('meal-builder-sezione').style.display = 'block';
-        }
-        addMessage(`✅ <strong>${item.desc}</strong> (${qta}g) aggiunto.`, 'assistant');
-    }
 
+        // --- FIX AGGIORNAMENTO VISIVO ---
+        if (typeof window.renderMealBuilder === 'function') {
+            window.renderMealBuilder(); // Riesegue il disegno della tabella
+        }
+        
+        const builder = document.getElementById('meal-builder-sezione');
+        if (builder) {
+            builder.style.display = 'block';
+            builder.scrollIntoView({ behavior: 'smooth' }); // Ti porta alla tabella
+        }
+        
+        addMessage(`✅ <strong>${item.desc}</strong> (${qta}g) aggiunto al costruttore.`, 'assistant');
+    }
     async function addFoodDirectly(nome, qta, pasto) {
         const query = window.sanitizeFirebaseKey(nome.toLowerCase());
         const keys = Object.keys(window.foodDatabase || {});
@@ -3764,6 +3780,7 @@ sendBtn.onclick = async () => {
 </script>
 </body>
 </html>
+
 
 
 
