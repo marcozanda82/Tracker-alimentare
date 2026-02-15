@@ -3198,21 +3198,50 @@
 
     <style>
         /* CHAT AI STYLES */
+/* Il widget deve essere fisso in basso a destra */
 .ai-chat-widget {
     position: fixed;
     bottom: 20px;
     right: 20px;
-    width: 380px;
+    width: 350px;
     max-width: calc(100vw - 40px);
     background: white;
-    border-radius: 16px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-    z-index: 9999;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    z-index: 10000; /* Assicura che stia sopra a tutto */
     overflow: hidden;
-    transition: all 0.3s ease-in-out;
-    max-height: 600px; /* Altezza da aperta */
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
 }
 
+/* Quando è ridotta, mostra solo la barra del titolo */
+.ai-chat-widget.minimized {
+    height: 45px;
+    transform: none; /* Rimuovi eventuali traslazioni precedenti */
+}
+
+/* Quando è aperta, definisci un'altezza */
+.ai-chat-widget:not(.minimized) {
+    height: 500px;
+}
+
+.ai-chat-header {
+    background: #667eea;
+    color: white;
+    padding: 12px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.ai-chat-body {
+    display: flex;
+    flex-direction: column;
+    height: calc(100% - 45px); /* Sottrae l'header */
+}
 .ai-chat-widget.minimized {
     transform: translateY(calc(100% - 50px));
     max-height: 50px; /* Altezza della sola barra viola */
@@ -3648,6 +3677,7 @@
 
 </body>
 </html>
+
 
 
 
