@@ -3572,50 +3572,49 @@
 // ==========================================
 
 (function() {
-    // 1. Riferimenti agli elementi UI (definiti all'interno del modulo)
-    const chatWidget = document.getElementById('ai-chat-widget');
-    const chatMessages = document.getElementById('ai-chat-messages');
-    const chatInput = document.getElementById('ai-chat-input');
-    const chatSend = document.getElementById('ai-chat-send');
-    const chatToggle = document.getElementById('ai-chat-toggle');
+    // 1. Riferimenti agli elementi (usiamo variabili locali per evitare conflitti)
+    const widget = document.getElementById('ai-chat-widget');
+    const messages = document.getElementById('ai-chat-messages');
+    const input = document.getElementById('ai-chat-input');
+    const sendBtn = document.getElementById('ai-chat-send');
+    const toggle = document.getElementById('ai-chat-toggle');
     
-    const API_KEY_STORAGE = 'gemini_api_key';
-    let geminiApiKey = localStorage.getItem(API_KEY_STORAGE) || '';
+    // Recupero API Key
+    const geminiKey = localStorage.getItem('gemini_api_key') || '';
 
     // 2. FUNZIONI DI SUPPORTO
     function addMessage(text, role) {
-        if (!chatMessages) return;
+        if (!messages) return;
         const d = document.createElement('div');
         d.className = `ai-message ${role}`;
         d.innerHTML = text.replace(/\n/g, '<br>');
-        chatMessages.appendChild(d);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
+        messages.appendChild(d);
+        messages.scrollTop = messages.scrollHeight;
         return d;
     }
 
     function addMessageElement(el) {
-        if (!chatMessages) return;
+        if (!messages) return;
         const d = document.createElement('div');
         d.className = 'ai-message assistant';
         d.appendChild(el);
-        chatMessages.appendChild(d);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
+        messages.appendChild(d);
+        messages.scrollTop = messages.scrollHeight;
         return d;
     }
 
-    async function callGeminiAPI(prompt) {
-        if (!geminiApiKey) {
-            alert("Per favore, inserisci la tua API Key nelle impostazioni (icona ingranaggio).");
+    async function callGemini(prompt) {
+        if (!geminiKey) {
+            alert("Inserisci l'API Key nelle impostazioni!");
             throw new Error('Manca API Key');
         }
-        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
-        const response = await fetch(url, {
+        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${geminiKey}`;
+        const resp = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
         });
-        const data = await response.json();
-        if (data.error) throw new Error(data.error.message);
+        const data = await resp.json();
         return data.candidates[0].content.parts[0].text;
     }
 
@@ -3632,11 +3631,10 @@
             document.getElementById('meal-type-selector').value = pasto;
         }
         if (typeof window.renderMealBuilder === 'function') window.renderMealBuilder();
-        
-        const builder = document.getElementById('meal-builder-sezione');
-        if (builder) builder.style.display = 'block';
-        
-        addMessage(`✅ <strong>${item.desc}</strong> (${qta}g) aggiunto al costruttore.`, 'assistant');
+        if (document.getElementById('meal-builder-sezione')) {
+            document.getElementById('meal-builder-sezione').style.display = 'block';
+        }
+        addMessage(`✅ <strong>${item.desc}</strong> (${qta}g) aggiunto.`, 'assistant');
     }
 
     async function addFoodDirectly(nome, qta, pasto) {
@@ -3675,7 +3673,7 @@
             const btnNo = document.createElement('button');
             btnNo.textContent = `No, cambia`;
             btnNo.style.background = "#666";
-            btnNo.onclick = () => { divConf.parentElement.remove(); addMessage("Ok, scrivi la quantità (es: 150g)", "assistant"); };
+            btnNo.onclick = () => { divConf.parentElement.remove(); addMessage("Scrivi la quantità (es: 150g)", "assistant"); };
             divConf.appendChild(btnOk); divConf.appendChild(btnNo);
             addMessageElement(divConf);
             return;
@@ -3686,7 +3684,7 @@
         } else {
             addMessage(`🔍 "${nome}" non in DB. Chiedo all'AI...`, 'assistant');
             try {
-                const raw = await callGeminiAPI(`Rispondi SOLO JSON per 100g di "${nome}": {"prot":0,"kcal":0,"carb":0,"zuccheri":0,"fatTotal":0}`);
+                const raw = await callGemini(`Rispondi SOLO JSON per 100g di "${nome}": {"prot":0,"kcal":0,"carb":0,"zuccheri":0,"fatTotal":0}`);
                 const jsonCleaned = raw.replace(/```json/g, '').replace(/```/g, '').trim();
                 const startJson = jsonCleaned.indexOf('{');
                 const endJson = jsonCleaned.lastIndexOf('}');
@@ -3696,43 +3694,34 @@
         }
     }
 
-    // 3. GESTIONE EVENTI
-    if (chatToggle) {
-        chatToggle.onclick = () => chatWidget.classList.toggle('minimized');
-    }
+    // 3. EVENTI
+    toggle.onclick = () => widget.classList.toggle('minimized');
 
-    if (chatSend) {
-        chatSend.onclick = async () => {
-            const text = chatInput.value.trim();
-            if (!text) return;
-            addMessage(text, 'user');
-            chatInput.value = '';
-            const loadingMsg = addMessage("🤔 Sto elaborando...", "assistant loading");
-            try {
-                const resp = await callGeminiAPI(`L'utente dice: "${text}". Se mancano pesi, fai elenco numerato. Altrimenti usa: [AGGIUNGI: nome | quantità | pasto]`);
-                if (loadingMsg) loadingMsg.remove();
-                addMessage(resp, 'assistant');
-                const m = /\[AGGIUNGI:\s*([^|]+)\s*\|\s*([^|]+)\s*\|\s*([^\]]+)\]/i.exec(resp);
-                if (m) {
-                    const nome = m[1].trim();
-                    const qta = parseInt(m[2].replace(/\D/g, '')) || 0;
-                    const pasto = m[3].trim().toLowerCase();
-                    addFoodDirectly(nome, qta, pasto);
-                }
-            } catch (e) { if (loadingMsg) loadingMsg.remove(); addMessage("❌ Errore: " + e.message, "assistant"); }
-        };
-    }
+    sendBtn.onclick = async () => {
+        const text = input.value.trim();
+        if (!text) return;
+        addMessage(text, 'user');
+        input.value = '';
+        const loading = addMessage("🤔 Elaboro...", "assistant loading");
+        try {
+            const resp = await callGemini(`Utente: "${text}". Se mancano pesi, fai elenco. Altrimenti: [AGGIUNGI: nome | quantità | pasto]`);
+            if (loading) loading.remove();
+            addMessage(resp, 'assistant');
+            const m = /\[AGGIUNGI:\s*([^|]+)\s*\|\s*([^|]+)\s*\|\s*([^\]]+)\]/i.exec(resp);
+            if (m) {
+                const nome = m[1].trim();
+                const qta = parseInt(m[2].replace(/\D/g, '')) || 0;
+                const pasto = m[3].trim().toLowerCase();
+                addFoodDirectly(nome, qta, pasto);
+            }
+        } catch (e) { if (loading) loading.remove(); addMessage("❌ Errore API", "assistant"); }
+    };
 
-    // Listener per il tasto Invio nella tastiera
-    chatInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            chatSend.click();
-        }
-    });
+    input.onkeypress = (e) => { if (e.key === 'Enter') sendBtn.click(); };
 
-})(); // FINE MODULO
-    </body>
+})();
+</script>
+</body>
 </html>
 
 
