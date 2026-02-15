@@ -3581,128 +3581,99 @@
 
             // Parsa la risposta dell'AI per trovare alimenti/allenamenti da aggiungere
             function parseAIResponseForActions(response, originalMessage) {
-                // PRIMA: Cerca un JSON nella risposta dell'AI
+                // Estrai JSON dalla risposta (cerca tra graffe)
                 const jsonMatch = response.match(/\{[\s\S]*\}/);
-                if (jsonMatch) {
-                    try {
-                        const jsonStr = jsonMatch[0];
-                        const data = JSON.parse(jsonStr);
+                if (!jsonMatch) return;
 
-                        // Controlla se c'è un allenamento
-                        if (data.allenamento && data.allenamento.kcal_bruciate > 0) {
-                            const desc = data.allenamento.descrizione || 'Allenamento';
-                            const kcal = data.allenamento.kcal_bruciate;
-                            setTimeout(() => {
-                                if (confirm(`Vuoi registrare l'allenamento "${desc} (${kcal} kcal)"?`)) {
-                                    addWorkoutDirectly(desc, kcal);
-                                }
-                            }, 500);
-                        }
+                try {
+                    const jsonStr = jsonMatch[0];
+                    const data = JSON.parse(jsonStr);
 
-                        // Controlla se ci sono alimenti nel diario
-                        if (data.diario_alimentare && data.diario_alimentare.length > 0) {
-                            const foods = [];
-                            data.diario_alimentare.forEach(item => {
-                                if (item.dettagli) {
-                                    item.dettagli.forEach(d => {
-                                        if (d.alimento && d.qta_g) {
-                                            foods.push({ nome: d.alimento, qta: d.qta_g });
-                                        }
-                                    });
-                                }
+                    // Array per raccogliere alimenti trovati
+                    const foods = [];
+
+                    // 1. Controlla se c'è un allenamento
+                    if (data.allenamento && data.allenamento.kcal_bruciate > 0) {
+                        const desc = data.allenamento.descrizione || 'Allenamento';
+                        const kcal = parseInt(data.allenamento.kcal_bruciate);
+                        setTimeout(() => {
+                            if (confirm(`Vuoi registrare l'allenamento "${desc} (${kcal} kcal)"?`)) {
+                                addWorkoutDirectly(desc, kcal);
+                            }
+                        }, 500);
+                    }
+
+                    // 2. Controlla diario_alimentare (formato array)
+                    if (data.diario_alimentare && Array.isArray(data.diario_alimentare)) {
+                        data.diario_alimentare.forEach(item => {
+                            // Formato 1: {alimento: "nome", quantità_g: 100}
+                            if (item.alimento && item.quantità_g) {
+                                foods.push({
+                                    nome: item.alimento,
+                                    qta: parseInt(item.quantità_g),
+                                    pasto: item.pasto || null,
+                                    dati: item
+                                });
+                            }
+                            // Formato 2: {cibo: "nome", quantità_g: 100}
+                            else if (item.cibo && item.quantità_g) {
+                                foods.push({
+                                    nome: item.cibo,
+                                    qta: parseInt(item.quantità_g),
+                                    pasto: item.pasto || null,
+                                    dati: item
+                                });
+                            }
+                        });
+                    }
+
+                    // 3. Controlla formato diretto (chiavi sono nomi cibi)
+                    for (const key in data) {
+                        if (['meta', 'obiettivi', 'progresso_attuale', 'diario_alimentare', 'allenamento'].includes(key)) continue;
+
+                        const val = data[key];
+                        // Se il valore è un numero, potrebbe essere la quantità in grammi
+                        if (typeof val === 'number' && val > 0 && val < 5000) {
+                            foods.push({
+                                nome: key,
+                                qta: val,
+                                pasto: null,
+                                dati: null
                             });
+                        }
+                        // Se è un oggetto con quantità
+                        else if (typeof val === 'object' && val && val.quantità_g) {
+                            foods.push({
+                                nome: key,
+                                qta: parseInt(val.quantità_g),
+                                pasto: val.pasto || null,
+                                dati: val
+                            });
+                        }
+                    }
 
-                            if (foods.length > 0) {
-                                setTimeout(() => {
-                                    const foodList = foods.map(f => `${f.nome} (${f.qta}g)`).join(', ');
-                                    if (confirm(`Vuoi aggiungere questi alimenti al diario: ${foodList}?`)) {
-                                        foods.forEach(f => addFoodDirectly(f.nome, f.qta));
+                    // Se abbiamo trovato alimenti, chiedi conferma
+                    if (foods.length > 0) {
+                        setTimeout(() => {
+                            const foodList = foods.map(f => `${f.nome} (${f.qta}g)`).join(', ');
+                            const pastoInfo = foods[0].pasto ? ` per ${foods[0].pasto}` : '';
+
+                            if (confirm(`Vuoi aggiungere al diario${pastoInfo}: ${foodList}?`)) {
+                                foods.forEach(f => {
+                                    if (f.dati && f.dati.kcal) {
+                                        // Abbiamo già i dati nutrizionali
+                                        addFoodWithData(f.nome, f.qta, f.dati);
+                                    } else {
+                                        // Dobbiamo chiedere all'AI
+                                        addFoodDirectly(f.nome, f.qta);
                                     }
-                                }, 500);
+                                });
                             }
-                        }
-
-                        // Controlla anche formato alternativo (cibo diretto)
-                        if (data.diario_alimentare === 'cibo' || typeof data.diario_alimentare === 'object') {
-                            // Cerca chiavi che potrebbero essere nomi di cibi
-                            for (const key in data) {
-                                if (key !== 'meta' && key !== 'obiettivi' && key !== 'progresso_attuale' && 
-                                    key !== 'diario_alimentare' && key !== 'allenamento') {
-                                    const val = data[key];
-                                    if (typeof val === 'number' && val > 0) {
-                                        // Potrebbe essere un alimento con quantità
-                                        setTimeout(() => {
-                                            if (confirm(`Vuoi aggiungere "${key} (${val}g)" al diario?`)) {
-                                                addFoodDirectly(key, val);
-                                            }
-                                        }, 500);
-                                    }
-                                }
-                            }
-                        }
-
-                        return; // JSON processato, esci
-                    } catch (e) {
-                        console.log('JSON non valido nella risposta:', e);
+                        }, 500);
                     }
-                }
 
-                // SECONDO: Cerca pattern di alimenti nel messaggio originale
-                const foodPatterns = [
-                    /(\d+)\s*g(?:rammi)?\s+(?:di\s+)?([\w\s]+?)(?:[,;.]|$)/i,
-                    /([\w\s]+?)\s+(\d+)\s*g(?:rammi)?/i,
-                    /ho\s+mangiat[oa]\s+([\w\s]+?)\s+(\d+)\s*g/i,
-                    /mangio\s+([\w\s]+?)\s+(\d+)\s*g/i
-                ];
-
-                // Cerca pattern di allenamento
-                const workoutPatterns = [
-                    /allenamento\s+(?:di\s+)?([\w\s]+?)\s+(\d+)\s*kcal/i,
-                    /([\w\s]+?)\s+(\d+)\s*kcal\s+(?:bruciate|bruciate)/i,
-                    /ho\s+(?:fatto|fatto)\s+([\w\s]+?)\s+(\d+)\s*kcal/i,
-                    /(?:corsa|pesistica|allenamento|workout)\s+(?:di\s+)?([\w\s]*?)\s*(\d+)\s*(?:min|minuti|kcal)/i
-                ];
-
-                // Prova a trovare un alimento
-                for (const pattern of foodPatterns) {
-                    const match = originalMessage.match(pattern);
-                    if (match) {
-                        let qta, nome;
-                        if (/^\d/.test(match[1])) {
-                            qta = parseInt(match[1]);
-                            nome = match[2].trim();
-                        } else {
-                            nome = match[1].trim();
-                            qta = parseInt(match[2]);
-                        }
-
-                        if (qta > 0 && nome.length > 2) {
-                            setTimeout(() => {
-                                if (confirm(`Vuoi aggiungere "${nome} (${qta}g)" al diario?`)) {
-                                    addFoodDirectly(nome, qta);
-                                }
-                            }, 500);
-                            return;
-                        }
-                    }
-                }
-
-                // Prova a trovare un allenamento
-                for (const pattern of workoutPatterns) {
-                    const match = originalMessage.match(pattern);
-                    if (match) {
-                        const desc = match[1].trim() || 'Allenamento';
-                        const kcal = parseInt(match[2]);
-
-                        if (kcal > 0) {
-                            setTimeout(() => {
-                                if (confirm(`Vuoi registrare l'allenamento "${desc} (${kcal} kcal)"?`)) {
-                                    addWorkoutDirectly(desc, kcal);
-                                }
-                            }, 500);
-                            return;
-                        }
-                    }
+                } catch (e) {
+                    console.log('Errore parsing JSON:', e);
                 }
             }
 
@@ -3755,7 +3726,48 @@
                 addMessage(`✅ Allenamento registrato: <strong>${desc}</strong> (${kcal} kcal)`, 'assistant');
             }
 
-            // Aggiungi alimento dal diario dalla chat
+            
+            // Aggiungi alimento con dati già disponibili (dal JSON)
+            function addFoodWithData(nome, qta, dati) {
+                const foodItem = {
+                    type: 'single',
+                    desc: nome.charAt(0).toUpperCase() + nome.slice(1),
+                    qta: qta,
+                    kcal: parseFloat(dati.kcal) || 0,
+                    prot: parseFloat(dati.proteine || dati.prot) || 0,
+                    carb: parseFloat(dati.carboidrati || dati.carb) || 0,
+                    zuccheri: parseFloat(dati.zuccheri) || 0,
+                    fatTotal: parseFloat(dati.grassi || dati.fatTotal) || 0,
+                    fatSat: parseFloat(dati.grassi_saturi || dati.fatSat) || 0,
+                    fatTrans: parseFloat(dati.fatTrans) || 0,
+                    fatMono: parseFloat(dati.fatMono) || 0,
+                    fatPoly: parseFloat(dati.fatPoly) || 0,
+                    omega3: parseFloat(dati.omega3) || 0,
+                    omega6: parseFloat(dati.omega6) || 0,
+                    fibreTotali: parseFloat(dati.fibre || dati.fibreTotali) || 0,
+                    fibreSolubili: parseFloat(dati.fibreSolubili) || 0,
+                    fibreInsolubili: parseFloat(dati.fibreInsolubili) || 0,
+                    na: parseFloat(dati.sodio || dati.na) || 0,
+                    mg: parseFloat(dati.magnesio || dati.mg) || 0,
+                    k: parseFloat(dati.potassio || dati.k) || 0,
+                    vitc: parseFloat(dati.vitamina_c || dati.vitc) || 0,
+                    ca: parseFloat(dati.calcio || dati.ca) || 0,
+                    fe: parseFloat(dati.ferro || dati.fe) || 0,
+                    zn: parseFloat(dati.zinco || dati.zn) || 0,
+                    cu: parseFloat(dati.rame || dati.cu) || 0,
+                    p: parseFloat(dati.fosforo || dati.p) || 0
+                };
+
+                // Aggiungi al diario
+                if (!window.datiGiornalieri.log) window.datiGiornalieri.log = [];
+                window.datiGiornalieri.log.push(foodItem);
+                window.salvaGiorno(window.giornoVisualizzato, window.datiGiornalieri);
+                window.aggiornaUI();
+
+                addMessage(`✅ Aggiunto: <strong>${nome}</strong> (${qta}g) - ${foodItem.kcal.toFixed(0)} kcal, ${foodItem.prot.toFixed(1)}g proteine`, 'assistant');
+            }
+
+// Aggiungi alimento dal diario dalla chat
             function addFoodFromChat(nome, qta) {
                 // Compila i campi del form
                 const builderDesc = document.getElementById('builder-desc');
