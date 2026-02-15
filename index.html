@@ -3513,751 +3513,226 @@
 
     <script>
         // CHAT AI INTEGRATA - GESTIONE
-        (function() {
-                        const chatWidget = document.getElementById('ai-chat-widget');
-            const chatToggle = document.getElementById('ai-chat-toggle');
-            const chatMessages = document.getElementById('ai-chat-messages');
-            const chatInput = document.getElementById('ai-chat-input');
-            const chatSend = document.getElementById('ai-chat-send');
-            const chatSleepBtn = document.getElementById('ai-chat-sleep-btn');
-            const chatSleepInput = document.getElementById('ai-chat-sleep-input');
-            const chatExportBtn = document.getElementById('ai-chat-export-data');
-            const chatClearBtn = document.getElementById('ai-chat-clear');
-            const foodModal = document.getElementById('ai-chat-food-modal');
-            const foodDetails = document.getElementById('ai-chat-food-details');
-            const foodConfirm = document.getElementById('ai-chat-food-confirm');
-            const foodCancel = document.getElementById('ai-chat-food-cancel');
-
-// GESTIONE API KEY GEMINI
-            const API_KEY_STORAGE = 'gemini_api_key';
-            let geminiApiKey = localStorage.getItem(API_KEY_STORAGE) || '';
-
-            // Elementi UI
-            const apiKeyInput = document.getElementById('ai-api-key-input');
-            const saveApiKeyBtn = document.getElementById('ai-save-api-key');
-            const toggleApiKeyBtn = document.getElementById('ai-toggle-api-key');
-            const apiStatus = document.getElementById('ai-api-status');
-            const settingsPanel = document.getElementById('ai-chat-settings');
-
-            // Carica API key salvata
-            if (geminiApiKey) {
-                apiKeyInput.value = geminiApiKey;
-                showApiStatus('✅ API key caricata!', 'success');
-                updateWelcomeMessage();
-            }
-
-            // Salva API key
-            saveApiKeyBtn.addEventListener('click', function() {
-                const key = apiKeyInput.value.trim();
-                if (key) {
-                    geminiApiKey = key;
-                    localStorage.setItem(API_KEY_STORAGE, key);
-                    showApiStatus('✅ API key salvata!', 'success');
-                    updateWelcomeMessage();
-                    // Nascondi impostazioni dopo 1 secondo
-                    setTimeout(() => {
-                        settingsPanel.style.display = 'none';
-                    }, 1000);
-                } else {
-                    showApiStatus('❌ Inserisci una API key valida', 'error');
-                }
-            });
-
-            // Mostra/nascondi API key
-            toggleApiKeyBtn.addEventListener('click', function() {
-                if (apiKeyInput.type === 'password') {
-                    apiKeyInput.type = 'text';
-                    toggleApiKeyBtn.textContent = '🙈 Nascondi';
-                } else {
-                    apiKeyInput.type = 'password';
-                    toggleApiKeyBtn.textContent = '👁️ Mostra';
-                }
-            });
-
-            function showApiStatus(message, type) {
-                apiStatus.textContent = message;
-                apiStatus.className = 'ai-api-status ' + type;
-            }
-
-            function updateWelcomeMessage() {
-                const welcomeMsg = chatMessages.querySelector('.ai-welcome');
-                if (welcomeMsg && geminiApiKey) {
-                    welcomeMsg.innerHTML = `
-                        <strong>Ciao! Sono il tuo assistente nutrizionale.</strong><br><br>
-                        Posso aiutarti a:<br>
-                        • Analizzare i tuoi dati giornalieri<br>
-                        • Consigliarti cosa mangiare<br>
-                        • Analizzare screenshot del sonno<br>
-                        • Compilare automaticamente gli alimenti<br><br>
-                        <em>✅ Pronto! Scrivi un messaggio o carica uno screenshot del sonno!</em>
-                    `;
-                }
-            }
-
-            // Chiama Gemini API direttamente
-            async function callGeminiAPI(prompt) {
-                if (!geminiApiKey) {
-                    throw new Error('API key non configurata. Inseriscila nelle impostazioni.');
-                }
-
-                // La versione corretta con Gemini 2.0 Flash
-var url = 'https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=' + geminiApiKey;
-
-                var requestBody = {
-                    contents: [
-                        {
-                            parts: [
-                                { text: prompt }
-                            ]
-                        }
-                    ],
-                    generationConfig: {
-                        temperature: 0.7,
-                        maxOutputTokens: 2048
-                    }
-                };
-
-                var fetchOptions = {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(requestBody)
-                };
-
-                var response = await fetch(url, fetchOptions);
-
-                if (!response.ok) {
-                    var errorData = await response.json();
-                    var errorMessage = 'Errore API Gemini';
-                    if (errorData.error && errorData.error.message) {
-                        errorMessage = errorData.error.message;
-                    }
-                    throw new Error(errorMessage);
-                }
-
-                var responseData = await response.json();
-                var text = 'Nessuna risposta';
-                if (responseData.candidates && responseData.candidates[0] && 
-                    responseData.candidates[0].content && responseData.candidates[0].content.parts &&
-                    responseData.candidates[0].content.parts[0]) {
-                    text = responseData.candidates[0].content.parts[0].text;
-                }
-                return text;
-            }
-
-
-            let pendingFoodData = null;
-            let chatHistory = JSON.parse(localStorage.getItem('aiChatHistory') || '[]');
-
-            // Ripristina storico chat
-            function loadChatHistory() {
-                if (chatHistory.length > 0) {
-                    chatMessages.innerHTML = '';
-                    chatHistory.forEach(msg => {
-                        addMessage(msg.content, msg.role, false);
-                    });
-                }
-            }
-
-            // Salva storico chat
-            function saveChatHistory() {
-                const messages = [];
-                chatMessages.querySelectorAll('.ai-message').forEach(el => {
-                    if (!el.classList.contains('ai-welcome') && !el.classList.contains('loading')) {
-                        messages.push({
-                            role: el.classList.contains('user') ? 'user' : 'assistant',
-                            content: el.innerHTML
-                        });
-                    }
-                });
-                localStorage.setItem('aiChatHistory', JSON.stringify(messages.slice(-50)));
-            }
-
-            // Toggle chat
-            chatToggle.addEventListener('click', () => {
-                chatWidget.classList.toggle('minimized');
-            });
-
-            // Aggiungi messaggio alla chat
-            function addMessage(content, role, save = true) {
-                const msgDiv = document.createElement('div');
-                msgDiv.className = 'ai-message ' + role;
-                msgDiv.innerHTML = content;
-                chatMessages.appendChild(msgDiv);
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-                if (save) saveChatHistory();
-            }
-
-            // Mostra loading
-            function showLoading() {
-                const loadingDiv = document.createElement('div');
-                loadingDiv.className = 'ai-message loading';
-                loadingDiv.id = 'ai-chat-loading';
-                loadingDiv.innerHTML = '🤔 Sto pensando...';
-                chatMessages.appendChild(loadingDiv);
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-            }
-
-            // Nascondi loading
-            function hideLoading() {
-                const loading = document.getElementById('ai-chat-loading');
-                if (loading) loading.remove();
-            }
-
-            // Preleva dati JSON completi del giorno
-            function getDailyDataJSON() {
-                const dataRef = new Date(window.giornoVisualizzato);
-                const piano = window.PIANO_SETTIMANALE[dataRef.getDay()] || window.PIANO_SETTIMANALE[1];
-                const targetKcal = piano.cal_base + (window.datiGiornalieri.workoutCalorie || 0) + (window.datiGiornalieri.calorieAdjustment || 0);
-
-                const allNutrientKeys = [
-                    'prot', 'kcal', 'carb', 'zuccheri', 'fatTotal', 'fatSat', 'fatTrans', 
-                    'fatMono', 'fatPoly', 'omega3', 'omega6', 'fibreTotali', 'fibreSolubili', 'fibreInsolubili',
-                    'na', 'mg', 'k', 'vitc', 'ca', 'fe', 'zn', 'cu', 'p', 
-                    'vitA', 'vitB12', 'vitD', 'vitE', 'vitK', 'b9', 'b2', 'b6',
-                    'leu', 'iso', 'val', 'lys', 'met', 'phe', 'thr', 'trp', 'his'
-                ];
-
-                let dailyTotals = {};
-                allNutrientKeys.forEach(function(k) { dailyTotals[k] = 0; });
-
-                const logDettagliato = [];
-
-                (window.datiGiornalieri.log || []).forEach(function(entry) {
-                    if (entry.type === 'workout') return;
-
-                    const items = entry.type === 'meal' ? entry.items : [entry];
-                    const itemsExport = items.map(function(item) {
-                        const cleanItem = {
-                            alimento: item.desc,
-                            qta_g: item.qta
-                        };
-
-                        allNutrientKeys.forEach(function(key) {
-                            const val = item[key];
-                            if (val !== undefined && val !== null && (val > 0 || key === 'kcal' || key === 'prot')) {
-                                cleanItem[key] = Number(val.toFixed(2));
-                                dailyTotals[key] += val;
-                            }
-                        });
-
-                        return cleanItem;
-                    });
-
-                    logDettagliato.push({
-                        tipo: entry.type === 'meal' ? 'Pasto: ' + entry.desc : 'Alimento Singolo',
-                        dettagli: itemsExport
-                    });
-                });
-
-                return {
-                    meta: {
-                        data: window.giornoVisualizzato,
-                        giorno_tipo: piano.tipo,
-                        ora_corrente: new Date().toLocaleTimeString('it-IT'),
-                        note_utente: window.datiGiornalieri.note || "Nessuna nota"
-                    },
-                    obiettivi: {
-                        kcal: targetKcal,
-                        proteine: piano.prot,
-                        carboidrati: piano.carb,
-                        grassi: window.OBIETTIVI_FAT.fatTotal
-                    },
-                    progresso_attuale: {
-                        kcal: dailyTotals.kcal.toFixed(0),
-                        proteine: dailyTotals.prot.toFixed(1),
-                        carboidrati: dailyTotals.carb.toFixed(1),
-                        grassi: dailyTotals.fatTotal.toFixed(1),
-                        fibre: dailyTotals.fibreTotali.toFixed(1),
-                        omega3: dailyTotals.omega3.toFixed(1),
-                        omega6: dailyTotals.omega6.toFixed(1)
-                    },
-                    diario_alimentare: logDettagliato,
-                    allenamento: {
-                        descrizione: (window.datiGiornalieri.log || []).filter(function(e) { return e.type === 'workout'; }).map(function(e) { return e.desc; }).join(", ") || "Riposo",
-                        kcal_bruciate: window.datiGiornalieri.workoutCalorie || 0
-                    }
-                };
-            }
-
-            // Chiama l'AI
-            async function callAI(prompt, includeData) {
-                try {
-                    // Verifica che la API key sia configurata
-                    if (!geminiApiKey) {
-                        settingsPanel.style.display = 'block';
-                        throw new Error('Inserisci la tua API key di Gemini nelle impostazioni qui sopra!');
-                    }
-
-                    // Prepara il prompt completo
-                    let fullPrompt = prompt;
-                    if (includeData) {
-                        const dailyData = getDailyDataJSON();
-                        fullPrompt = `Contesto: Oggi è ${dailyData.meta.data}, giorno di ${dailyData.meta.giorno_tipo}.
-
-I miei dati nutrizionali attuali sono:
-- Calorie: ${dailyData.progresso_attuale.kcal}/${dailyData.obiettivi.kcal} kcal
-- Proteine: ${dailyData.progresso_attuale.proteine}/${dailyData.obiettivi.proteine}g
-- Carboidrati: ${dailyData.progresso_attuale.carboidrati}/${dailyData.obiettivi.carboidrati}g
-- Grassi: ${dailyData.progresso_attuale.grassi}/${dailyData.obiettivi.grassi}g
-
-Domanda dell utente: ${prompt}
-
-ISTRUZIONI IMPORTANTI:
-1. Rispondi SEMPRE in italiano in modo naturale e conversazionale
-2. NON usare JSON nella risposta visibile all'utente
-3. Se l'utente dice di aver mangiato qualcosa SENZA specificare la quantità, chiedi gentilmente "Quanti grammi hai mangiato?"
-4. Se l'utente dice di aver mangiato qualcosa SENZA specificare il pasto, chiedi "Era per quale pasto? (merenda AM, pranzo, merenda PM, cena)"
-5. Se l'utente ha già mangiato quell'alimento in passato, puoi suggerire la stessa quantità
-6. Alla fine della risposta, se ci sono alimenti da aggiungere, includi questa riga esatta: [AGGIUNGI: nome_alimento | quantità_g | pasto]`;
-                    }
-
-                    // Chiama Gemini API direttamente
-                    const response = await callGeminiAPI(fullPrompt);
-                    return response;
-
-                } catch (err) {
-                    console.error('Errore AI:', err);
-                    return '❌ ' + err.message;
-                }
-            }
-
-            // Gestisci invio messaggio
-            async function sendMessage() {
-                const message = chatInput.value.trim();
-                if (!message) return;
-
-                addMessage(message, 'user');
-                chatInput.value = '';
-                showLoading();
-
-                const response = await callAI(message, true);
-                hideLoading();
-
-                // Formatta la risposta
-                let formattedResponse = response
-                    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                    .replace(/\n/g, '<br>');
-
-                addMessage(formattedResponse, 'assistant');
-
-                // Parsa la risposta per cercare alimenti o allenamenti da aggiungere
-                parseAIResponseForActions(response, message);
-            }
-
-
-
-            // Parsa la risposta dell'AI per trovare alimenti/allenamenti da aggiungere
-            function parseAIResponseForActions(response, originalMessage) {
-                // Cerca pattern [AGGIUNGI: nome | quantità | pasto] nella risposta
-                const addPattern = /\[AGGIUNGI:\s*([^|]+)\s*\|\s*(\d+)\s*g?\s*\|\s*([^\]]+)\]/gi;
-                let match;
-                const foodsToAdd = [];
-
-                while ((match = addPattern.exec(response)) !== null) {
-                    foodsToAdd.push({
-                        nome: match[1].trim(),
-                        qta: parseInt(match[2]),
-                        pasto: match[3].trim()
-                    });
-                }
-
-                if (foodsToAdd.length > 0) {
-                    // Chiedi conferma all'utente
-                    setTimeout(() => {
-                        const foodList = foodsToAdd.map(f => `${f.nome} (${f.qta}g) per ${f.pasto}`).join(', ');
-                        if (confirm(`Vuoi aggiungere al diario: ${foodList}?`)) {
-                            foodsToAdd.forEach(f => addFoodDirectly(f.nome, f.qta, f.pasto));
-                        }
-                    }, 500);
-                    return;
-                }
-
-                // Se la risposta contiene domande su quantità/pasto, non fare nulla
-                // (l'utente risponderà nella prossima interazione)
-                if (response.includes('Quanti grammi') || response.includes('quale pasto')) {
-                    return;
-                }
-
-                // Cerca nel messaggio originale pattern di alimenti
-                const foodPatterns = [
-                    /ho\s+mangiat[oa]\s+([\w\s]+?)(?:\s+(\d+)\s*g)?/i,
-                    /mangio\s+([\w\s]+?)(?:\s+(\d+)\s*g)?/i,
-                    /([\w\s]+?)\s+(\d+)\s*g/i
-                ];
-
-                for (const pattern of foodPatterns) {
-                    const match = originalMessage.match(pattern);
-                    if (match) {
-                        const nome = match[1].trim();
-                        const qta = match[2] ? parseInt(match[2]) : null;
-
-                        if (nome.length > 2) {
-                            // Cerca nel database se abbiamo già questo alimento
-                            const lastQty = findLastQuantityForFood(nome);
-
-                            if (!qta && lastQty) {
-                                // Suggerisci la quantità precedente
-                                setTimeout(() => {
-                                    if (confirm(`Hai già mangiato ${nome} in passato (${lastQty}g). Vuoi aggiungerlo con la stessa quantità?`)) {
-                                        askForMealType(nome, lastQty);
-                                    }
-                                }, 500);
-                            } else if (!qta) {
-                                // Chiedi la quantità
-                                // La AI dovrebbe già averlo chiesto, ma come fallback:
-                                addMessage(`Quanti grammi di ${nome} hai mangiato?`, 'assistant');
-                            } else {
-                                // Abbiamo quantità, chiedi il pasto
-                                askForMealType(nome, qta);
-                            }
-                            return;
-                        }
-                    }
-                }
-
-                // Cerca pattern di allenamento
-                const workoutPatterns = [
-                    /allenamento\s+(?:di\s+)?([\w\s]+?)(?:\s+(\d+)\s*kcal)?/i,
-                    /(?:corsa|pesistica|workout)\s+(?:di\s+)?([\w\s]*?)(?:\s+(\d+)\s*kcal)?/i
-                ];
-
-                for (const pattern of workoutPatterns) {
-                    const match = originalMessage.match(pattern);
-                    if (match) {
-                        const desc = match[1].trim() || 'Allenamento';
-                        const kcal = match[2] ? parseInt(match[2]) : null;
-
-                        if (kcal && kcal > 0) {
-                            setTimeout(() => {
-                                if (confirm(`Vuoi registrare l'allenamento "${desc} (${kcal} kcal)"?`)) {
-                                    addWorkoutDirectly(desc, kcal);
-                                }
-                            }, 500);
-                            return;
-                        }
-                    }
-                }
-            }
-
-            // Trova l'ultima quantità usata per un alimento
-            function findLastQuantityForFood(nome) {
-                const sanitizedKey = window.sanitizeFirebaseKey(nome.toLowerCase());
-                const foodData = window.foodDatabase[sanitizedKey];
-                if (foodData && foodData.lastQta) {
-                    return foodData.lastQta;
-                }
-
-                // Cerca nel diario degli ultimi 7 giorni
-                const today = new Date();
-                for (let i = 0; i < 7; i++) {
-                    const dateToCheck = new Date(today);
-                    dateToCheck.setDate(today.getDate() - i);
-                    const dateString = dateToCheck.toISOString().split('T')[0];
-                    const dailyDataRaw = localStorage.getItem(`trackerStorico_${dateString}`);
-
-                    if (dailyDataRaw) {
-                        try {
-                            const dailyData = JSON.parse(dailyDataRaw);
-                            if (dailyData && dailyData.log) {
-                                for (const entry of dailyData.log) {
-                                    if (entry.type === 'workout') continue;
-                                    const items = entry.type === 'meal' ? entry.items : [entry];
-                                    for (const item of items) {
-                                        if (item.desc && item.desc.toLowerCase().includes(nome.toLowerCase())) {
-                                            return item.qta;
-                                        }
-                                    }
-                                }
-                            }
-                        } catch (e) {}
-                    }
-                }
-                return null;
-            }
-
-            // Chiedi il tipo di pasto
-            function askForMealType(nome, qta) {
-                // Crea i bottoni per selezionare il pasto
-                const mealButtons = document.createElement('div');
-                mealButtons.className = 'ai-chat-meal-buttons';
-                mealButtons.innerHTML = `
-                    <p><strong>${nome} (${qta}g)</strong> - Per quale pasto?</p>
-                    <button data-meal="merenda1">Merenda AM</button>
-                    <button data-meal="pranzo">Pranzo</button>
-                    <button data-meal="merenda2">Merenda PM</button>
-                    <button data-meal="cena">Cena</button>
-                `;
-
-                const msgDiv = document.createElement('div');
-                msgDiv.className = 'ai-message assistant';
-                msgDiv.appendChild(mealButtons);
-                document.getElementById('ai-chat-messages').appendChild(msgDiv);
-                document.getElementById('ai-chat-messages').scrollTop = document.getElementById('ai-chat-messages').scrollHeight;
-
-                // Aggiungi event listeners
-                mealButtons.querySelectorAll('button').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const pasto = btn.dataset.meal;
-                        addFoodDirectly(nome, qta, pasto);
-                        msgDiv.remove();
-                    });
-                });
-            }
-
-            // Aggiungi alimento direttamente al diario (con dati AI)
-// Funzione aggiornata per consultare il database e usare il Costruttore Pasti
-async function addFoodDirectly(nome, qta, pasto) {
-    try {
-        const sanitizedInput = nome.toLowerCase().trim();
-        const keys = Object.keys(window.foodDatabase);
-        
-        // 1. CERCA NEL DATABASE LOCALE (Il pezzo forte)
-        const matches = keys.filter(k => k.includes(window.sanitizeFirebaseKey(sanitizedInput)));
-        
-        // Caso A: Più corrispondenze trovate -> Mostra tasti di scelta
-        if (matches.length > 1) {
-            const choiceButtons = document.createElement('div');
-            choiceButtons.className = 'ai-chat-meal-buttons';
-            choiceButtons.innerHTML = `<p>Ho trovato più corrispondenze per "<strong>${nome}</strong>". Quale intendi?</p>`;
-            
-            matches.forEach(m => {
-                const btn = document.createElement('button');
-                btn.textContent = window.foodDatabase[m].desc;
-                btn.onclick = () => {
-                    choiceButtons.parentElement.parentElement.remove(); // Rimuove il messaggio dei tasti
-                    addFoodDirectly(window.foodDatabase[m].desc, qta, pasto);
-                };
-                choiceButtons.appendChild(btn);
-            });
-            
-            const msgDiv = document.createElement('div');
-            msgDiv.className = 'ai-message assistant';
-            msgDiv.appendChild(choiceButtons);
-            document.getElementById('ai-chat-messages').appendChild(msgDiv);
-            document.getElementById('ai-chat-messages').scrollTop = document.getElementById('ai-chat-messages').scrollHeight;
-            return;
-        }
-
-        let foodItem;
-        const exactKey = window.sanitizeFirebaseKey(sanitizedInput);
-
-        // Caso B: Corrispondenza trovata (esatta o singola parziale)
-        if (matches.length === 1 || window.foodDatabase[exactKey]) {
-            const dbKey = matches[0] || exactKey;
-            const dbData = window.foodDatabase[dbKey];
-            
-            foodItem = {
-                desc: dbData.desc,
-                qta: qta,
-                selezionato: true,
-                ingredienti: dbData.ingredienti || null
-            };
-
-            // Calcola i nutrienti in base alla quantità richiesta
-            for (const key in dbData) {
-                if (key !== 'lastQta' && key !== 'desc' && key !== 'ingredienti') {
-                    foodItem[key] = ((dbData[key] ?? 0) / 100) * qta;
-                }
-            }
-            addMessage(`✅ Uso i dati dal tuo database per: <strong>${dbData.desc}</strong>.`, 'assistant');
-        } 
-        // Caso C: Alimento nuovo -> Chiedi se salvarlo nel DB
-        else {
-            const saveConfirmDiv = document.createElement('div');
-            saveConfirmDiv.className = 'ai-chat-meal-buttons';
-            saveConfirmDiv.innerHTML = `<p>"<strong>${nome}</strong>" non è nel tuo database. Vuoi che lo cerchi online e lo <strong>salvi nel database</strong> per il futuro?</p>
-                <button id="btn-save-yes">Sì, salva nel DB</button>
-                <button id="btn-save-no">No, solo per stavolta</button>`;
-            
-            const msgDiv = document.createElement('div');
-            msgDiv.className = 'ai-message assistant';
-            msgDiv.appendChild(saveConfirmDiv);
-            document.getElementById('ai-chat-messages').appendChild(msgDiv);
-
-            return new Promise((resolve) => {
-                msgDiv.querySelector('#btn-save-yes').onclick = async () => {
-                    msgDiv.remove();
-                    const data = await fetchAndBuildFood(nome, qta, true);
-                    resolve(finishFoodAddition(data, pasto));
-                };
-                msgDiv.querySelector('#btn-save-no').onclick = async () => {
-                    msgDiv.remove();
-                    const data = await fetchAndBuildFood(nome, qta, false);
-                    resolve(finishFoodAddition(data, pasto));
-                };
-            });
-        }
-
-        finishFoodAddition(foodItem, pasto);
-
-    } catch (err) {
-        console.error('Errore:', err);
-        addMessage(`❌ Si è verificato un errore nel caricamento.`, 'assistant');
-    }
-}
-
-// Funzione di supporto per ottenere dati AI
-async function fetchAndBuildFood(nome, qta, shouldSaveToDB) {
-    addMessage(`🔍 Cerco i valori per ${nome}...`, 'assistant');
-    const callGemini = window.httpsCallable(window.functions, 'callOpenAI');
-    const prompt = `Fornisci ESATTAMENTE questo oggetto JSON (senza altro testo) con i valori nutrizionali medi per 100g di "${nome}". Agisci come un esperto nutrizionista. {"prot":g,"kcal":kcal,"carb":g,"zuccheri":g,"fatSat":g,"fatTrans":g,"fatMono":g,"fatPoly":g,"omega3":g,"omega6":g,"fibreTotali":g,"fibreSolubili":g,"fibreInsolubili":g,"na":mg,"mg":mg,"k":mg,"vitc":mg,"ca":mg,"vitA":ug,"vitB12":ug,"vitD":ug,"vitE":mg,"vitK":ug,"b9":ug,"b2":mg,"b6":mg,"fe":mg,"zn":mg,"cu":mg,"p":mg}`;
+       (function() {
+    // 1. SELEZIONE ELEMENTI E RIFERIMENTI
+    const chatWidget = document.getElementById('ai-chat-widget');
+    const chatToggle = document.getElementById('ai-chat-toggle');
+    const chatMessages = document.getElementById('ai-chat-messages');
+    const chatInput = document.getElementById('ai-chat-input');
+    const chatSend = document.getElementById('ai-chat-send');
+    const chatSleepBtn = document.getElementById('ai-chat-sleep-btn');
+    const chatSleepInput = document.getElementById('ai-chat-sleep-input');
+    const settingsPanel = document.getElementById('ai-chat-settings');
+    const apiKeyInput = document.getElementById('ai-api-key-input');
     
-    const result = await callGemini({ prompt: prompt });
-    const rawJson = result.data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-    const nutrients100g = JSON.parse(rawJson.replace(/```json|```/g, '').trim());
+    const API_KEY_STORAGE = 'gemini_api_key';
+    let geminiApiKey = localStorage.getItem(API_KEY_STORAGE) || '';
 
-    if (shouldSaveToDB) {
-        const dbKey = window.sanitizeFirebaseKey(nome.toLowerCase());
-        window.foodDatabase[dbKey] = {
-            desc: nome.charAt(0).toUpperCase() + nome.slice(1),
-            lastQta: qta,
-            ...nutrients100g
-        };
-        window.salvaFoodDatabase();
-        addMessage(`💾 <strong>${nome}</strong> è stato salvato nel tuo database!`, 'assistant');
-    }
+    // 2. GESTIONE APERTURA/CHIUSURA CHAT
+    chatToggle.addEventListener('click', (e) => {
+        // Se clicchi sull'ingranaggio o tasti interni, non chiudere la chat
+        if (e.target.closest('button')) return; 
+        
+        chatWidget.classList.toggle('minimized');
+        
+        // Scroll all'ultimo messaggio all'apertura
+        if (!chatWidget.classList.contains('minimized')) {
+            setTimeout(() => {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }, 300);
+        }
+    });
 
-    const foodItem = {
-        desc: nome.charAt(0).toUpperCase() + nome.slice(1),
-        qta: qta,
-        selezionato: true
+    // 3. GESTIONE API KEY (Solo su richiesta)
+    document.getElementById('ai-open-settings').onclick = (e) => {
+        e.stopPropagation();
+        settingsPanel.style.display = settingsPanel.style.display === 'none' ? 'block' : 'none';
+        apiKeyInput.value = localStorage.getItem(API_KEY_STORAGE) || '';
     };
-    
-    for (const key in nutrients100g) {
-        foodItem[key] = (nutrients100g[key] / 100) * qta;
+
+    document.getElementById('ai-close-settings').onclick = () => {
+        settingsPanel.style.display = 'none';
+    };
+
+    document.getElementById('ai-save-api-key').onclick = () => {
+        const key = apiKeyInput.value.trim();
+        if (key) {
+            geminiApiKey = key;
+            localStorage.setItem(API_KEY_STORAGE, key);
+            settingsPanel.style.display = 'none';
+            alert("✅ API Key salvata!");
+        }
+    };
+
+    // 4. LOGICA DI COMUNICAZIONE AI
+    async function callGeminiAPI(prompt) {
+        if (!geminiApiKey) {
+            settingsPanel.style.display = 'block';
+            throw new Error('Configura l\'API Key cliccando sull\'ingranaggio.');
+        }
+        
+        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
+            })
+        });
+
+        if (!response.ok) throw new Error('Errore API: controlla la chiave.');
+        const data = await response.json();
+        return data.candidates[0].content.parts[0].text;
     }
-    return foodItem;
-}
 
-// Funzione finale per spostare l'alimento nel costruttore
-function finishFoodAddition(foodItem, pasto) {
-    if (!window.pastoInCostruzione) window.pastoInCostruzione = [];
-    window.pastoInCostruzione.push(foodItem);
-    localStorage.setItem('trackerPastoInCostruzione', JSON.stringify(window.pastoInCostruzione));
-    
-    if (pasto) {
-        const selector = document.getElementById('meal-type-selector');
-        if (selector) selector.value = pasto;
-    }
-
-    const builderSection = document.getElementById('meal-builder-sezione');
-    builderSection.dataset.visible = "true";
-    builderSection.style.display = "block";
-    
-    // Aggiorna la UI del costruttore (usando la funzione globale esistente)
-    if (typeof window.renderMealBuilder === 'function') {
-        window.renderMealBuilder();
-    }
-    
-    builderSection.scrollIntoView({ behavior: 'smooth' });
-    addMessage(`🎯 <strong>${foodItem.desc}</strong> aggiunto al <strong>Costruttore Pasti</strong>.`, 'assistant');
-}
-
-            // Analizza screenshot sonno
-            async function analyzeSleepImage(file) {
-                showLoading();
-                addMessage('📸 Ho caricato uno screenshot del sonno. Sto analizzando...', 'user');
-
-                try {
-                    // OCR sull'immagine
-                    const { data: { text } } = await Tesseract.recognize(file, 'ita');
-
-                    // Invia all'AI per analisi
-                    const prompt = 'Analizza questi dati di sonno estratti da uno screenshot dell app Mi Fitness. Estrai: ore totali di sonno, qualità del sonno, fasi del sonno (leggero, profondo, REM), eventuali sveglie. Poi dammi consigli nutrizionali basati sulla qualità del sonno (es. se sonno scarso, suggerisci alimenti ricchi di magnesio e triptofano).\n\nTesto estratto:\n' + text;
-
-                    const callGemini = window.httpsCallable(window.functions, 'callOpenAI');
-                    const result = await callGemini({ prompt: prompt });
-                    const data = result.data;
-                    const response = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Non sono riuscito ad analizzare i dati del sonno.';
-
-                    hideLoading();
-                    addMessage(response.replace(/\n/g, '<br>'), 'assistant');
-
-                } catch (error) {
-                    hideLoading();
-                    addMessage('❌ Errore nell analisi dello screenshot. Assicurati che l immagine sia chiara.', 'assistant');
-                    console.error(error);
-                }
+    // 5. FUNZIONE AGGIUNTA ALIMENTO (INTEGRATA COL DATABASE E COSTRUTTORE)
+    async function addFoodDirectly(nome, qta, pasto) {
+        try {
+            const sanitizedInput = nome.toLowerCase().trim();
+            const keys = Object.keys(window.foodDatabase);
+            
+            // Cerca nel Database locale
+            const matches = keys.filter(k => k.includes(window.sanitizeFirebaseKey(sanitizedInput)));
+            
+            // Se trova più yogurt/alimenti simili -> Genera Bottoni
+            if (matches.length > 1) {
+                const choiceButtons = document.createElement('div');
+                choiceButtons.className = 'ai-chat-meal-buttons';
+                choiceButtons.innerHTML = `<p>Ho trovato più tipi di <strong>${nome}</strong>. Quale intendi?</p>`;
+                
+                matches.forEach(m => {
+                    const btn = document.createElement('button');
+                    btn.textContent = window.foodDatabase[m].desc;
+                    btn.onclick = () => {
+                        choiceButtons.parentElement.parentElement.remove();
+                        addFoodDirectly(window.foodDatabase[m].desc, qta, pasto);
+                    };
+                    choiceButtons.appendChild(btn);
+                });
+                
+                addMessageElement(choiceButtons);
+                return;
             }
 
-            // Esporta dati per AI
-            chatExportBtn.addEventListener('click', async function() {
-                const data = getDailyDataJSON();
-                const jsonString = JSON.stringify(data, null, 2);
+            let foodItem;
+            // Se lo trova nel DB
+            if (matches.length === 1 || window.foodDatabase[window.sanitizeFirebaseKey(sanitizedInput)]) {
+                const dbKey = matches[0] || window.sanitizeFirebaseKey(sanitizedInput);
+                const dbData = window.foodDatabase[dbKey];
+                
+                foodItem = {
+                    desc: dbData.desc,
+                    qta: qta,
+                    selezionato: true
+                };
 
-                try {
-                    await navigator.clipboard.writeText(jsonString);
-                    addMessage('✅ Dati JSON copiati negli appunti! Puoi incollarli dove preferisci.', 'assistant');
-                } catch (err) {
-                    addMessage('❌ Errore nella copia. Riprova.', 'assistant');
+                for (const key in dbData) {
+                    if (key !== 'lastQta' && key !== 'desc' && key !== 'ingredienti') {
+                        foodItem[key] = ((dbData[key] ?? 0) / 100) * qta;
+                    }
                 }
-            });
+                addMessage(`✅ Uso i dati del tuo database per <strong>${dbData.desc}</strong>.`, 'assistant');
+            } 
+            // Se l'alimento è nuovo -> Chiedi conferma per salvataggio
+            else {
+                const saveConfirm = document.createElement('div');
+                saveConfirm.className = 'ai-chat-meal-buttons';
+                saveConfirm.innerHTML = `<p>"<strong>${nome}</strong>" è nuovo. Vuoi cercarlo online e <strong>salvarlo nel tuo database</strong>?</p>
+                    <button id="ai-save-db-yes">Sì, salva</button>
+                    <button id="ai-save-db-no">No, solo stavolta</button>`;
+                
+                const msgDiv = addMessageElement(saveConfirm);
+                
+                msgDiv.querySelector('#ai-save-db-yes').onclick = async () => {
+                    msgDiv.remove();
+                    const data = await fetchAIValues(nome, qta, true);
+                    finishAddition(data, pasto);
+                };
+                msgDiv.querySelector('#ai-save-db-no').onclick = async () => {
+                    msgDiv.remove();
+                    const data = await fetchAIValues(nome, qta, false);
+                    finishAddition(data, pasto);
+                };
+                return;
+            }
 
-            // Pulisci chat
-            chatClearBtn.addEventListener('click', function() {
-                if (confirm('Vuoi cancellare la cronologia della chat?')) {
-                    chatMessages.innerHTML = '<div class="ai-message ai-welcome"><strong>Chat pulita!</strong><br><br>Come posso aiutarti oggi?</div>';
-                    localStorage.removeItem('aiChatHistory');
-                }
-            });
+            finishAddition(foodItem, pasto);
+        } catch (e) { addMessage("❌ Errore nel caricamento.", "assistant"); }
+    }
 
-            // Event listeners
-            chatSend.addEventListener('click', sendMessage);
-            chatInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    sendMessage();
-                }
-            });
+    async function fetchAIValues(nome, qta, save) {
+        addMessage(`🔍 Ricerca valori per ${nome}...`, "assistant");
+        const prompt = `JSON nutrizionale per 100g di "${nome}". Formato: {"prot":g,"kcal":kcal,"carb":g,"zuccheri":g,"fatSat":g,"fatTrans":g,"fatMono":g,"fatPoly":g,"omega3":g,"omega6":g,"fibreTotali":g,"fibreSolubili":g,"fibreInsolubili":g,"na":mg,"mg":mg,"k":mg,"vitc":mg,"ca":mg,"vitA":ug,"vitB12":ug,"vitD":ug,"vitE":mg,"vitK":ug,"b9":ug,"b2":mg,"b6":mg,"fe":mg,"zn":mg,"cu":mg,"p":mg}`;
+        const raw = await callGeminiAPI(prompt);
+        const data100 = JSON.parse(raw.replace(/```json|```/g, '').trim());
 
+        if (save) {
+            const key = window.sanitizeFirebaseKey(nome.toLowerCase());
+            window.foodDatabase[key] = { desc: nome, ...data100 };
+            window.salvaFoodDatabase();
+            addMessage(`💾 Salvato nel database!`, "assistant");
+        }
 
+        const item = { desc: nome, qta: qta, selezionato: true };
+        for (const k in data100) { item[k] = (data100[k] / 100) * qta; }
+        return item;
+    }
 
-            chatSleepBtn.addEventListener('click', function() {
-                chatSleepInput.click();
-            });
+    function finishAddition(item, pasto) {
+        window.pastoInCostruzione.push(item);
+        localStorage.setItem('trackerPastoInCostruzione', JSON.stringify(window.pastoInCostruzione));
+        if (pasto) document.getElementById('meal-type-selector').value = pasto;
+        window.renderMealBuilder();
+        document.getElementById('meal-builder-sezione').style.display = "block";
+        document.getElementById('meal-builder-sezione').scrollIntoView({ behavior: 'smooth' });
+        addMessage(`🎯 <strong>${item.desc}</strong> aggiunto al Costruttore Pasti.`, "assistant");
+    }
 
-            chatSleepInput.addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (file) {
-                    analyzeSleepImage(file);
-                }
-                chatSleepInput.value = '';
-            });
+    // UTILS CHAT
+    function addMessage(text, role) {
+        const d = document.createElement('div');
+        d.className = `ai-message ${role}`;
+        d.innerHTML = text.replace(/\n/g, '<br>');
+        chatMessages.appendChild(d);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
 
-            // Chiudi modal alimento
-            foodCancel.addEventListener('click', function() {
-                foodModal.style.display = 'none';
-                pendingFoodData = null;
-            });
+    function addMessageElement(el) {
+        const d = document.createElement('div');
+        d.className = 'ai-message assistant';
+        d.appendChild(el);
+        chatMessages.appendChild(d);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        return d;
+    }
 
-            foodConfirm.addEventListener('click', function() {
-                if (pendingFoodData) {
-                    // Aggiungi al diario
-                    if (!window.datiGiornalieri.log) window.datiGiornalieri.log = [];
-                    window.datiGiornalieri.log.push({
-                        type: 'single',
-                        desc: pendingFoodData.desc,
-                        qta: pendingFoodData.qta,
-                        prot: pendingFoodData.prot || 0,
-                        kcal: pendingFoodData.kcal || 0
-                    });
-                    window.salvaGiorno(window.giornoVisualizzato, window.datiGiornalieri);
-                    window.aggiornaUI();
+    async function sendMessage() {
+        const text = chatInput.value.trim();
+        if (!text) return;
+        addMessage(text, 'user');
+        chatInput.value = '';
+        const loading = addMessageElement(document.createTextNode("🤔 Sto pensando..."));
+        try {
+            const response = await callGeminiAPI(`Analizza: ${text}. Rispondi in italiano. Se aggiungi cibo usa: [AGGIUNGI: nome | qta | pasto]`);
+            loading.remove();
+            addMessage(response, 'assistant');
+            // Logica parsing AGGIUNGI
+            const match = /\[AGGIUNGI:\s*([^|]+)\s*\|\s*(\d+)\s*\|\s*([^\]]+)\]/i.exec(response);
+            if (match) addFoodDirectly(match[1].trim(), parseInt(match[2]), match[3].trim());
+        } catch (e) { loading.innerHTML = "❌ " + e.message; }
+    }
 
-                    addMessage('✅ Aggiunto: ' + pendingFoodData.desc + ' (' + pendingFoodData.qta + 'g)', 'assistant');
-                    foodModal.style.display = 'none';
-                    pendingFoodData = null;
-                }
-            });
+    chatSend.onclick = sendMessage;
+    chatInput.onkeypress = (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } };
 
-            // Inizializza
-            loadChatHistory();
-
+})();
         })();
     </script>
 
 </body>
 </html>
+
 
 
 
