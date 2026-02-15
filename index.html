@@ -882,7 +882,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js" type="module"></script> 
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-functions.js" type="module"></script> 
     <script type="module">
-        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-functions.js";
+        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-functions.js"
+        window.httpsCallable = httpsCallable; // Esporta per la chat AI;
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
         import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
@@ -3519,7 +3520,7 @@
             // Chiama l'AI
             async function callAI(prompt, includeData) {
                 try {
-                    const callGemini = httpsCallable(window.functions, 'callOpenAI');
+                    const callGemini = window.httpsCallable(window.functions, 'callOpenAI');
 
                     let fullPrompt = prompt;
                     if (includeData) {
@@ -3570,7 +3571,7 @@
                     // Invia all'AI per analisi
                     const prompt = 'Analizza questi dati di sonno estratti da uno screenshot dell app Mi Fitness. Estrai: ore totali di sonno, qualità del sonno, fasi del sonno (leggero, profondo, REM), eventuali sveglie. Poi dammi consigli nutrizionali basati sulla qualità del sonno (es. se sonno scarso, suggerisci alimenti ricchi di magnesio e triptofano).\n\nTesto estratto:\n' + text;
 
-                    const callGemini = httpsCallable(window.functions, 'callOpenAI');
+                    const callGemini = window.httpsCallable(window.functions, 'callOpenAI');
                     const result = await callGemini({ prompt: prompt });
                     const data = result.data;
                     const response = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Non sono riuscito ad analizzare i dati del sonno.';
