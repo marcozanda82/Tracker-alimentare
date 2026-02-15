@@ -3581,7 +3581,73 @@
 
             // Parsa la risposta dell'AI per trovare alimenti/allenamenti da aggiungere
             function parseAIResponseForActions(response, originalMessage) {
-                // Cerca pattern di alimenti: "yogurt greco 150g" o "150g di yogurt greco"
+                // PRIMA: Cerca un JSON nella risposta dell'AI
+                const jsonMatch = response.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    try {
+                        const jsonStr = jsonMatch[0];
+                        const data = JSON.parse(jsonStr);
+
+                        // Controlla se c'è un allenamento
+                        if (data.allenamento && data.allenamento.kcal_bruciate > 0) {
+                            const desc = data.allenamento.descrizione || 'Allenamento';
+                            const kcal = data.allenamento.kcal_bruciate;
+                            setTimeout(() => {
+                                if (confirm(`Vuoi registrare l'allenamento "${desc} (${kcal} kcal)"?`)) {
+                                    addWorkoutDirectly(desc, kcal);
+                                }
+                            }, 500);
+                        }
+
+                        // Controlla se ci sono alimenti nel diario
+                        if (data.diario_alimentare && data.diario_alimentare.length > 0) {
+                            const foods = [];
+                            data.diario_alimentare.forEach(item => {
+                                if (item.dettagli) {
+                                    item.dettagli.forEach(d => {
+                                        if (d.alimento && d.qta_g) {
+                                            foods.push({ nome: d.alimento, qta: d.qta_g });
+                                        }
+                                    });
+                                }
+                            });
+
+                            if (foods.length > 0) {
+                                setTimeout(() => {
+                                    const foodList = foods.map(f => `${f.nome} (${f.qta}g)`).join(', ');
+                                    if (confirm(`Vuoi aggiungere questi alimenti al diario: ${foodList}?`)) {
+                                        foods.forEach(f => addFoodDirectly(f.nome, f.qta));
+                                    }
+                                }, 500);
+                            }
+                        }
+
+                        // Controlla anche formato alternativo (cibo diretto)
+                        if (data.diario_alimentare === 'cibo' || typeof data.diario_alimentare === 'object') {
+                            // Cerca chiavi che potrebbero essere nomi di cibi
+                            for (const key in data) {
+                                if (key !== 'meta' && key !== 'obiettivi' && key !== 'progresso_attuale' && 
+                                    key !== 'diario_alimentare' && key !== 'allenamento') {
+                                    const val = data[key];
+                                    if (typeof val === 'number' && val > 0) {
+                                        // Potrebbe essere un alimento con quantità
+                                        setTimeout(() => {
+                                            if (confirm(`Vuoi aggiungere "${key} (${val}g)" al diario?`)) {
+                                                addFoodDirectly(key, val);
+                                            }
+                                        }, 500);
+                                    }
+                                }
+                            }
+                        }
+
+                        return; // JSON processato, esci
+                    } catch (e) {
+                        console.log('JSON non valido nella risposta:', e);
+                    }
+                }
+
+                // SECONDO: Cerca pattern di alimenti nel messaggio originale
                 const foodPatterns = [
                     /(\d+)\s*g(?:rammi)?\s+(?:di\s+)?([\w\s]+?)(?:[,;.]|$)/i,
                     /([\w\s]+?)\s+(\d+)\s*g(?:rammi)?/i,
@@ -3611,13 +3677,12 @@
                         }
 
                         if (qta > 0 && nome.length > 2) {
-                            // Chiedi conferma all'utente
                             setTimeout(() => {
-                                if (confirm(`Vuoi aggiungere \"${nome} \\(${qta}g\\)\" al diario?`)) {
-                                    addFoodFromChat(nome, qta);
+                                if (confirm(`Vuoi aggiungere "${nome} (${qta}g)" al diario?`)) {
+                                    addFoodDirectly(nome, qta);
                                 }
                             }, 500);
-                            return; // Trovato un alimento, esci
+                            return;
                         }
                     }
                 }
@@ -3631,14 +3696,63 @@
 
                         if (kcal > 0) {
                             setTimeout(() => {
-                                if (confirm(`Vuoi registrare l'allenamento \"${desc} \\(${kcal} kcal\\)\"?`)) {
-                                    addWorkoutFromChat(desc, kcal);
+                                if (confirm(`Vuoi registrare l'allenamento "${desc} (${kcal} kcal)"?`)) {
+                                    addWorkoutDirectly(desc, kcal);
                                 }
                             }, 500);
                             return;
                         }
                     }
                 }
+            }
+
+            // Aggiungi alimento direttamente al diario (con dati AI)
+            async function addFoodDirectly(nome, qta) {
+                try {
+                    const callGemini = window.httpsCallable(window.functions, 'callOpenAI');
+
+                    const prompt = `Fornisci ESATTAMENTE questo oggetto JSON (senza altro testo) con i valori nutrizionali medi per ${qta} g di "${nome}". Agisci come un esperto nutrizionista. Basa le tue risposte su database nutrizionali affidabili. {"prot":g,"kcal":kcal,"carb":g,"zuccheri":g,"fatSat":g,"fatTrans":g,"fatMono":g,"fatPoly":g,"omega3":g,"omega6":g,"fibreTotali":g,"fibreSolubili":g,"fibreInsolubili":g,"na":mg,"mg":mg,"k":mg,"vitc":mg,"ca":mg,"vitA":ug,"vitB12":ug,"vitD":ug,"vitE":mg,"vitK":ug,"b9":ug,"b2":mg,"b6":mg,"fe":mg,"zn":mg,"cu":mg,"p":mg}`;
+
+                    const result = await callGemini({ prompt: prompt });
+                    const data = result.data;
+                    const rawJson = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+                    const nutrientData = JSON.parse(rawJson.replace(/```json|```/g, '').trim());
+
+                    // Crea l'oggetto alimento
+                    const foodItem = {
+                        type: 'single',
+                        desc: nome.charAt(0).toUpperCase() + nome.slice(1),
+                        qta: qta,
+                        ...nutrientData
+                    };
+
+                    // Aggiungi al diario
+                    if (!window.datiGiornalieri.log) window.datiGiornalieri.log = [];
+                    window.datiGiornalieri.log.push(foodItem);
+                    window.salvaGiorno(window.giornoVisualizzato, window.datiGiornalieri);
+                    window.aggiornaUI();
+
+                    addMessage(`✅ Aggiunto: <strong>${nome}</strong> (${qta}g) - ${nutrientData.kcal || '?'} kcal, ${nutrientData.prot || '?'}g proteine`, 'assistant');
+
+                } catch (err) {
+                    console.error('Errore aggiunta alimento:', err);
+                    addMessage(`❌ Errore nell'aggiungere ${nome}. Prova a compilarlo manualmente.`, 'assistant');
+                }
+            }
+
+            // Aggiungi allenamento direttamente
+            function addWorkoutDirectly(desc, kcal) {
+                if (!window.datiGiornalieri.log) window.datiGiornalieri.log = [];
+                window.datiGiornalieri.log.push({ 
+                    type: 'workout', 
+                    desc: desc, 
+                    kcal: kcal 
+                });
+                window.datiGiornalieri.workoutCalorie = (window.datiGiornalieri.workoutCalorie || 0) + kcal;
+                window.salvaGiorno(window.giornoVisualizzato, window.datiGiornalieri);
+                window.aggiornaUI();
+
+                addMessage(`✅ Allenamento registrato: <strong>${desc}</strong> (${kcal} kcal)`, 'assistant');
             }
 
             // Aggiungi alimento dal diario dalla chat
