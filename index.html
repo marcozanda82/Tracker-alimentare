@@ -3381,6 +3381,31 @@
                 bottom: 10px;
             }
         }
+
+        .ai-chat-meal-buttons {
+            margin-top: 10px;
+        }
+
+        .ai-chat-meal-buttons p {
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+
+        .ai-chat-meal-buttons button {
+            margin: 5px;
+            padding: 8px 15px;
+            border: 1px solid #667eea;
+            border-radius: 20px;
+            background: white;
+            color: #667eea;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .ai-chat-meal-buttons button:hover {
+            background: #667eea;
+            color: white;
+        }
     </style>
 
     <script>
@@ -3542,7 +3567,7 @@
                     let fullPrompt = prompt;
                     if (includeData) {
                         const dailyData = getDailyDataJSON();
-                        fullPrompt = 'Contesto: Oggi è ' + dailyData.meta.data + ', giorno di ' + dailyData.meta.giorno_tipo + '.\n\nI miei dati nutrizionali attuali sono in formato json: ' + JSON.stringify(dailyData, null, 2) + '\n\nDomanda dell utente: ' + prompt + '\n\nRispondi in italiano usando formato json se necessario. Se l utente chiede cosa mangiare, suggerisci alimenti specifici con quantità approssimative.';
+                        fullPrompt = `Contesto: Oggi è ${dailyData.meta.data}, giorno di ${dailyData.meta.giorno_tipo}.\n\nI miei dati nutrizionali attuali sono:\n- Calorie: ${dailyData.progresso_attuale.kcal}/${dailyData.obiettivi.kcal} kcal\n- Proteine: ${dailyData.progresso_attuale.proteine}/${dailyData.obiettivi.proteine}g\n- Carboidrati: ${dailyData.progresso_attuale.carboidrati}/${dailyData.obiettivi.carboidrati}g\n- Grassi: ${dailyData.progresso_attuale.grassi}/${dailyData.obiettivi.grassi}g\n\nDomanda dell utente: ${prompt}\n\nISTRUZIONI IMPORTANTI:\n1. Rispondi SEMPRE in italiano in modo naturale e conversazionale\n2. NON usare JSON nella risposta visibile all'utente\n3. Se l'utente dice di aver mangiato qualcosa SENZA specificare la quantità, chiedi gentilmente "Quanti grammi hai mangiato?"\n4. Se l'utente dice di aver mangiato qualcosa SENZA specificare il pasto, chiedi "Era per quale pasto? (merenda AM, pranzo, merenda PM, cena)"\n5. Se l'utente ha già mangiato quell'alimento in passato, puoi suggerire la stessa quantità\n6. Alla fine della risposta, se ci sono alimenti da aggiungere, includi questa riga esatta: [AGGIUNGI: nome_alimento | quantità_g | pasto]`;
                     }
 
                     const result = await callGemini({ prompt: fullPrompt });
@@ -3581,104 +3606,164 @@
 
             // Parsa la risposta dell'AI per trovare alimenti/allenamenti da aggiungere
             function parseAIResponseForActions(response, originalMessage) {
-                // Estrai JSON dalla risposta (cerca tra graffe)
-                const jsonMatch = response.match(/\{[\s\S]*\}/);
-                if (!jsonMatch) return;
+                // Cerca pattern [AGGIUNGI: nome | quantità | pasto] nella risposta
+                const addPattern = /\[AGGIUNGI:\s*([^|]+)\s*\|\s*(\d+)\s*g?\s*\|\s*([^\]]+)\]/gi;
+                let match;
+                const foodsToAdd = [];
 
-                try {
-                    const jsonStr = jsonMatch[0];
-                    const data = JSON.parse(jsonStr);
+                while ((match = addPattern.exec(response)) !== null) {
+                    foodsToAdd.push({
+                        nome: match[1].trim(),
+                        qta: parseInt(match[2]),
+                        pasto: match[3].trim()
+                    });
+                }
 
-                    // Array per raccogliere alimenti trovati
-                    const foods = [];
-
-                    // 1. Controlla se c'è un allenamento
-                    if (data.allenamento && data.allenamento.kcal_bruciate > 0) {
-                        const desc = data.allenamento.descrizione || 'Allenamento';
-                        const kcal = parseInt(data.allenamento.kcal_bruciate);
-                        setTimeout(() => {
-                            if (confirm(`Vuoi registrare l'allenamento "${desc} (${kcal} kcal)"?`)) {
-                                addWorkoutDirectly(desc, kcal);
-                            }
-                        }, 500);
-                    }
-
-                    // 2. Controlla diario_alimentare (formato array)
-                    if (data.diario_alimentare && Array.isArray(data.diario_alimentare)) {
-                        data.diario_alimentare.forEach(item => {
-                            // Formato 1: {alimento: "nome", quantità_g: 100}
-                            if (item.alimento && item.quantità_g) {
-                                foods.push({
-                                    nome: item.alimento,
-                                    qta: parseInt(item.quantità_g),
-                                    pasto: item.pasto || null,
-                                    dati: item
-                                });
-                            }
-                            // Formato 2: {cibo: "nome", quantità_g: 100}
-                            else if (item.cibo && item.quantità_g) {
-                                foods.push({
-                                    nome: item.cibo,
-                                    qta: parseInt(item.quantità_g),
-                                    pasto: item.pasto || null,
-                                    dati: item
-                                });
-                            }
-                        });
-                    }
-
-                    // 3. Controlla formato diretto (chiavi sono nomi cibi)
-                    for (const key in data) {
-                        if (['meta', 'obiettivi', 'progresso_attuale', 'diario_alimentare', 'allenamento'].includes(key)) continue;
-
-                        const val = data[key];
-                        // Se il valore è un numero, potrebbe essere la quantità in grammi
-                        if (typeof val === 'number' && val > 0 && val < 5000) {
-                            foods.push({
-                                nome: key,
-                                qta: val,
-                                pasto: null,
-                                dati: null
-                            });
+                if (foodsToAdd.length > 0) {
+                    // Chiedi conferma all'utente
+                    setTimeout(() => {
+                        const foodList = foodsToAdd.map(f => `${f.nome} (${f.qta}g) per ${f.pasto}`).join(', ');
+                        if (confirm(`Vuoi aggiungere al diario: ${foodList}?`)) {
+                            foodsToAdd.forEach(f => addFoodDirectly(f.nome, f.qta, f.pasto));
                         }
-                        // Se è un oggetto con quantità
-                        else if (typeof val === 'object' && val && val.quantità_g) {
-                            foods.push({
-                                nome: key,
-                                qta: parseInt(val.quantità_g),
-                                pasto: val.pasto || null,
-                                dati: val
-                            });
-                        }
-                    }
+                    }, 500);
+                    return;
+                }
 
-                    // Se abbiamo trovato alimenti, chiedi conferma
-                    if (foods.length > 0) {
-                        setTimeout(() => {
-                            const foodList = foods.map(f => `${f.nome} (${f.qta}g)`).join(', ');
-                            const pastoInfo = foods[0].pasto ? ` per ${foods[0].pasto}` : '';
+                // Se la risposta contiene domande su quantità/pasto, non fare nulla
+                // (l'utente risponderà nella prossima interazione)
+                if (response.includes('Quanti grammi') || response.includes('quale pasto')) {
+                    return;
+                }
 
-                            if (confirm(`Vuoi aggiungere al diario${pastoInfo}: ${foodList}?`)) {
-                                foods.forEach(f => {
-                                    if (f.dati && f.dati.kcal) {
-                                        // Abbiamo già i dati nutrizionali
-                                        addFoodWithData(f.nome, f.qta, f.dati);
-                                    } else {
-                                        // Dobbiamo chiedere all'AI
-                                        addFoodDirectly(f.nome, f.qta);
+                // Cerca nel messaggio originale pattern di alimenti
+                const foodPatterns = [
+                    /ho\s+mangiat[oa]\s+([\w\s]+?)(?:\s+(\d+)\s*g)?/i,
+                    /mangio\s+([\w\s]+?)(?:\s+(\d+)\s*g)?/i,
+                    /([\w\s]+?)\s+(\d+)\s*g/i
+                ];
+
+                for (const pattern of foodPatterns) {
+                    const match = originalMessage.match(pattern);
+                    if (match) {
+                        const nome = match[1].trim();
+                        const qta = match[2] ? parseInt(match[2]) : null;
+
+                        if (nome.length > 2) {
+                            // Cerca nel database se abbiamo già questo alimento
+                            const lastQty = findLastQuantityForFood(nome);
+
+                            if (!qta && lastQty) {
+                                // Suggerisci la quantità precedente
+                                setTimeout(() => {
+                                    if (confirm(`Hai già mangiato ${nome} in passato (${lastQty}g). Vuoi aggiungerlo con la stessa quantità?`)) {
+                                        askForMealType(nome, lastQty);
                                     }
-                                });
+                                }, 500);
+                            } else if (!qta) {
+                                // Chiedi la quantità
+                                // La AI dovrebbe già averlo chiesto, ma come fallback:
+                                addMessage(`Quanti grammi di ${nome} hai mangiato?`, 'assistant');
+                            } else {
+                                // Abbiamo quantità, chiedi il pasto
+                                askForMealType(nome, qta);
                             }
-                        }, 500);
+                            return;
+                        }
                     }
+                }
 
-                } catch (e) {
-                    console.log('Errore parsing JSON:', e);
+                // Cerca pattern di allenamento
+                const workoutPatterns = [
+                    /allenamento\s+(?:di\s+)?([\w\s]+?)(?:\s+(\d+)\s*kcal)?/i,
+                    /(?:corsa|pesistica|workout)\s+(?:di\s+)?([\w\s]*?)(?:\s+(\d+)\s*kcal)?/i
+                ];
+
+                for (const pattern of workoutPatterns) {
+                    const match = originalMessage.match(pattern);
+                    if (match) {
+                        const desc = match[1].trim() || 'Allenamento';
+                        const kcal = match[2] ? parseInt(match[2]) : null;
+
+                        if (kcal && kcal > 0) {
+                            setTimeout(() => {
+                                if (confirm(`Vuoi registrare l'allenamento "${desc} (${kcal} kcal)"?`)) {
+                                    addWorkoutDirectly(desc, kcal);
+                                }
+                            }, 500);
+                            return;
+                        }
+                    }
                 }
             }
 
+            // Trova l'ultima quantità usata per un alimento
+            function findLastQuantityForFood(nome) {
+                const sanitizedKey = window.sanitizeFirebaseKey(nome.toLowerCase());
+                const foodData = window.foodDatabase[sanitizedKey];
+                if (foodData && foodData.lastQta) {
+                    return foodData.lastQta;
+                }
+
+                // Cerca nel diario degli ultimi 7 giorni
+                const today = new Date();
+                for (let i = 0; i < 7; i++) {
+                    const dateToCheck = new Date(today);
+                    dateToCheck.setDate(today.getDate() - i);
+                    const dateString = dateToCheck.toISOString().split('T')[0];
+                    const dailyDataRaw = localStorage.getItem(`trackerStorico_${dateString}`);
+
+                    if (dailyDataRaw) {
+                        try {
+                            const dailyData = JSON.parse(dailyDataRaw);
+                            if (dailyData && dailyData.log) {
+                                for (const entry of dailyData.log) {
+                                    if (entry.type === 'workout') continue;
+                                    const items = entry.type === 'meal' ? entry.items : [entry];
+                                    for (const item of items) {
+                                        if (item.desc && item.desc.toLowerCase().includes(nome.toLowerCase())) {
+                                            return item.qta;
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (e) {}
+                    }
+                }
+                return null;
+            }
+
+            // Chiedi il tipo di pasto
+            function askForMealType(nome, qta) {
+                // Crea i bottoni per selezionare il pasto
+                const mealButtons = document.createElement('div');
+                mealButtons.className = 'ai-chat-meal-buttons';
+                mealButtons.innerHTML = `
+                    <p><strong>${nome} (${qta}g)</strong> - Per quale pasto?</p>
+                    <button data-meal="merenda1">Merenda AM</button>
+                    <button data-meal="pranzo">Pranzo</button>
+                    <button data-meal="merenda2">Merenda PM</button>
+                    <button data-meal="cena">Cena</button>
+                `;
+
+                const msgDiv = document.createElement('div');
+                msgDiv.className = 'ai-message assistant';
+                msgDiv.appendChild(mealButtons);
+                document.getElementById('ai-chat-messages').appendChild(msgDiv);
+                document.getElementById('ai-chat-messages').scrollTop = document.getElementById('ai-chat-messages').scrollHeight;
+
+                // Aggiungi event listeners
+                mealButtons.querySelectorAll('button').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const pasto = btn.dataset.meal;
+                        addFoodDirectly(nome, qta, pasto);
+                        msgDiv.remove();
+                    });
+                });
+            }
+
             // Aggiungi alimento direttamente al diario (con dati AI)
-            async function addFoodDirectly(nome, qta) {
+            async function addFoodDirectly(nome, qta, pasto) {
                 try {
                     const callGemini = window.httpsCallable(window.functions, 'callOpenAI');
 
@@ -3691,19 +3776,51 @@
 
                     // Crea l'oggetto alimento
                     const foodItem = {
-                        type: 'single',
                         desc: nome.charAt(0).toUpperCase() + nome.slice(1),
                         qta: qta,
                         ...nutrientData
                     };
 
-                    // Aggiungi al diario
                     if (!window.datiGiornalieri.log) window.datiGiornalieri.log = [];
-                    window.datiGiornalieri.log.push(foodItem);
+
+                    if (pasto) {
+                        // Cerca se esiste già un pasto dello stesso tipo
+                        const pastoNames = {
+                            'merenda1': 'Merenda AM',
+                            'pranzo': 'Pranzo',
+                            'merenda2': 'Merenda PM',
+                            'cena': 'Cena'
+                        };
+                        const pastoName = pastoNames[pasto] || pasto;
+
+                        let existingMeal = window.datiGiornalieri.log.find(e => 
+                            e.type === 'meal' && e.mealId === pasto
+                        );
+
+                        if (existingMeal) {
+                            // Aggiungi al pasto esistente
+                            existingMeal.items.push(foodItem);
+                        } else {
+                            // Crea nuovo pasto
+                            window.datiGiornalieri.log.push({
+                                type: 'meal',
+                                desc: pastoName,
+                                mealId: pasto,
+                                isExpanded: false,
+                                items: [foodItem]
+                            });
+                        }
+                    } else {
+                        // Aggiungi come alimento singolo
+                        foodItem.type = 'single';
+                        window.datiGiornalieri.log.push(foodItem);
+                    }
+
                     window.salvaGiorno(window.giornoVisualizzato, window.datiGiornalieri);
                     window.aggiornaUI();
 
-                    addMessage(`✅ Aggiunto: <strong>${nome}</strong> (${qta}g) - ${nutrientData.kcal || '?'} kcal, ${nutrientData.prot || '?'}g proteine`, 'assistant');
+                    const pastoText = pasto ? ` per ${pasto}` : '';
+                    addMessage(`✅ Aggiunto: <strong>${nome}</strong> (${qta}g)${pastoText} - ${nutrientData.kcal || '?'} kcal, ${nutrientData.prot || '?'}g proteine`, 'assistant');
 
                 } catch (err) {
                     console.error('Errore aggiunta alimento:', err);
