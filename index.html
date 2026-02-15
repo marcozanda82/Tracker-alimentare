@@ -3214,27 +3214,25 @@
 <div id="ai-chat-widget" class="ai-chat-widget minimized">
     <div class="ai-chat-header" id="ai-chat-toggle">
         <span>🤖 Assistente AI</span>
-        <div style="display:flex; align-items:center; gap:10px;">
-            <button id="ai-open-settings" title="Configura API Key" style="background:none; border:none; font-size:1.3em; cursor:pointer; padding:0; color:white; opacity:0.8;">⚙️</button>
-            <span id="ai-toggle-icon">▲</span>
-        </div>
+        <span id="ai-toggle-icon">▲</span>
     </div>
     <div class="ai-chat-body" style="display: flex; flex-direction: column; height: 450px;">
-        <div id="ai-chat-settings" style="display:none; padding:12px; background:#f8f9fa; border-bottom:2px solid #667eea;">
-            <label style="font-size:0.85em; color:#555; margin-bottom:6px; display:block; font-weight:600;">🔑 API Key Gemini:</label>
-            <input type="password" id="ai-api-key-input" placeholder="Incolla qui la tua chiave..." style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box; font-size:0.9em;">
+        <div id="ai-chat-settings" style="display:none; padding:10px; background:#f0f0f0; border-bottom:1px solid #ccc;">
+            <label style="font-size:0.85em; color:#555; margin-bottom:5px; display:block;">Inserisci la tua API Key di Gemini:</label>
+            <input type="password" id="ai-api-key-input" placeholder="Chiave API..." style="width:100%; padding:8px; margin-bottom:8px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box;">
             <div style="display:flex; gap:8px;">
-                <button id="ai-save-api-key" style="flex:1; padding:10px; background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600;">💾 Salva</button>
-                <button id="ai-close-settings" style="padding:10px 15px; background:#e0e0e0; color:#333; border:none; border-radius:8px; cursor:pointer;">✕</button>
+                <button id="ai-save-api-key" style="flex:1; padding:8px; background:#4caf50; color:white; border:none; border-radius:4px; cursor:pointer;">Salva</button>
+                <button id="ai-close-settings" style="padding:8px 12px; background:#607d8b; color:white; border:none; border-radius:4px; cursor:pointer;">X</button>
             </div>
-            <p id="ai-api-status" style="margin:8px 0 0 0; font-size:0.8em; min-height:18px;"></p>
+            <p id="ai-api-status" style="margin:8px 0 0 0; font-size:0.8em; color:#666;"></p>
         </div>
-        <div class="ai-chat-messages" id="ai-chat-messages" style="flex:1; overflow-y:auto; padding:15px; background:#f8f9fa;">
+        <div class="ai-chat-messages" id="ai-chat-messages" style="flex:1; overflow-y:auto; padding:15px;">
             <div class="ai-message assistant">Ciao! Sono il tuo assistente nutrizionale. Scrivimi cosa hai mangiato (es. "150g di petto di pollo a pranzo") e lo aggiungerò al tuo diario.</div>
         </div>
-        <div class="ai-chat-input-area" style="display:flex; padding:12px; border-top:1px solid #e0e0e0; gap:10px; background:white; align-items:center;">
-            <textarea id="ai-chat-input" placeholder="Cosa hai mangiato? (es. 200g yogurt greco)" style="flex:1; border:1px solid #ddd; border-radius:20px; padding:12px 16px; resize:none; font-family:inherit; font-size:0.95em; outline:none; min-height:20px; max-height:80px;"></textarea>
-            <button id="ai-chat-send" style="width:46px; height:46px; border-radius:50%; border:none; background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:white; font-size:1.1em; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(102,126,234,0.3);">➤</button>
+        <div class="ai-chat-input-area" style="display:flex; padding:10px; border-top:1px solid #eee; gap:8px;">
+            <button id="ai-open-settings" title="Configura API Key" style="background:none; border:none; font-size:1.3em; cursor:pointer; padding:5px;">⚙️</button>
+            <textarea id="ai-chat-input" placeholder="Cosa hai mangiato?" style="flex:1; border:1px solid #ddd; border-radius:20px; padding:10px 15px; resize:none; font-family:inherit; height:20px; outline:none;"></textarea>
+            <button id="ai-chat-send" style="width:44px; height:44px; border-radius:50%; border:none; background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:white; font-size:1.2em; cursor:pointer;">➤</button>
         </div>
     </div>
 </div>
@@ -3654,24 +3652,12 @@
                 addMessageElement(div);
             }
 
-          
             // Event Listeners
             if (aiToggle) {
-                aiToggle.addEventListener('click', (e) => {
-                    // Non toggle se clicco sul bottone settings
-                    if (e.target.closest('#ai-open-settings')) return;
-                    
+                aiToggle.addEventListener('click', () => {
                     aiWidget.classList.toggle('minimized');
                     const icon = document.getElementById('ai-toggle-icon');
                     if (icon) icon.textContent = aiWidget.classList.contains('minimized') ? '▲' : '▼';
-                });
-            }
-
-            if (aiOpenSettings) {
-                aiOpenSettings.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    toggleSettings();
                 });
             }
 
@@ -3764,5 +3750,3 @@ Se non è una richiesta di aggiunta alimento, rispondi normalmente in italiano.`
     </script>
 </body>
 </html>
-
-
