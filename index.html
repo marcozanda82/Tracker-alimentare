@@ -3996,70 +3996,106 @@ ISTRUZIONI IMPORTANTI:
             }
 
             // Aggiungi alimento direttamente al diario (con dati AI)
-            async function addFoodDirectly(nome, qta, pasto) {
-                try {
-                    const callGemini = window.httpsCallable(window.functions, 'callOpenAI');
+// Funzione aggiornata per consultare il database e usare il Costruttore Pasti
+async function addFoodDirectly(nome, qta, pasto) {
+    try {
+        const sanitizedInput = nome.toLowerCase().trim();
+        const keys = Object.keys(window.foodDatabase);
+        
+        // 1. Cerca corrispondenze nel database locale
+        const matches = keys.filter(k => k.includes(window.sanitizeFirebaseKey(sanitizedInput)));
+        
+        if (matches.length > 1) {
+            // Se sono troppi, chiedi di scegliere
+            const choiceButtons = document.createElement('div');
+            choiceButtons.className = 'ai-chat-meal-buttons';
+            choiceButtons.innerHTML = `<p>Ho trovato più tipi di <strong>${nome}</strong>. Quale hai mangiato?</p>`;
+            
+            matches.forEach(m => {
+                const btn = document.createElement('button');
+                btn.textContent = window.foodDatabase[m].desc;
+                btn.onclick = () => {
+                    choiceButtons.remove();
+                    addFoodDirectly(window.foodDatabase[m].desc, qta, pasto);
+                };
+                choiceButtons.appendChild(btn);
+            });
+            
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'ai-message assistant';
+            msgDiv.appendChild(choiceButtons);
+            document.getElementById('ai-chat-messages').appendChild(msgDiv);
+            return;
+        }
 
-                    const prompt = `Fornisci ESATTAMENTE questo oggetto JSON (senza altro testo) con i valori nutrizionali medi per ${qta} g di "${nome}". Agisci come un esperto nutrizionista. Basa le tue risposte su database nutrizionali affidabili. {"prot":g,"kcal":kcal,"carb":g,"zuccheri":g,"fatSat":g,"fatTrans":g,"fatMono":g,"fatPoly":g,"omega3":g,"omega6":g,"fibreTotali":g,"fibreSolubili":g,"fibreInsolubili":g,"na":mg,"mg":mg,"k":mg,"vitc":mg,"ca":mg,"vitA":ug,"vitB12":ug,"vitD":ug,"vitE":mg,"vitK":ug,"b9":ug,"b2":mg,"b6":mg,"fe":mg,"zn":mg,"cu":mg,"p":mg}`;
+        let foodItem;
+        const exactKey = window.sanitizeFirebaseKey(sanitizedInput);
 
-                    const result = await callGemini({ prompt: prompt });
-                    const data = result.data;
-                    const rawJson = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-                    const nutrientData = JSON.parse(rawJson.replace(/```json|```/g, '').trim());
-
-                    // Crea l'oggetto alimento
-                    const foodItem = {
-                        desc: nome.charAt(0).toUpperCase() + nome.slice(1),
-                        qta: qta,
-                        ...nutrientData
-                    };
-
-                    if (!window.datiGiornalieri.log) window.datiGiornalieri.log = [];
-
-                    if (pasto) {
-                        // Cerca se esiste già un pasto dello stesso tipo
-                        const pastoNames = {
-                            'merenda1': 'Merenda AM',
-                            'pranzo': 'Pranzo',
-                            'merenda2': 'Merenda PM',
-                            'cena': 'Cena'
-                        };
-                        const pastoName = pastoNames[pasto] || pasto;
-
-                        let existingMeal = window.datiGiornalieri.log.find(e => 
-                            e.type === 'meal' && e.mealId === pasto
-                        );
-
-                        if (existingMeal) {
-                            // Aggiungi al pasto esistente
-                            existingMeal.items.push(foodItem);
-                        } else {
-                            // Crea nuovo pasto
-                            window.datiGiornalieri.log.push({
-                                type: 'meal',
-                                desc: pastoName,
-                                mealId: pasto,
-                                isExpanded: false,
-                                items: [foodItem]
-                            });
-                        }
-                    } else {
-                        // Aggiungi come alimento singolo
-                        foodItem.type = 'single';
-                        window.datiGiornalieri.log.push(foodItem);
-                    }
-
-                    window.salvaGiorno(window.giornoVisualizzato, window.datiGiornalieri);
-                    window.aggiornaUI();
-
-                    const pastoText = pasto ? ` per ${pasto}` : '';
-                    addMessage(`✅ Aggiunto: <strong>${nome}</strong> (${qta}g)${pastoText} - ${nutrientData.kcal || '?'} kcal, ${nutrientData.prot || '?'}g proteine`, 'assistant');
-
-                } catch (err) {
-                    console.error('Errore aggiunta alimento:', err);
-                    addMessage(`❌ Errore nell'aggiungere ${nome}. Prova a compilarlo manualmente.`, 'assistant');
+        if (matches.length === 1 || window.foodDatabase[exactKey]) {
+            // 2. USA DATI DAL DATABASE (Pezzo forte)
+            const dbKey = matches[0] || exactKey;
+            const dbData = window.foodDatabase[dbKey];
+            foodItem = {
+                desc: dbData.desc,
+                qta: qta,
+                selezionato: true
+            };
+            // Calcola i valori in base alla quantità
+            for (const key in dbData) {
+                if (key !== 'lastQta' && key !== 'desc' && key !== 'ingredienti') {
+                    foodItem[key] = ((dbData[key] ?? 0) / 100) * qta;
                 }
             }
+            addMessage(`✅ Trovato nel database: <strong>${dbData.desc}</strong>. Lo sto aggiungendo al Costruttore Pasti...`, 'assistant');
+        } else {
+            // 3. FALLBACK AI (solo se non esiste nel DB)
+            addMessage(`🔍 "${nome}" non è nel tuo database. Chiedo all'AI i valori medi...`, 'assistant');
+            const callGemini = window.httpsCallable(window.functions, 'callOpenAI');
+            const prompt = `Fornisci ESATTAMENTE questo oggetto JSON (senza altro testo) con i valori nutrizionali medi per ${qta} g di "${nome}". {"prot":g,"kcal":kcal,"carb":g,"zuccheri":g,"fatSat":g,"fatTrans":g,"fatMono":g,"fatPoly":g,"omega3":g,"omega6":g,"fibreTotali":g,"fibreSolubili":g,"fibreInsolubili":g,"na":mg,"mg":mg,"k":mg,"vitc":mg,"ca":mg,"vitA":ug,"vitB12":ug,"vitD":ug,"vitE":mg,"vitK":ug,"b9":ug,"b2":mg,"b6":mg,"fe":mg,"zn":mg,"cu":mg,"p":mg}`;
+            const result = await callGemini({ prompt: prompt });
+            const data = result.data;
+            const rawJson = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+            const nutrientData = JSON.parse(rawJson.replace(/```json|```/g, '').trim());
+            
+            foodItem = {
+                desc: nome.charAt(0).toUpperCase() + nome.slice(1),
+                qta: qta,
+                selezionato: true,
+                ...nutrientData
+            };
+        }
+
+        // 4. INSERIMENTO NEL COSTRUTTORE PASTI (Invece del diario)
+        window.pastoInCostruzione.push(foodItem);
+        localStorage.setItem('trackerPastoInCostruzione', JSON.stringify(window.pastoInCostruzione));
+        
+        // Se è stato specificato un pasto, aggiorna il selettore
+        if (pasto) {
+            const selector = document.getElementById('meal-type-selector');
+            if (selector) selector.value = pasto;
+        }
+
+        // Aggiorna l'interfaccia
+        const builderSection = document.getElementById('meal-builder-sezione');
+        builderSection.dataset.visible = "true";
+        builderSection.style.display = "block";
+        
+        // Funzioni globali definite nello script principale
+        if (typeof window.renderMealBuilder === 'function') {
+            window.renderMealBuilder();
+        } else {
+            // Fallback se la funzione non è globale: simuliamo l'aggiornamento UI
+            location.reload(); 
+        }
+
+        builderSection.scrollIntoView({ behavior: 'smooth' });
+        addMessage(`🎯 <strong>${foodItem.desc}</strong> caricato nel <strong>Costruttore Pasto</strong>. Controlla i dati e clicca su 'Salva Pasto' per confermare.`, 'assistant');
+
+    } catch (err) {
+        console.error('Errore:', err);
+        addMessage(`❌ Errore nel caricamento di ${nome}.`, 'assistant');
+    }
+}
 
             // Aggiungi allenamento direttamente
             function addWorkoutDirectly(desc, kcal) {
@@ -4256,6 +4292,7 @@ ISTRUZIONI IMPORTANTI:
 
 </body>
 </html>
+
 
 
 
