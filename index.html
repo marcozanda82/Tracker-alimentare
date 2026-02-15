@@ -3630,49 +3630,49 @@
     }
 
 chatSend.onclick = async () => {
-    const text = chatInput.value.trim();
-    if (!text) return;
+        const text = chatInput.value.trim();
+        if (!text) return;
 
-    addMessage(text, 'user');
-    chatInput.value = '';
+        addMessage(text, 'user');
+        chatInput.value = '';
 
-    // Aggiungiamo un feedback visivo di caricamento
-    const loadingMsg = addMessage("🤔 Sto elaborando...", "assistant loading");
+        // 1. QUESTO VA INCLUSO: crea l'attesa visiva
+        const loadingMsg = addMessage("🤔 Sto elaborando...", "assistant loading");
 
-    try {
-        const promptAI = `L'utente ha mangiato: "${text}". 
-        Rispondi in modo brevissimo (max 10 parole) confermando l'alimento. 
-        DEVI includere il comando alla fine: [AGGIUNGI: nome | quantità | pasto]. 
-        Pasti validi: merenda1, pranzo, merenda2, cena. 
-        Usa i nomi del database se li conosci.`;
+        try {
+            // Chiediamo all'AI di essere secca e precisa
+            const promptAI = `L'utente ha mangiato: "${text}". 
+            Rispondi in modo brevissimo (max 10 parole) confermando l'alimento. 
+            DEVI includere il comando alla fine: [AGGIUNGI: nome | quantità | pasto]. 
+            Pasti validi: merenda1, pranzo, merenda2, cena.`;
 
-        const resp = await callGeminiAPI(promptAI);
-        
-        // Rimuoviamo il messaggio di caricamento prima di mostrare la risposta
-        if (loadingMsg && loadingMsg.remove) loadingMsg.remove();
-        
-        addMessage(resp, 'assistant');
+            const resp = await callGeminiAPI(promptAI);
+            
+            // 2. Rimuove il "pensando..." quando arriva la risposta
+            if (loadingMsg && loadingMsg.remove) loadingMsg.remove();
+            
+            addMessage(resp, 'assistant');
 
-        // REGEX MIGLIORATA: ([^|]+) per il nome, ([\d\s\w]+) per la quantità (gestisce "100" o "100g")
-        const m = /\[AGGIUNGI:\s*([^|]+)\s*\|\s*([^|]+)\s*\|\s*([^\]]+)\]/i.exec(resp);
-        
-        if (m) {
-            const nome = m[1].trim();
-            // Puliamo la quantità estraendo solo i numeri per addFoodDirectly
-            const qtaRaw = m[2].trim();
-            const qtaPercent = parseInt(qtaRaw.replace(/\D/g, '')) || 100; // Default 100 se non legge numeri
-            const pasto = m[3].trim().toLowerCase();
+            // 3. Legge il comando [AGGIUNGI: ...]
+            const m = /\[AGGIUNGI:\s*([^|]+)\s*\|\s*([^|]+)\s*\|\s*([^\]]+)\]/i.exec(resp);
+            
+            if (m) {
+                const nome = m[1].trim();
+                const qtaRaw = m[2].trim();
+                const qta = parseInt(qtaRaw.replace(/\D/g, '')) || 100;
+                const pasto = m[3].trim().toLowerCase();
 
-            // Chiamata alla funzione che hai creato per il database e costruttore
-            addFoodDirectly(nome, qtaPercent, pasto);
+                // Esegue l'inserimento nel costruttore
+                addFoodDirectly(nome, qta, pasto);
+            }
+        } catch (e) {
+            if (loadingMsg && loadingMsg.remove) loadingMsg.remove();
+            addMessage("❌ Errore: " + e.message, "assistant");
         }
-    } catch (e) {
-        if (loadingMsg && loadingMsg.remove) loadingMsg.remove();
-        addMessage("❌ Errore: " + e.message, "assistant");
-    }
-};
+    };
 })();
 </script>
 </body>
 </html>
+
 
