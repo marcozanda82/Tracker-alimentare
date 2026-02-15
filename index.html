@@ -3704,7 +3704,12 @@
         input.value = '';
         const loading = addMessage("🤔 Elaboro...", "assistant loading");
         try {
-            const resp = await callGemini(`Utente: "${text}". Se mancano pesi, fai elenco. Altrimenti: [AGGIUNGI: nome | quantità | pasto]`);
+           const resp = await callGemini(`Utente: "${text}". 
+REGOLE RIGIDE:
+1. Se mancano i pesi per degli alimenti, fai SOLO un elenco numerato (es: 1. Pasta, 2. Olio) e chiedi i grammi.
+2. NON suggerire condimenti, proteine o verdure mancanti. NON fare commenti salutistici.
+3. Se hai i pesi (o l'utente conferma), scrivi SOLO il comando: [AGGIUNGI: nome | quantità | pasto] per ogni alimento.
+4. Se l'utente risponde con numeri (es: "1. 80g"), esegui l'inserimento degli alimenti corrispondenti.`);
             if (loading) loading.remove();
             addMessage(resp, 'assistant');
             const m = /\[AGGIUNGI:\s*([^|]+)\s*\|\s*([^|]+)\s*\|\s*([^\]]+)\]/i.exec(resp);
@@ -3723,6 +3728,7 @@
 </script>
 </body>
 </html>
+
 
 
 
