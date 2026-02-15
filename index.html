@@ -471,6 +471,45 @@
             color: #555;
         }
         .balance-value { font-weight: bold; }
+        /* Widget fisso e fluttuante */
+.ai-chat-widget {
+    position: fixed !important;
+    bottom: 20px !important;
+    right: 20px !important;
+    width: 380px !important;
+    background: white !important;
+    border-radius: 16px !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2) !important;
+    z-index: 99999 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    transition: all 0.3s ease-in-out !important;
+    border: 1px solid #ddd !important;
+}
+
+/* Stato minimizzato */
+.ai-chat-widget.minimized {
+    height: 50px !important;
+}
+
+/* Stato aperto */
+.ai-chat-widget:not(.minimized) {
+    height: 500px !important;
+}
+
+/* Header barra viola */
+.ai-chat-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+    padding: 0 20px !important;
+    height: 50px !important;
+    min-height: 50px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    cursor: pointer !important;
+}
     </style>
 </head>
 <body>
@@ -3129,50 +3168,27 @@
     </script>
 
     <!-- CHAT AI INTEGRATA -->
-    <div id="ai-chat-widget" class="ai-chat-widget minimized">
-        <div class="ai-chat-header" id="ai-chat-toggle">
-            <span>🤖 Assistente AI Nutrizionale</span>
-            <span class="ai-chat-toggle-icon">▲</span>
-        </div>
-        <div class="ai-chat-body" id="ai-chat-body">
-    <div class="ai-chat-settings" id="ai-chat-settings" style="display: none;">
-        <h4>🔑 Gestione API Key</h4>
-        <input type="password" id="ai-api-key-input" placeholder="Incolla qui la chiave di Gemini...">
-        <div class="ai-chat-settings-buttons">
-            <button id="ai-save-api-key">💾 Salva</button>
-            <button id="ai-close-settings">❌ Chiudi</button>
-        </div>
+<div id="ai-chat-widget" class="ai-chat-widget minimized">
+    <div class="ai-chat-header" id="ai-chat-toggle">
+        <span>🤖 Assistente AI</span>
+        <span id="ai-toggle-icon">▲</span>
     </div>
-
-    <div class="ai-chat-messages" id="ai-chat-messages">
-        <button id="ai-open-settings" title="Configura API" style="position: sticky; top: 0; float: right; background: none; border: none; cursor: pointer; color: #667eea; font-size: 1.2em; z-index: 10;">⚙️</button>
-        
-        <div class="ai-message ai-welcome">
-            <strong>Ciao! Sono il tuo assistente nutrizionale.</strong><br><br>
-            La chat è ora integrata con il tuo database alimenti e il costruttore pasti.
+    <div class="ai-chat-body" style="display: flex; flex-direction: column; height: 450px;">
+        <div id="ai-chat-settings" style="display:none; padding:10px; background:#f0f0f0; border-bottom:1px solid #ccc;">
+            <input type="password" id="ai-api-key-input" placeholder="Chiave Gemini..." style="width:70%;">
+            <button id="ai-save-api-key">Salva</button>
+            <button id="ai-close-settings">X</button>
         </div>
-    </div>
-    
-    <div class="ai-chat-input-area">
-        <input type="file" id="ai-chat-sleep-input" accept="image/*" style="display: none;">
-        <button id="ai-chat-sleep-btn" class="ai-chat-sleep-btn" title="Screenshot sonno">😴</button>
-        <textarea id="ai-chat-input" placeholder="Chiedimi consigli..." rows="2"></textarea>
-        <button id="ai-chat-send" class="ai-chat-send-btn">➤</button>
+        <div class="ai-chat-messages" id="ai-chat-messages">
+            <button id="ai-open-settings" title="Configura API" style="float:right; background:none; border:none; cursor:pointer; font-size:1.2em;">⚙️</button>
+            <div class="ai-message assistant">Pronto! Consulta il tuo database e aggiungi alimenti al costruttore pasti.</div>
+        </div>
+        <div class="ai-chat-input-area">
+            <textarea id="ai-chat-input" placeholder="Cosa hai mangiato?"></textarea>
+            <button id="ai-chat-send" style="margin-left:5px;">➤</button>
+        </div>
     </div>
 </div>
-            <div class="ai-chat-input-area">
-                <input type="file" id="ai-chat-sleep-input" accept="image/*" style="display: none;">
-                <button id="ai-chat-sleep-btn" class="ai-chat-sleep-btn" title="Carica screenshot sonno">😴</button>
-                <textarea id="ai-chat-input" placeholder="Chiedimi consigli nutrizionali..." rows="2"></textarea>
-                <button id="ai-chat-send" class="ai-chat-send-btn">➤</button>
-            </div>
-
-            <div class="ai-chat-actions">
-                <button id="ai-chat-export-data" class="ai-chat-action-btn">📊 Esporta Dati</button>
-                <button id="ai-chat-clear" class="ai-chat-action-btn">🗑️ Pulisci Chat</button>
-            </div>
-        </div>
-    </div>
 
     <!-- MODAL PER CONFERMA ALIMENTO DALLA CHAT -->
     <div id="ai-chat-food-modal" class="modal">
@@ -3732,3 +3748,4 @@
 
 </body>
 </html>
+
