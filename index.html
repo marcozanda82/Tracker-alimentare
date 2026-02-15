@@ -3572,24 +3572,29 @@
 // ==========================================
 
 (function() {
-    // 1. Riferimenti agli elementi UI
+    // 1. Riferimenti agli elementi UI (definiti all'interno del modulo)
     const chatWidget = document.getElementById('ai-chat-widget');
     const chatMessages = document.getElementById('ai-chat-messages');
     const chatInput = document.getElementById('ai-chat-input');
     const chatSend = document.getElementById('ai-chat-send');
     const chatToggle = document.getElementById('ai-chat-toggle');
     
-    // 2. FUNZIONI DI SUPPORTO (Devono stare in alto per essere viste da tutti)
+    const API_KEY_STORAGE = 'gemini_api_key';
+    let geminiApiKey = localStorage.getItem(API_KEY_STORAGE) || '';
+
+    // 2. FUNZIONI DI SUPPORTO
     function addMessage(text, role) {
+        if (!chatMessages) return;
         const d = document.createElement('div');
         d.className = `ai-message ${role}`;
         d.innerHTML = text.replace(/\n/g, '<br>');
         chatMessages.appendChild(d);
         chatMessages.scrollTop = chatMessages.scrollHeight;
-        return d; // Restituisce l'elemento per poterlo rimuovere (es. loading)
+        return d;
     }
 
     function addMessageElement(el) {
+        if (!chatMessages) return;
         const d = document.createElement('div');
         d.className = 'ai-message assistant';
         d.appendChild(el);
@@ -3598,7 +3603,22 @@
         return d;
     }
 
-    // 3. LOGICA DI INSERIMENTO E COSTRUTTORE
+    async function callGeminiAPI(prompt) {
+        if (!geminiApiKey) {
+            alert("Per favore, inserisci la tua API Key nelle impostazioni (icona ingranaggio).");
+            throw new Error('Manca API Key');
+        }
+        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+        const data = await response.json();
+        if (data.error) throw new Error(data.error.message);
+        return data.candidates[0].content.parts[0].text;
+    }
+
     function procediInserimento(data, qta, pasto) {
         if (!window.pastoInCostruzione) window.pastoInCostruzione = [];
         let item = { desc: data.desc, qta: qta, selezionato: true };
@@ -3624,7 +3644,6 @@
         const keys = Object.keys(window.foodDatabase || {});
         const matches = keys.filter(k => k.includes(query));
 
-        // Gestione scelta multipla
         if (matches.length > 1) {
             const div = document.createElement('div');
             div.className = 'ai-chat-meal-buttons';
@@ -3645,7 +3664,6 @@
         const exactKey = window.sanitizeFirebaseKey(nome.toLowerCase());
         const dbEntry = (window.foodDatabase && window.foodDatabase[exactKey]) ? window.foodDatabase[exactKey] : (matches.length === 1 ? window.foodDatabase[matches[0]] : null);
         
-        // Logica lastQta (Ultima quantità usata)
         if (dbEntry && (qta <= 1 || !qta)) {
             const finalQta = dbEntry.lastQta || 100;
             addMessage(`L'ultima volta hai usato <strong>${finalQta}g</strong> di ${dbEntry.desc}. Confermi?`, 'assistant');
@@ -3678,34 +3696,45 @@
         }
     }
 
-    // 4. GESTIONE EVENTI (Apertura e Invio)
-    chatToggle.onclick = () => {
-        chatWidget.classList.toggle('minimized');
-    };
+    // 3. GESTIONE EVENTI
+    if (chatToggle) {
+        chatToggle.onclick = () => chatWidget.classList.toggle('minimized');
+    }
 
-    chatSend.onclick = async () => {
-        const text = chatInput.value.trim();
-        if (!text) return;
-        addMessage(text, 'user');
-        chatInput.value = '';
-        const loadingMsg = addMessage("🤔 Sto elaborando...", "assistant loading");
-        try {
-            const resp = await callGeminiAPI(`L'utente dice: "${text}". Se mancano pesi, fai elenco numerato. Altrimenti usa: [AGGIUNGI: nome | quantità | pasto]`);
-            if (loadingMsg) loadingMsg.remove();
-            addMessage(resp, 'assistant');
-            const m = /\[AGGIUNGI:\s*([^|]+)\s*\|\s*([^|]+)\s*\|\s*([^\]]+)\]/i.exec(resp);
-            if (m) {
-                const nome = m[1].trim();
-                const qta = parseInt(m[2].replace(/\D/g, '')) || 0;
-                const pasto = m[3].trim().toLowerCase();
-                addFoodDirectly(nome, qta, pasto);
-            }
-        } catch (e) { if (loadingMsg) loadingMsg.remove(); addMessage("❌ Errore: " + e.message, "assistant"); }
-    };
+    if (chatSend) {
+        chatSend.onclick = async () => {
+            const text = chatInput.value.trim();
+            if (!text) return;
+            addMessage(text, 'user');
+            chatInput.value = '';
+            const loadingMsg = addMessage("🤔 Sto elaborando...", "assistant loading");
+            try {
+                const resp = await callGeminiAPI(`L'utente dice: "${text}". Se mancano pesi, fai elenco numerato. Altrimenti usa: [AGGIUNGI: nome | quantità | pasto]`);
+                if (loadingMsg) loadingMsg.remove();
+                addMessage(resp, 'assistant');
+                const m = /\[AGGIUNGI:\s*([^|]+)\s*\|\s*([^|]+)\s*\|\s*([^\]]+)\]/i.exec(resp);
+                if (m) {
+                    const nome = m[1].trim();
+                    const qta = parseInt(m[2].replace(/\D/g, '')) || 0;
+                    const pasto = m[3].trim().toLowerCase();
+                    addFoodDirectly(nome, qta, pasto);
+                }
+            } catch (e) { if (loadingMsg) loadingMsg.remove(); addMessage("❌ Errore: " + e.message, "assistant"); }
+        };
+    }
 
-})(); // CHIUSURA MODULO
+    // Listener per il tasto Invio nella tastiera
+    chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            chatSend.click();
+        }
+    });
+
+})(); // FINE MODULO
     </body>
 </html>
+
 
 
 
