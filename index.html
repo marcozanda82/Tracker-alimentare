@@ -3516,187 +3516,108 @@
 
     <script>
         // CHAT AI INTEGRATA - GESTIONE
-       (function() {
-    // 1. SELEZIONE ELEMENTI E RIFERIMENTI
+ (function() {
     const chatWidget = document.getElementById('ai-chat-widget');
     const chatToggle = document.getElementById('ai-chat-toggle');
     const chatMessages = document.getElementById('ai-chat-messages');
     const chatInput = document.getElementById('ai-chat-input');
     const chatSend = document.getElementById('ai-chat-send');
-    const chatSleepBtn = document.getElementById('ai-chat-sleep-btn');
-    const chatSleepInput = document.getElementById('ai-chat-sleep-input');
     const settingsPanel = document.getElementById('ai-chat-settings');
     const apiKeyInput = document.getElementById('ai-api-key-input');
     
     const API_KEY_STORAGE = 'gemini_api_key';
     let geminiApiKey = localStorage.getItem(API_KEY_STORAGE) || '';
 
-    // 2. GESTIONE APERTURA/CHIUSURA CHAT
-    chatToggle.addEventListener('click', (e) => {
-        // Se clicchi sull'ingranaggio o tasti interni, non chiudere la chat
+    // APERTURA/CHIUSURA CHAT
+    chatToggle.onclick = (e) => {
         if (e.target.closest('button')) return; 
-        
         chatWidget.classList.toggle('minimized');
-        
-        // Scroll all'ultimo messaggio all'apertura
-        if (!chatWidget.classList.contains('minimized')) {
-            setTimeout(() => {
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-            }, 300);
-        }
-    });
+    };
 
-    // 3. GESTIONE API KEY (Solo su richiesta)
+    // GESTIONE API KEY
     document.getElementById('ai-open-settings').onclick = (e) => {
         e.stopPropagation();
-        settingsPanel.style.display = settingsPanel.style.display === 'none' ? 'block' : 'none';
-        apiKeyInput.value = localStorage.getItem(API_KEY_STORAGE) || '';
+        settingsPanel.style.display = 'block';
     };
-
-    document.getElementById('ai-close-settings').onclick = () => {
-        settingsPanel.style.display = 'none';
-    };
-
+    document.getElementById('ai-close-settings').onclick = () => settingsPanel.style.display = 'none';
     document.getElementById('ai-save-api-key').onclick = () => {
-        const key = apiKeyInput.value.trim();
-        if (key) {
-            geminiApiKey = key;
-            localStorage.setItem(API_KEY_STORAGE, key);
-            settingsPanel.style.display = 'none';
-            alert("✅ API Key salvata!");
-        }
+        geminiApiKey = apiKeyInput.value.trim();
+        localStorage.setItem(API_KEY_STORAGE, geminiApiKey);
+        settingsPanel.style.display = 'none';
+        alert("Chiave salvata!");
     };
 
-    // 4. LOGICA DI COMUNICAZIONE AI
     async function callGeminiAPI(prompt) {
-        if (!geminiApiKey) {
-            settingsPanel.style.display = 'block';
-            throw new Error('Configura l\'API Key cliccando sull\'ingranaggio.');
-        }
-        
+        if (!geminiApiKey) { settingsPanel.style.display = 'block'; throw new Error('Manca API Key'); }
         const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
         const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
-            })
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
         });
-
-        if (!response.ok) throw new Error('Errore API: controlla la chiave.');
         const data = await response.json();
         return data.candidates[0].content.parts[0].text;
     }
 
-    // 5. FUNZIONE AGGIUNTA ALIMENTO (INTEGRATA COL DATABASE E COSTRUTTORE)
+    // IL CUORE DELLA TUA RICHIESTA: Ricerca nel DB e inserimento nel Costruttore
     async function addFoodDirectly(nome, qta, pasto) {
-        try {
-            const sanitizedInput = nome.toLowerCase().trim();
-            const keys = Object.keys(window.foodDatabase);
-            
-            // Cerca nel Database locale
-            const matches = keys.filter(k => k.includes(window.sanitizeFirebaseKey(sanitizedInput)));
-            
-            // Se trova più yogurt/alimenti simili -> Genera Bottoni
-            if (matches.length > 1) {
-                const choiceButtons = document.createElement('div');
-                choiceButtons.className = 'ai-chat-meal-buttons';
-                choiceButtons.innerHTML = `<p>Ho trovato più tipi di <strong>${nome}</strong>. Quale intendi?</p>`;
-                
-                matches.forEach(m => {
-                    const btn = document.createElement('button');
-                    btn.textContent = window.foodDatabase[m].desc;
-                    btn.onclick = () => {
-                        choiceButtons.parentElement.parentElement.remove();
-                        addFoodDirectly(window.foodDatabase[m].desc, qta, pasto);
-                    };
-                    choiceButtons.appendChild(btn);
-                });
-                
-                addMessageElement(choiceButtons);
-                return;
-            }
+        const query = window.sanitizeFirebaseKey(nome.toLowerCase());
+        const keys = Object.keys(window.foodDatabase);
+        const matches = keys.filter(k => k.includes(query));
 
-            let foodItem;
-            // Se lo trova nel DB
-            if (matches.length === 1 || window.foodDatabase[window.sanitizeFirebaseKey(sanitizedInput)]) {
-                const dbKey = matches[0] || window.sanitizeFirebaseKey(sanitizedInput);
-                const dbData = window.foodDatabase[dbKey];
-                
-                foodItem = {
-                    desc: dbData.desc,
-                    qta: qta,
-                    selezionato: true
-                };
-
-                for (const key in dbData) {
-                    if (key !== 'lastQta' && key !== 'desc' && key !== 'ingredienti') {
-                        foodItem[key] = ((dbData[key] ?? 0) / 100) * qta;
-                    }
-                }
-                addMessage(`✅ Uso i dati del tuo database per <strong>${dbData.desc}</strong>.`, 'assistant');
-            } 
-            // Se l'alimento è nuovo -> Chiedi conferma per salvataggio
-            else {
-                const saveConfirm = document.createElement('div');
-                saveConfirm.className = 'ai-chat-meal-buttons';
-                saveConfirm.innerHTML = `<p>"<strong>${nome}</strong>" è nuovo. Vuoi cercarlo online e <strong>salvarlo nel tuo database</strong>?</p>
-                    <button id="ai-save-db-yes">Sì, salva</button>
-                    <button id="ai-save-db-no">No, solo stavolta</button>`;
-                
-                const msgDiv = addMessageElement(saveConfirm);
-                
-                msgDiv.querySelector('#ai-save-db-yes').onclick = async () => {
-                    msgDiv.remove();
-                    const data = await fetchAIValues(nome, qta, true);
-                    finishAddition(data, pasto);
-                };
-                msgDiv.querySelector('#ai-save-db-no').onclick = async () => {
-                    msgDiv.remove();
-                    const data = await fetchAIValues(nome, qta, false);
-                    finishAddition(data, pasto);
-                };
-                return;
-            }
-
-            finishAddition(foodItem, pasto);
-        } catch (e) { addMessage("❌ Errore nel caricamento.", "assistant"); }
-    }
-
-    async function fetchAIValues(nome, qta, save) {
-        addMessage(`🔍 Ricerca valori per ${nome}...`, "assistant");
-        const prompt = `JSON nutrizionale per 100g di "${nome}". Formato: {"prot":g,"kcal":kcal,"carb":g,"zuccheri":g,"fatSat":g,"fatTrans":g,"fatMono":g,"fatPoly":g,"omega3":g,"omega6":g,"fibreTotali":g,"fibreSolubili":g,"fibreInsolubili":g,"na":mg,"mg":mg,"k":mg,"vitc":mg,"ca":mg,"vitA":ug,"vitB12":ug,"vitD":ug,"vitE":mg,"vitK":ug,"b9":ug,"b2":mg,"b6":mg,"fe":mg,"zn":mg,"cu":mg,"p":mg}`;
-        const raw = await callGeminiAPI(prompt);
-        const data100 = JSON.parse(raw.replace(/```json|```/g, '').trim());
-
-        if (save) {
-            const key = window.sanitizeFirebaseKey(nome.toLowerCase());
-            window.foodDatabase[key] = { desc: nome, ...data100 };
-            window.salvaFoodDatabase();
-            addMessage(`💾 Salvato nel database!`, "assistant");
+        // Se trova più yogurt/alimenti simili
+        if (matches.length > 1) {
+            const div = document.createElement('div');
+            div.className = 'ai-chat-meal-buttons';
+            div.innerHTML = `<p>Ho trovato più corrispondenze per "<strong>${nome}</strong>":</p>`;
+            matches.forEach(m => {
+                const btn = document.createElement('button');
+                btn.textContent = window.foodDatabase[m].desc;
+                btn.onclick = () => { div.remove(); addFoodDirectly(window.foodDatabase[m].desc, qta, pasto); };
+                div.appendChild(btn);
+            });
+            addMessageElement(div);
+            return;
         }
 
-        const item = { desc: nome, qta: qta, selezionato: true };
-        for (const k in data100) { item[k] = (data100[k] / 100) * qta; }
-        return item;
-    }
+        let item;
+        // Se trovato nel DB
+        if (matches.length === 1 || window.foodDatabase[query]) {
+            const data = window.foodDatabase[matches[0] || query];
+            item = { desc: data.desc, qta: qta, selezionato: true };
+            // Calcola i nutrienti basandosi sui 100g del DB
+            for (const k in data) {
+                if (!['desc', 'lastQta', 'ingredienti'].includes(k)) {
+                    item[k] = (data[k] / 100) * qta;
+                }
+            }
+            addMessage(`✅ Usati dati dal tuo database per <strong>${data.desc}</strong>`, 'assistant');
+        } else {
+            // Se non trovato, usa l'AI (ma non salva nel diario, va al costruttore)
+            addMessage(`🔍 "${nome}" non è nel DB. Chiedo i valori all'AI...`, 'assistant');
+            const prompt = `JSON nutrizionale per 100g di "${nome}": {"prot":0,"kcal":0,"carb":0,"zuccheri":0,"fatTotal":0,"fibreTotali":0,"na":0}`;
+            const raw = await callGeminiAPI(prompt);
+            const d100 = JSON.parse(raw.replace(/```json|```/g, '').trim());
+            item = { desc: nome, qta: qta, selezionato: true };
+            for (const k in d100) item[k] = (d100[k] / 100) * qta;
+        }
 
-    function finishAddition(item, pasto) {
+        // INVIO AL COSTRUTTORE PASTI
         window.pastoInCostruzione.push(item);
         localStorage.setItem('trackerPastoInCostruzione', JSON.stringify(window.pastoInCostruzione));
         if (pasto) document.getElementById('meal-type-selector').value = pasto;
-        window.renderMealBuilder();
-        document.getElementById('meal-builder-sezione').style.display = "block";
+        
+        window.renderMealBuilder(); // Chiamata alla funzione esistente nel tuo file
+        document.getElementById('meal-builder-sezione').style.display = 'block';
         document.getElementById('meal-builder-sezione').scrollIntoView({ behavior: 'smooth' });
-        addMessage(`🎯 <strong>${item.desc}</strong> aggiunto al Costruttore Pasti.`, "assistant");
+        addMessage(`🎯 <strong>${item.desc}</strong> aggiunto al Costruttore Pasti.`, 'assistant');
     }
 
-    // UTILS CHAT
-    function addMessage(text, role) {
+    // Helper per messaggi
+    function addMessage(t, r) {
         const d = document.createElement('div');
-        d.className = `ai-message ${role}`;
-        d.innerHTML = text.replace(/\n/g, '<br>');
+        d.className = `ai-message ${r}`;
+        d.innerHTML = t;
         chatMessages.appendChild(d);
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
@@ -3706,35 +3627,28 @@
         d.className = 'ai-message assistant';
         d.appendChild(el);
         chatMessages.appendChild(d);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
         return d;
     }
 
-    async function sendMessage() {
+    chatSend.onclick = async () => {
         const text = chatInput.value.trim();
         if (!text) return;
         addMessage(text, 'user');
         chatInput.value = '';
-        const loading = addMessageElement(document.createTextNode("🤔 Sto pensando..."));
         try {
-            const response = await callGeminiAPI(`Analizza: ${text}. Rispondi in italiano. Se aggiungi cibo usa: [AGGIUNGI: nome | qta | pasto]`);
-            loading.remove();
-            addMessage(response, 'assistant');
-            // Logica parsing AGGIUNGI
-            const match = /\[AGGIUNGI:\s*([^|]+)\s*\|\s*(\d+)\s*\|\s*([^\]]+)\]/i.exec(response);
-            if (match) addFoodDirectly(match[1].trim(), parseInt(match[2]), match[3].trim());
-        } catch (e) { loading.innerHTML = "❌ " + e.message; }
-    }
-
-    chatSend.onclick = sendMessage;
-    chatInput.onkeypress = (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } };
-
+            const resp = await callGeminiAPI(`Analizza: ${text}. Se l'utente ha mangiato qualcosa usa: [AGGIUNGI: nome | qta | pasto]`);
+            addMessage(resp, 'assistant');
+            const m = /\[AGGIUNGI:\s*([^|]+)\s*\|\s*(\d+)\s*\|\s*([^\]]+)\]/i.exec(resp);
+            if (m) addFoodDirectly(m[1].trim(), parseInt(m[2]), m[3].trim());
+        } catch (e) { addMessage("❌ " + e.message, "assistant"); }
+    };
 })();
         })();
     </script>
 
 </body>
 </html>
+
 
 
 
