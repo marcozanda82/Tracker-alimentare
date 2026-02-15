@@ -472,44 +472,118 @@
         }
         .balance-value { font-weight: bold; }
         /* Widget fisso e fluttuante */
-.ai-chat-widget {
-    position: fixed !important;
-    bottom: 20px !important;
-    right: 20px !important;
-    width: 380px !important;
-    background: white !important;
-    border-radius: 16px !important;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.2) !important;
-    z-index: 99999 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    overflow: hidden !important;
-    transition: all 0.3s ease-in-out !important;
-    border: 1px solid #ddd !important;
-}
+(function() {
+    const chatWidget = document.getElementById('ai-chat-widget');
+    const chatToggle = document.getElementById('ai-chat-toggle');
+    const chatMessages = document.getElementById('ai-chat-messages');
+    const chatInput = document.getElementById('ai-chat-input');
+    const chatSend = document.getElementById('ai-chat-send');
+    const settingsPanel = document.getElementById('ai-chat-settings');
+    const apiKeyInput = document.getElementById('ai-api-key-input');
+    
+    const API_KEY_STORAGE = 'gemini_api_key';
+    let geminiApiKey = localStorage.getItem(API_KEY_STORAGE) || '';
 
-/* Stato minimizzato */
-.ai-chat-widget.minimized {
-    height: 50px !important;
-}
+    chatToggle.onclick = (e) => {
+        if (e.target.closest('button')) return; 
+        chatWidget.classList.toggle('minimized');
+        const icon = document.getElementById('ai-toggle-icon');
+        if (icon) icon.textContent = chatWidget.classList.contains('minimized') ? '▲' : '▼';
+    };
 
-/* Stato aperto */
-.ai-chat-widget:not(.minimized) {
-    height: 500px !important;
-}
+    document.getElementById('ai-open-settings').onclick = (e) => {
+        e.stopPropagation();
+        settingsPanel.style.display = 'block';
+    };
+    document.getElementById('ai-close-settings').onclick = () => settingsPanel.style.display = 'none';
+    document.getElementById('ai-save-api-key').onclick = () => {
+        geminiApiKey = apiKeyInput.value.trim();
+        localStorage.setItem(API_KEY_STORAGE, geminiApiKey);
+        settingsPanel.style.display = 'none';
+        alert("API Key salvata!");
+    };
 
-/* Header barra viola */
-.ai-chat-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-    color: white !important;
-    padding: 0 20px !important;
-    height: 50px !important;
-    min-height: 50px !important;
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    cursor: pointer !important;
-}
+    async function callGeminiAPI(prompt) {
+        if (!geminiApiKey) { settingsPanel.style.display = 'block'; throw new Error('Manca API Key'); }
+        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+        const data = await response.json();
+        return data.candidates[0].content.parts[0].text;
+    }
+
+    async function addFoodDirectly(nome, qta, pasto) {
+        const query = window.sanitizeFirebaseKey(nome.toLowerCase());
+        const keys = Object.keys(window.foodDatabase);
+        const matches = keys.filter(k => k.includes(query));
+
+        if (matches.length > 1) {
+            const div = document.createElement('div');
+            div.className = 'ai-chat-meal-buttons';
+            div.innerHTML = `<p>Ho trovato più corrispondenze per "<strong>${nome}</strong>":</p>`;
+            matches.forEach(m => {
+                const btn = document.createElement('button');
+                btn.textContent = window.foodDatabase[m].desc;
+                btn.onclick = () => { div.remove(); addFoodDirectly(window.foodDatabase[m].desc, qta, pasto); };
+                div.appendChild(btn);
+            });
+            const msg = document.createElement('div');
+            msg.className = 'ai-message assistant';
+            msg.appendChild(div);
+            chatMessages.appendChild(msg);
+            return;
+        }
+
+        let item;
+        const exactKey = window.sanitizeFirebaseKey(nome.toLowerCase());
+        if (matches.length === 1 || window.foodDatabase[exactKey]) {
+            const data = window.foodDatabase[matches[0] || exactKey];
+            item = { desc: data.desc, qta: qta, selezionato: true };
+            for (const k in data) {
+                if (!['desc', 'lastQta', 'ingredienti'].includes(k)) item[k] = (data[k] / 100) * qta;
+            }
+            addMessage(`✅ Usati dati DB per: <strong>${data.desc}</strong>`, 'assistant');
+        } else {
+            addMessage(`🔍 "${nome}" non è nel DB. Chiedo all'AI...`, 'assistant');
+            const raw = await callGeminiAPI(`JSON 100g per "${nome}": {"prot":0,"kcal":0,"carb":0,"zuccheri":0,"fatTotal":0}`);
+            const d100 = JSON.parse(raw.replace(/```json|```/g, '').trim());
+            item = { desc: nome, qta: qta, selezionato: true };
+            for (const k in d100) item[k] = (d100[k] / 100) * qta;
+        }
+
+        window.pastoInCostruzione.push(item);
+        localStorage.setItem('trackerPastoInCostruzione', JSON.stringify(window.pastoInCostruzione));
+        if (pasto) document.getElementById('meal-type-selector').value = pasto;
+        window.renderMealBuilder();
+        document.getElementById('meal-builder-sezione').style.display = 'block';
+        document.getElementById('meal-builder-sezione').scrollIntoView({ behavior: 'smooth' });
+        addMessage(`🎯 <strong>${item.desc}</strong> aggiunto al Costruttore.`, 'assistant');
+    }
+
+    function addMessage(t, r) {
+        const d = document.createElement('div');
+        d.className = `ai-message ${r}`;
+        d.innerHTML = t;
+        chatMessages.appendChild(d);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    chatSend.onclick = async () => {
+        const text = chatInput.value.trim();
+        if (!text) return;
+        addMessage(text, 'user');
+        chatInput.value = '';
+        try {
+            const resp = await callGeminiAPI(`Analizza: ${text}. Se aggiungi cibo usa: [AGGIUNGI: nome | qta | pasto]`);
+            addMessage(resp, 'assistant');
+            const m = /\[AGGIUNGI:\s*([^|]+)\s*\|\s*(\d+)\s*\|\s*([^\]]+)\]/i.exec(resp);
+            if (m) addFoodDirectly(m[1].trim(), parseInt(m[2]), m[3].trim());
+        } catch (e) { addMessage("❌ " + e.message, "assistant"); }
+    };
+})();
     </style>
 </head>
 <body>
@@ -3748,4 +3822,5 @@
 
 </body>
 </html>
+
 
