@@ -3519,13 +3519,13 @@
 // ==========================================
 
 (function() {
-    // 1. Riferimenti UI - Usiamo nomi unici per evitare conflitti
+    // 1. Riferimenti UI con nomi univoci
     const aiWidget = document.getElementById('ai-chat-widget');
     const aiMessages = document.getElementById('ai-chat-messages');
     const aiInput = document.getElementById('ai-chat-input');
     const aiSendBtn = document.getElementById('ai-chat-send');
     const aiToggle = document.getElementById('ai-chat-toggle');
-    const aiSettings = document.querySelector('.ai-chat-header .fa-cog'); // L'ingranaggio
+    const aiSettingsIcon = document.querySelector('.ai-chat-header .fa-cog');
 
     // 2. FUNZIONI DI SERVIZIO
     function addMessage(text, role) {
@@ -3548,7 +3548,26 @@
         return d;
     }
 
-    // 3. LOGICA INSERIMENTO (Con Fix Tabella e LastQta)
+    // Funzione API interna al modulo
+    async function callGeminiAPI(prompt) {
+        const key = localStorage.getItem('gemini_api_key') || '';
+        if (!key) throw new Error("Manca API Key");
+
+        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${key}`;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+        
+        if (!response.ok) throw new Error("Errore rete o Key non valida");
+        const data = await response.json();
+        
+        if (data.error) throw new Error(data.error.message);
+        return data.candidates[0].content.parts[0].text;
+    }
+
+    // 3. LOGICA INSERIMENTO (Fix Tabella e Memoria)
     function procediInserimento(data, qta, pasto) {
         if (!window.pastoInCostruzione) window.pastoInCostruzione = [];
         let item = { desc: data.desc, qta: qta, selezionato: true };
@@ -3562,14 +3581,14 @@
             document.getElementById('meal-type-selector').value = pasto;
         }
 
-        // AGGIORNAMENTO ISTANTANEO
+        // AGGIORNAMENTO ISTANTANEO UI
         if (typeof window.renderMealBuilder === 'function') {
             window.renderMealBuilder();
         }
         const builder = document.getElementById('meal-builder-sezione');
         if (builder) builder.style.display = 'block';
         
-        addMessage(`✅ <strong>${item.desc}</strong> (${qta}g) aggiunto al costruttore.`, 'assistant');
+        addMessage(`✅ <strong>${item.desc}</strong> (${qta}g) aggiunto.`, 'assistant');
     }
 
     async function addFoodDirectly(nome, qta, pasto) {
@@ -3594,6 +3613,7 @@
         const exactKey = window.sanitizeFirebaseKey(nome.toLowerCase());
         const dbEntry = db[exactKey] || (matches.length === 1 ? db[matches[0]] : null);
         
+        // Memoria lastQta
         if (dbEntry && (!qta || qta <= 0)) {
             const lastQta = dbEntry.lastQta || 100;
             addMessage(`Per <strong>${dbEntry.desc}</strong> uso l'ultima quantità (<strong>${lastQta}g</strong>)?`, 'assistant');
@@ -3622,8 +3642,9 @@
     // 4. GESTIONE EVENTI
     if (aiToggle) aiToggle.onclick = () => aiWidget.classList.toggle('minimized');
     
-    if (aiSettings) {
-        aiSettings.onclick = (e) => {
+    // Fix Ingranaggio Impostazioni
+    if (aiSettingsIcon) {
+        aiSettingsIcon.onclick = (e) => {
             e.stopPropagation();
             const modal = document.getElementById('settings-modal');
             if (modal) modal.style.display = 'block';
@@ -3635,16 +3656,17 @@
         if (!text) return;
         addMessage(text, 'user');
         aiInput.value = '';
-        const loading = addMessage("🤔 Elaboro...", "assistant loading");
+        const loading = addMessage("🤔 Sto calcolando...", "assistant loading");
 
         try {
-            const prompt = `Utente: "${text}". Analizza e rispondi SOLO con comandi: [AGGIUNGI: nome | quantità | pasto]. Se mancano pesi, metti 0. Estrai TUTTI i cibi.`;
+            const prompt = `Utente: "${text}". Analizza e rispondi SOLO con comandi: [AGGIUNGI: nome | quantità | pasto]. Se ci sono calcoli (es 56*2), risolvili nel comando. Se mancano pesi, metti 0.`;
             const resp = await callGeminiAPI(prompt);
             if (loading) loading.remove();
             addMessage(resp, 'assistant');
 
             const matches = [...resp.matchAll(/\[AGGIUNGI:\s*([^|]+)\s*\|\s*([^|]+)\s*\|\s*([^\]]+)\]/gi)];
             for (const m of matches) {
+                // Esecuzione sequenziale con await per gestire le domande di conferma una alla volta
                 await addFoodDirectly(m[1].trim(), parseInt(m[2].replace(/\D/g, '')) || 0, m[3].trim().toLowerCase());
             }
         } catch (e) {
@@ -3659,6 +3681,7 @@
     </script>
 </body>
 </html>
+
 
 
 
