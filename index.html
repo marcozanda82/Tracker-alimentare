@@ -2020,7 +2020,7 @@
                 photoOcrStatus.textContent = 'Fase 2/2: Analisi AI...';
                 const prompt = `Analizza il seguente testo estratto da una tabella nutrizionale: "${ocrText}". Estrai i valori per 100g (o 100ml), ignorando le colonne "per porzione". Restituisci ESCLUSIVAMENTE un oggetto JSON. Le chiavi devono essere i nomi dei nutrienti in italiano (es. "Energia", "Grassi", "di cui acidi grassi saturi"). Se un valore non è presente, omettilo.`;
                 
-                const callGemini = httpsCallable(functions, 'callOpenAI');
+                const callGemini = httpsCallable(window.functions, 'callOpenAI');
                 const result = await callGemini({ prompt: prompt });
                 const data = result.data;
                 const rawJson = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
@@ -2576,7 +2576,7 @@
                     }
                     let promptText = `Fornisci ESATTAMENTE questo oggetto JSON (senza altro testo) con i valori nutrizionali medi per 100 g di "${nome}". ${ingredientiInfo} ${AI_INSTRUCTION}. ${GEMINI_PROMPT_FORMAT}`;
                     
-                    const callGemini = httpsCallable(functions, 'callOpenAI');
+                    const callGemini = httpsCallable(window.functions, 'callOpenAI');
                     const result = await callGemini({ prompt: promptText });
                     const data = result.data;
                     const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
@@ -2644,6 +2644,7 @@
                 db = getDatabase(firebaseApp);
                 auth = getAuth(firebaseApp);
                 functions = getFunctions(firebaseApp, 'europe-west1');
+                window.functions = functions; // Esporta per la chat AI
                 console.log("Firebase inizializzato.");
 
                 onAuthStateChanged(auth, async (user) => {
@@ -2932,7 +2933,7 @@
                         prompt = `Agisci come un esperto di etichette alimentari. Genera una lista di ingredienti per il prodotto commerciale "${foodName}". Rispondi ESCLUSIVAMENTE con la lista, senza frasi introduttive o conclusive. Il formato deve essere un elenco puntato, un ingrediente per riga. È FONDAMENTALE che la lista rifletta il contenuto di un PRODOTTO CONFEZIONATO (es. un sacchetto di minestrone surgelato), NON una ricetta per prepararlo. Pertanto, NON includere ingredienti come acqua aggiunta in cottura, olio, sale o pasta, a meno che non siano specificati come pre-inseriti nel prodotto. Se non conosci l'etichetta esatta, basati su prodotti concorrenti simili dei supermercati.`;
                     }
 
-                    const callGemini = httpsCallable(functions, 'callOpenAI');
+                    const callGemini = httpsCallable(window.functions, 'callOpenAI');
                     const result = await callGemini({ prompt: prompt });
                     const data = result.data;
                     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Nessuna risposta dall\'AI.';
@@ -3518,7 +3519,7 @@
             // Chiama l'AI
             async function callAI(prompt, includeData) {
                 try {
-                    const callGemini = httpsCallable(functions, 'callOpenAI');
+                    const callGemini = httpsCallable(window.functions, 'callOpenAI');
 
                     let fullPrompt = prompt;
                     if (includeData) {
@@ -3569,7 +3570,7 @@
                     // Invia all'AI per analisi
                     const prompt = 'Analizza questi dati di sonno estratti da uno screenshot dell app Mi Fitness. Estrai: ore totali di sonno, qualità del sonno, fasi del sonno (leggero, profondo, REM), eventuali sveglie. Poi dammi consigli nutrizionali basati sulla qualità del sonno (es. se sonno scarso, suggerisci alimenti ricchi di magnesio e triptofano).\n\nTesto estratto:\n' + text;
 
-                    const callGemini = httpsCallable(functions, 'callOpenAI');
+                    const callGemini = httpsCallable(window.functions, 'callOpenAI');
                     const result = await callGemini({ prompt: prompt });
                     const data = result.data;
                     const response = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Non sono riuscito ad analizzare i dati del sonno.';
