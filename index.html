@@ -3591,7 +3591,8 @@
                     throw new Error('API key non configurata. Inseriscila nelle impostazioni.');
                 }
 
-                var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + geminiApiKey;
+                // La versione corretta con Gemini 2.0 Flash
+var url = 'https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=' + geminiApiKey;
 
                 var requestBody = {
                     contents: [
@@ -4255,6 +4256,7 @@ ISTRUZIONI IMPORTANTI:
 
 </body>
 </html>
+
 
 
 
