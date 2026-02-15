@@ -471,32 +471,7 @@
             color: #555;
         }
         .balance-value { font-weight: bold; }
-        
-        /* --- NUOVI STILI AI COACH --- */
-#ai-coach-container { 
-    background: linear-gradient(135deg, #f3e5f5 0%, #e8eaf6 100%);
-    border-radius: 15px; padding: 20px; margin-bottom: 30px;
-    border-left: 6px solid #673ab7; box-shadow: 0 4px 10px rgba(103, 58, 183, 0.15);
-}
-#chat-window { 
-    height: 300px; overflow-y: auto; background: rgba(255, 255, 255, 0.8); 
-    padding: 15px; border-radius: 10px; border: 1px solid #d1c4e9; 
-    display: flex; flex-direction: column; gap: 12px; margin-bottom: 15px;
-}
-.msg { padding: 12px; border-radius: 12px; max-width: 80%; font-size: 0.95em; line-height: 1.4; }
-.msg.user { background: #673ab7; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
-.msg.coach { background: white; color: #333; align-self: flex-start; border-bottom-left-radius: 2px; border: 1px solid #e0e0e0; }
-.chat-input-area { display: flex; gap: 10px; background: white; padding: 10px; border-radius: 10px; border: 1px solid #d1c4e9; }
-#chat-input { flex-grow: 1; border: none; outline: none; resize: none; height: 45px; }
-.btn-ai { padding: 10px 15px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; }
-.btn-primary { background: #673ab7; color: white; }
-        #chat-window { height: 250px; overflow-y: auto; background: white; padding: 10px; border-radius: 8px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px; }
-.msg { padding: 8px 12px; border-radius: 12px; max-width: 85%; }
-.msg.user { background: #673ab7; color: white; align-self: flex-end; }
-.msg.coach { background: #e1f5fe; color: #333; align-self: flex-start; }
-.chat-input-area { display: flex; gap: 5px; }
-#chat-input { flex-grow: 1; height: 50px; border-radius: 5px; padding: 5px; }
-            </style>
+    </style>
 </head>
 <body>
     <div class="container">
@@ -822,42 +797,8 @@
                 <button id="btn-salva-pasto">Salva Pasto nel Diario</button>
             </div>
             <div class="sezione">
-                <div id="ai-coach-container">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-        <h2 style="margin:0; color: #4527a0;"><i class="fas fa-brain"></i> Cortisol Coach</h2>
-        <span id="ai-status" style="font-size: 0.8em; color: #673ab7;">✨ Pronto</span>
-    </div>
-    <div id="chat-window">
-        <div class="msg coach">Ciao Davide, i dati di oggi sono caricati. Come gestiamo il cortisolo stasera?</div>
-    </div>
-    <div class="chat-input-area">
-        <textarea id="chat-input" placeholder="Es: 'Cosa mangio per cena?' o 'Aggiungi 100g riso'"></textarea>
-        <button id="btn-send-chat" class="btn-ai btn-primary"><i class="fas fa-paper-plane"></i></button>
-    </div>
-    <div style="margin-top: 10px; display: flex; gap: 10px;">
-        <input type="file" id="fitness-upload" accept="image/*" style="display:none;">
-        <button class="btn-ai" style="background:#2196f3; color:white; font-size:0.8em;" onclick="document.getElementById('fitness-upload').click()">
-            <i class="fas fa-camera"></i> Carica Mi Fitness
-        </button>
-    </div>
-</div>
                 <h2>Diario Giornaliero</h2>
                 <div class="diary-table-container">
-                    <div id="ai-coach-container" class="sezione" style="border-left: 5px solid #673ab7; background: #f3e5f5;">
-    <h2 style="color: #4527a0;"><i class="fas fa-robot"></i> Cortisol Coach</h2>
-    <div id="chat-window"></div>
-    <div class="chat-input-area">
-        <textarea id="chat-input" placeholder="Chiedi consiglio o aggiungi cibo..."></textarea>
-        <button id="btn-send-chat" class="btn-ai btn-primary"><i class="fas fa-paper-plane"></i></button>
-    </div>
-    <div style="margin-top:10px;">
-        <input type="file" id="fitness-upload" accept="image/*" style="display:none;">
-        <button class="btn-ai" style="background:#2196f3; color:white;" onclick="document.getElementById('fitness-upload').click()">
-            <i class="fas fa-camera"></i> Carica Mi Fitness
-        </button>
-        <span id="ai-status" style="margin-left:10px; font-style:italic;">Pronto</span>
-    </div>
-</div>
                 <table id="log-pasti">
                     <thead>
                         <tr>
@@ -1044,63 +985,6 @@
         const calorieAdjustmentInput = document.getElementById('calorie-adjustment-input');
         const btnCalorieMinus = document.getElementById('btn-calorie-minus');
         const btnCaloriePlus = document.getElementById('btn-calorie-plus');
-        // --- NUOVE VARIABILI AI COACH ---
-const chatInput = document.getElementById('chat-input');
-const chatWindow = document.getElementById('chat-window');
-const btnSendChat = document.getElementById('btn-send-chat');
-const aiStatus = document.getElementById('ai-status');
-const fitnessUpload = document.getElementById('fitness-upload');
-
-async function askCoach() {
-    const text = chatInput.value.trim();
-    if (!text) return;
-
-    appendMsg('user', text);
-    chatInput.value = '';
-    aiStatus.textContent = "Analisi in corso...";
-
-    const context = {
-        kcal_oggi: document.getElementById('totale-calorie').innerText,
-        pro_oggi: document.getElementById('totale-proteine').innerText,
-        na: document.getElementById('valore-sodio').innerText,
-        k: document.getElementById('valore-potassio').innerText,
-        cortisolo_target: "Gestione stress serale"
-    };
-
-    try {
-        const callAI = httpsCallable(functions, 'callOpenAI');
-        const result = await callAI({ 
-            prompt: `Sei il coach di Davide. Dati: ${JSON.stringify(context)}. Domanda: ${text}. Rispondi focalizzandoti sul cortisolo. Se indichi un cibo, aggiungi JSON finale: {"kcal":x,"pro":x,"carb":x,"fat":x,"na":x}` 
-        });
-
-        const reply = result.data.candidates[0].content.parts[0].text;
-        appendMsg('coach', reply);
-
-        const jsonMatch = reply.match(/\{.*\}/s);
-        if (jsonMatch) {
-            const data = JSON.parse(jsonMatch[0]);
-            builderKcal.value = data.kcal || "";
-            builderProt.value = data.pro || "";
-            builderCarb.value = data.carb || "";
-            builderFatTotal.value = data.fat || "";
-            builderNa.value = data.na || "";
-            aggiornaColoreNutrienti();
-        }
-    } catch (e) {
-        appendMsg('coach', "Errore di connessione.");
-    }
-    aiStatus.textContent = "Pronto";
-}
-
-function appendMsg(role, text) {
-    const div = document.createElement('div');
-    div.className = `msg ${role}`;
-    div.innerHTML = text.replace(/\n/g, '<br>');
-    chatWindow.appendChild(div);
-    chatWindow.scrollTop = chatWindow.scrollHeight;
-}
-
-btnSendChat.onclick = askCoach;
         const btnDownloadManual = document.getElementById('btn-download-manual');
         const cloudSyncStatusSpan = document.getElementById('cloud-sync-status');
         const cloudSyncSection = document.querySelector('.cloud-sync-section');
@@ -3226,7 +3110,3 @@ btnSendChat.onclick = askCoach;
     </script>
 </body>
 </html>
-
-
-
-
