@@ -3201,19 +3201,14 @@
     box-shadow: 0 8px 32px rgba(0,0,0,0.2);
     z-index: 9999;
     overflow: hidden;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    transition: all 0.3s ease-in-out; /* Transizione fluida per altezza e trasformazione */
-    max-height: 600px; /* Altezza massima da aperta */
+    transition: all 0.3s ease-in-out;
+    max-height: 600px; /* Altezza da aperta */
 }
 
 .ai-chat-widget.minimized {
-    transform: translateY(calc(100% - 50px)); /* Sposta quasi tutto fuori dallo schermo */
-    max-height: 50px; /* Forza l'altezza della sola barra viola */
+    transform: translateY(calc(100% - 50px));
+    max-height: 50px; /* Altezza della sola barra viola */
 }
-
-        .ai-chat-widget.minimized {
-            transform: translateY(calc(100% - 50px));
-        }
 
         .ai-chat-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -3732,6 +3727,7 @@
 
 </body>
 </html>
+
 
 
 
