@@ -883,7 +883,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-functions.js" type="module"></script> 
     <script type="module">
         import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-functions.js";
-        window.httpsCallable = httpsCallable;
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
         import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
@@ -3365,93 +3364,303 @@
             }
         }
     </style>
-<div id="ai-chat-widget" class="ai-chat-widget">
-        <div class="ai-chat-header" id="ai-chat-toggle">
-            <span>🤖 Assistente AI Nutrizionale</span>
-            <span class="ai-chat-toggle-icon">▲</span>
-        </div>
-        <div class="ai-chat-body" id="ai-chat-body">
-            <div class="ai-chat-messages" id="ai-chat-messages">
-                <div class="ai-message ai-welcome">
-                    <strong>Ciao! Sono il tuo assistente.</strong><br><br>
-                    Ho accesso ai tuoi dati di oggi per aiutarti con i problemi di <strong>cortisolo</strong>.
-                </div>
-            </div>
-            <div class="ai-chat-input-area">
-                <textarea id="ai-chat-input" placeholder="Chiedimi consigli..." rows="2"></textarea>
-                <button id="ai-chat-send" class="ai-chat-send-btn">➤</button>
-            </div>
-        </div>
-    </div>
-
-    <style>
-        .ai-chat-widget { position: fixed; bottom: 20px; right: 20px; width: 380px; background: white; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); z-index: 9999; overflow: hidden; font-family: sans-serif; transition: transform 0.3s ease; }
-        .ai-chat-widget.minimized { transform: translateY(calc(100% - 50px)); }
-        .ai-chat-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 600; }
-        .ai-chat-body { max-height: 500px; display: flex; flex-direction: column; }
-        .ai-chat-messages { flex: 1; max-height: 350px; overflow-y: auto; padding: 15px; background: #f8f9fa; }
-        .ai-message { margin-bottom: 12px; padding: 12px 15px; border-radius: 12px; max-width: 85%; font-size: 0.95em; line-height: 1.5; }
-        .ai-message.user { background: #667eea; color: white; margin-left: auto; }
-        .ai-message.assistant { background: white; color: #333; margin-right: auto; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .ai-chat-input-area { display: flex; padding: 12px 15px; background: white; border-top: 1px solid #e0e0e0; gap: 8px; }
-        .ai-chat-input-area textarea { flex: 1; border: 1px solid #ddd; border-radius: 20px; padding: 10px; outline: none; resize: none; }
-        .ai-chat-send-btn { background: #667eea; color: white; border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; }
-    </style>
 
     <script>
+        // CHAT AI INTEGRATA - GESTIONE
         (function() {
+            const chatWidget = document.getElementById('ai-chat-widget');
+            const chatToggle = document.getElementById('ai-chat-toggle');
+            const chatMessages = document.getElementById('ai-chat-messages');
             const chatInput = document.getElementById('ai-chat-input');
             const chatSend = document.getElementById('ai-chat-send');
-            const chatMessages = document.getElementById('ai-chat-messages');
-            const chatToggle = document.getElementById('ai-chat-toggle');
-            const chatWidget = document.getElementById('ai-chat-widget');
+            const chatSleepBtn = document.getElementById('ai-chat-sleep-btn');
+            const chatSleepInput = document.getElementById('ai-chat-sleep-input');
+            const chatExportBtn = document.getElementById('ai-chat-export-data');
+            const chatClearBtn = document.getElementById('ai-chat-clear');
+            const foodModal = document.getElementById('ai-chat-food-modal');
+            const foodDetails = document.getElementById('ai-chat-food-details');
+            const foodConfirm = document.getElementById('ai-chat-food-confirm');
+            const foodCancel = document.getElementById('ai-chat-food-cancel');
 
-            chatToggle.addEventListener('click', () => chatWidget.classList.toggle('minimized'));
+            let pendingFoodData = null;
+            let chatHistory = JSON.parse(localStorage.getItem('aiChatHistory') || '[]');
 
-            function addMessage(content, role) {
+            // Ripristina storico chat
+            function loadChatHistory() {
+                if (chatHistory.length > 0) {
+                    chatMessages.innerHTML = '';
+                    chatHistory.forEach(msg => {
+                        addMessage(msg.content, msg.role, false);
+                    });
+                }
+            }
+
+            // Salva storico chat
+            function saveChatHistory() {
+                const messages = [];
+                chatMessages.querySelectorAll('.ai-message').forEach(el => {
+                    if (!el.classList.contains('ai-welcome') && !el.classList.contains('loading')) {
+                        messages.push({
+                            role: el.classList.contains('user') ? 'user' : 'assistant',
+                            content: el.innerHTML
+                        });
+                    }
+                });
+                localStorage.setItem('aiChatHistory', JSON.stringify(messages.slice(-50)));
+            }
+
+            // Toggle chat
+            chatToggle.addEventListener('click', () => {
+                chatWidget.classList.toggle('minimized');
+            });
+
+            // Aggiungi messaggio alla chat
+            function addMessage(content, role, save = true) {
                 const msgDiv = document.createElement('div');
                 msgDiv.className = 'ai-message ' + role;
                 msgDiv.innerHTML = content;
                 chatMessages.appendChild(msgDiv);
                 chatMessages.scrollTop = chatMessages.scrollHeight;
+                if (save) saveChatHistory();
             }
 
-            async function sendMessage() {
-                const text = chatInput.value.trim();
-                if (!text) return;
+            // Mostra loading
+            function showLoading() {
+                const loadingDiv = document.createElement('div');
+                loadingDiv.className = 'ai-message loading';
+                loadingDiv.id = 'ai-chat-loading';
+                loadingDiv.innerHTML = '🤔 Sto pensando...';
+                chatMessages.appendChild(loadingDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
 
-                addMessage(text, 'user');
-                chatInput.value = '';
+            // Nascondi loading
+            function hideLoading() {
+                const loading = document.getElementById('ai-chat-loading');
+                if (loading) loading.remove();
+            }
 
+            // Preleva dati JSON completi del giorno
+            function getDailyDataJSON() {
+                const dataRef = new Date(giornoVisualizzato);
+                const piano = PIANO_SETTIMANALE[dataRef.getDay()] || PIANO_SETTIMANALE[1];
+                const targetKcal = piano.cal_base + (datiGiornalieri.workoutCalorie || 0) + (datiGiornalieri.calorieAdjustment || 0);
+
+                const allNutrientKeys = [
+                    'prot', 'kcal', 'carb', 'zuccheri', 'fatTotal', 'fatSat', 'fatTrans', 
+                    'fatMono', 'fatPoly', 'omega3', 'omega6', 'fibreTotali', 'fibreSolubili', 'fibreInsolubili',
+                    'na', 'mg', 'k', 'vitc', 'ca', 'fe', 'zn', 'cu', 'p', 
+                    'vitA', 'vitB12', 'vitD', 'vitE', 'vitK', 'b9', 'b2', 'b6',
+                    'leu', 'iso', 'val', 'lys', 'met', 'phe', 'thr', 'trp', 'his'
+                ];
+
+                let dailyTotals = {};
+                allNutrientKeys.forEach(function(k) { dailyTotals[k] = 0; });
+
+                const logDettagliato = [];
+
+                (datiGiornalieri.log || []).forEach(function(entry) {
+                    if (entry.type === 'workout') return;
+
+                    const items = entry.type === 'meal' ? entry.items : [entry];
+                    const itemsExport = items.map(function(item) {
+                        const cleanItem = {
+                            alimento: item.desc,
+                            qta_g: item.qta
+                        };
+
+                        allNutrientKeys.forEach(function(key) {
+                            const val = item[key];
+                            if (val !== undefined && val !== null && (val > 0 || key === 'kcal' || key === 'prot')) {
+                                cleanItem[key] = Number(val.toFixed(2));
+                                dailyTotals[key] += val;
+                            }
+                        });
+
+                        return cleanItem;
+                    });
+
+                    logDettagliato.push({
+                        tipo: entry.type === 'meal' ? 'Pasto: ' + entry.desc : 'Alimento Singolo',
+                        dettagli: itemsExport
+                    });
+                });
+
+                return {
+                    meta: {
+                        data: giornoVisualizzato,
+                        giorno_tipo: piano.tipo,
+                        ora_corrente: new Date().toLocaleTimeString('it-IT'),
+                        note_utente: datiGiornalieri.note || "Nessuna nota"
+                    },
+                    obiettivi: {
+                        kcal: targetKcal,
+                        proteine: piano.prot,
+                        carboidrati: piano.carb,
+                        grassi: OBIETTIVI_FAT.fatTotal
+                    },
+                    progresso_attuale: {
+                        kcal: dailyTotals.kcal.toFixed(0),
+                        proteine: dailyTotals.prot.toFixed(1),
+                        carboidrati: dailyTotals.carb.toFixed(1),
+                        grassi: dailyTotals.fatTotal.toFixed(1),
+                        fibre: dailyTotals.fibreTotali.toFixed(1),
+                        omega3: dailyTotals.omega3.toFixed(1),
+                        omega6: dailyTotals.omega6.toFixed(1)
+                    },
+                    diario_alimentare: logDettagliato,
+                    allenamento: {
+                        descrizione: (datiGiornalieri.log || []).filter(function(e) { return e.type === 'workout'; }).map(function(e) { return e.desc; }).join(", ") || "Riposo",
+                        kcal_bruciate: datiGiornalieri.workoutCalorie || 0
+                    }
+                };
+            }
+
+            // Chiama l'AI
+            async function callAI(prompt, includeData) {
                 try {
-                    // Recupero sicuro delle funzioni Firebase
-                    const callGemini = window.httpsCallable(window.functions, 'callOpenAI');
-                    
-                    // ACCESSO AI DATI: Qui risolviamo l'errore "giornoVisualizzato"
-                    // Prendiamo la data direttamente dal campo nel tracker
-                    const dataAttuale = document.getElementById('data-caricamento').value;
-                    const logOggi = document.getElementById('log-body').innerText;
+                    const callGemini = httpsCallable(window.functions, 'callOpenAI');
 
-                    const promptCompleto = `
-                        L'utente ha problemi di cortisolo.
-                        Data: ${dataAttuale}
-                        Cibi mangiati oggi (riepilogo): ${logOggi}
-                        Domanda: ${text}
-                        Rispondi brevemente in italiano suggerendo cibi anti-stress se necessario.
-                    `;
+                    let fullPrompt = prompt;
+                    if (includeData) {
+                        const dailyData = getDailyDataJSON();
+                        fullPrompt = 'Contesto: Oggi è ' + dailyData.meta.data + ', giorno di ' + dailyData.meta.giorno_tipo + '.\n\nI miei dati nutrizionali attuali sono: ' + JSON.stringify(dailyData, null, 2) + '\n\nDomanda dell utente: ' + prompt + '\n\nRispondi in italiano, in modo conciso ma completo. Se l utente chiede cosa mangiare, suggerisci alimenti specifici con quantità approssimative.';
+                    }
 
-                    const result = await callGemini({ prompt: promptCompleto });
-                    const risposta = result.data.candidates[0].content.parts[0].text;
-                    addMessage(risposta.replace(/\n/g, '<br>'), 'assistant');
+                    const result = await callGemini({ prompt: fullPrompt });
+                    const data = result.data;
+                    const response = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Nessuna risposta dall AI.';
+
+                    return response;
                 } catch (err) {
-                    addMessage("Assicurati di aver fatto il login e riprova.", 'assistant');
-                    console.error(err);
+                    console.error('Errore AI:', err);
+                    return 'Mi dispiace, si è verificato un errore. Riprova più tardi.';
                 }
             }
 
+            // Gestisci invio messaggio
+            async function sendMessage() {
+                const message = chatInput.value.trim();
+                if (!message) return;
+
+                addMessage(message, 'user');
+                chatInput.value = '';
+                showLoading();
+
+                const response = await callAI(message, true);
+                hideLoading();
+
+                // Formatta la risposta
+                let formattedResponse = response
+                    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\n/g, '<br>');
+
+                addMessage(formattedResponse, 'assistant');
+            }
+
+            // Analizza screenshot sonno
+            async function analyzeSleepImage(file) {
+                showLoading();
+                addMessage('📸 Ho caricato uno screenshot del sonno. Sto analizzando...', 'user');
+
+                try {
+                    // OCR sull'immagine
+                    const { data: { text } } = await Tesseract.recognize(file, 'ita');
+
+                    // Invia all'AI per analisi
+                    const prompt = 'Analizza questi dati di sonno estratti da uno screenshot dell app Mi Fitness. Estrai: ore totali di sonno, qualità del sonno, fasi del sonno (leggero, profondo, REM), eventuali sveglie. Poi dammi consigli nutrizionali basati sulla qualità del sonno (es. se sonno scarso, suggerisci alimenti ricchi di magnesio e triptofano).\n\nTesto estratto:\n' + text;
+
+                    const callGemini = httpsCallable(window.functions, 'callOpenAI');
+                    const result = await callGemini({ prompt: prompt });
+                    const data = result.data;
+                    const response = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Non sono riuscito ad analizzare i dati del sonno.';
+
+                    hideLoading();
+                    addMessage(response.replace(/\n/g, '<br>'), 'assistant');
+
+                } catch (error) {
+                    hideLoading();
+                    addMessage('❌ Errore nell analisi dello screenshot. Assicurati che l immagine sia chiara.', 'assistant');
+                    console.error(error);
+                }
+            }
+
+            // Esporta dati per AI
+            chatExportBtn.addEventListener('click', async function() {
+                const data = getDailyDataJSON();
+                const jsonString = JSON.stringify(data, null, 2);
+
+                try {
+                    await navigator.clipboard.writeText(jsonString);
+                    addMessage('✅ Dati JSON copiati negli appunti! Puoi incollarli dove preferisci.', 'assistant');
+                } catch (err) {
+                    addMessage('❌ Errore nella copia. Riprova.', 'assistant');
+                }
+            });
+
+            // Pulisci chat
+            chatClearBtn.addEventListener('click', function() {
+                if (confirm('Vuoi cancellare la cronologia della chat?')) {
+                    chatMessages.innerHTML = '<div class="ai-message ai-welcome"><strong>Chat pulita!</strong><br><br>Come posso aiutarti oggi?</div>';
+                    localStorage.removeItem('aiChatHistory');
+                }
+            });
+
+            // Event listeners
             chatSend.addEventListener('click', sendMessage);
-            chatInput.addEventListener('keypress', (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+            chatInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            chatSleepBtn.addEventListener('click', function() {
+                chatSleepInput.click();
+            });
+
+            chatSleepInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    analyzeSleepImage(file);
+                }
+                chatSleepInput.value = '';
+            });
+
+            // Chiudi modal alimento
+            foodCancel.addEventListener('click', function() {
+                foodModal.style.display = 'none';
+                pendingFoodData = null;
+            });
+
+            foodConfirm.addEventListener('click', function() {
+                if (pendingFoodData) {
+                    // Aggiungi al diario
+                    if (!datiGiornalieri.log) datiGiornalieri.log = [];
+                    datiGiornalieri.log.push({
+                        type: 'single',
+                        desc: pendingFoodData.desc,
+                        qta: pendingFoodData.qta,
+                        prot: pendingFoodData.prot || 0,
+                        kcal: pendingFoodData.kcal || 0
+                    });
+                    salvaGiorno(giornoVisualizzato, datiGiornalieri);
+                    aggiornaUI();
+
+                    addMessage('✅ Aggiunto: ' + pendingFoodData.desc + ' (' + pendingFoodData.qta + 'g)', 'assistant');
+                    foodModal.style.display = 'none';
+                    pendingFoodData = null;
+                }
+            });
+
+            // Inizializza
+            loadChatHistory();
+
         })();
     </script>
+
 </body>
 </html>
+
+
+
