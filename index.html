@@ -3562,7 +3562,7 @@
         return data.candidates[0].content.parts[0].text;
     }
 
-    // 3. LOGICA DI INSERIMENTO E AGGIORNAMENTO TABELLA
+    // 3. LOGICA DI INSERIMENTO CON REFRESH FORZATO
     function procediInserimento(data, qta, pasto) {
         if (!window.pastoInCostruzione) window.pastoInCostruzione = [];
         
@@ -3578,12 +3578,17 @@
             document.getElementById('meal-type-selector').value = pasto;
         }
 
-        // AGGIORNAMENTO ISTANTANEO DELLA TABELLA ARANCIONE
-        if (typeof window.renderMealBuilder === 'function') {
-            window.renderMealBuilder();
-        }
-        const builder = document.getElementById('meal-builder-sezione');
-        if (builder) builder.style.display = 'block';
+        // AGGIORNAMENTO ISTANTANEO (con piccolo delay per sincronizzazione browser)
+        setTimeout(() => {
+            if (typeof window.renderMealBuilder === 'function') {
+                window.renderMealBuilder();
+            }
+            const builder = document.getElementById('meal-builder-sezione');
+            if (builder) {
+                builder.style.display = 'block';
+                builder.scrollIntoView({ behavior: 'smooth' });
+            }
+        }, 50);
         
         addMessage(`✅ <strong>${item.desc}</strong> (${qta}g) aggiunto.`, 'assistant');
     }
@@ -3613,7 +3618,7 @@
         const exactKey = window.sanitizeFirebaseKey(nome.toLowerCase());
         const dbEntry = db[exactKey] || (matches.length === 1 ? db[matches[0]] : null);
         
-        // LOGICA MEMORIA: Se manca la quantità, proponi l'ultima usata
+        // MEMORIA QUANTITÀ: Chiede conferma per lastQta se grammi mancano
         if (dbEntry && (!qta || qta <= 0)) {
             const lastQta = dbEntry.lastQta || 100;
             addMessage(`Per <strong>${dbEntry.desc}</strong> uso l'ultima quantità (<strong>${lastQta}g</strong>)?`, 'assistant');
@@ -3640,7 +3645,7 @@
     }
 
     // 4. GESTIONE EVENTI
-    aiToggle.onclick = () => aiWidget.classList.toggle('minimized');
+    if (aiToggle) aiToggle.onclick = () => aiWidget.classList.toggle('minimized');
     
     if (aiSettingsIcon) {
         aiSettingsIcon.onclick = (e) => {
@@ -3658,13 +3663,13 @@
         const loading = addMessage("🤔 Elaboro...", "assistant loading");
 
         try {
-            const prompt = `Utente: "${text}". Rispondi SOLO con comandi: [AGGIUNGI: nome | quantità | pasto]. Se mancano pesi, metti 0. Calcola i totali (es. 56*2 = 112). Sii sintetico.`;
+            const prompt = `Utente: "${text}". Rispondi SOLO comandi: [AGGIUNGI: nome | quantità | pasto]. Se mancano grammi, metti 0. Calcola i totali (es. 56*2 = 112). Sii sintetico.`;
             const resp = await callGeminiAPI(prompt);
             if (loading) loading.remove();
             addMessage(resp, 'assistant');
 
             const matches = [...resp.matchAll(/\[AGGIUNGI:\s*([^|]+)\s*\|\s*([^|]+)\s*\|\s*([^\]]+)\]/gi)];
-            // Esecuzione sequenziale con await per gestire correttamente la memoria lastQta
+            // Processiamo ogni alimento aspettando che l'UI si aggiorni
             for (const m of matches) {
                 await addFoodDirectly(m[1].trim(), parseInt(m[2].replace(/\D/g, '')) || 0, m[3].trim().toLowerCase());
             }
@@ -3680,6 +3685,7 @@
     </script>
 </body>
 </html>
+
 
 
 
