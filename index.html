@@ -3574,6 +3574,105 @@
                     .replace(/\n/g, '<br>');
 
                 addMessage(formattedResponse, 'assistant');
+
+                // Parsa la risposta per cercare alimenti o allenamenti da aggiungere
+                parseAIResponseForActions(response, message);
+            }
+
+            // Parsa la risposta dell'AI per trovare alimenti/allenamenti da aggiungere
+            function parseAIResponseForActions(response, originalMessage) {
+                // Cerca pattern di alimenti: "yogurt greco 150g" o "150g di yogurt greco"
+                const foodPatterns = [
+                    /(\d+)\s*g(?:rammi)?\s+(?:di\s+)?([\w\s]+?)(?:[,;.]|$)/i,
+                    /([\w\s]+?)\s+(\d+)\s*g(?:rammi)?/i,
+                    /ho\s+mangiat[oa]\s+([\w\s]+?)\s+(\d+)\s*g/i,
+                    /mangio\s+([\w\s]+?)\s+(\d+)\s*g/i
+                ];
+
+                // Cerca pattern di allenamento
+                const workoutPatterns = [
+                    /allenamento\s+(?:di\s+)?([\w\s]+?)\s+(\d+)\s*kcal/i,
+                    /([\w\s]+?)\s+(\d+)\s*kcal\s+(?:bruciate|bruciate)/i,
+                    /ho\s+(?:fatto|fatto)\s+([\w\s]+?)\s+(\d+)\s*kcal/i,
+                    /(?:corsa|pesistica|allenamento|workout)\s+(?:di\s+)?([\w\s]*?)\s*(\d+)\s*(?:min|minuti|kcal)/i
+                ];
+
+                // Prova a trovare un alimento
+                for (const pattern of foodPatterns) {
+                    const match = originalMessage.match(pattern);
+                    if (match) {
+                        let qta, nome;
+                        if (/^\d/.test(match[1])) {
+                            qta = parseInt(match[1]);
+                            nome = match[2].trim();
+                        } else {
+                            nome = match[1].trim();
+                            qta = parseInt(match[2]);
+                        }
+
+                        if (qta > 0 && nome.length > 2) {
+                            // Chiedi conferma all'utente
+                            setTimeout(() => {
+                                if (confirm(`Vuoi aggiungere \"${nome} \\(${qta}g\\)\" al diario?`)) {
+                                    addFoodFromChat(nome, qta);
+                                }
+                            }, 500);
+                            return; // Trovato un alimento, esci
+                        }
+                    }
+                }
+
+                // Prova a trovare un allenamento
+                for (const pattern of workoutPatterns) {
+                    const match = originalMessage.match(pattern);
+                    if (match) {
+                        const desc = match[1].trim() || 'Allenamento';
+                        const kcal = parseInt(match[2]);
+
+                        if (kcal > 0) {
+                            setTimeout(() => {
+                                if (confirm(`Vuoi registrare l'allenamento \"${desc} \\(${kcal} kcal\\)\"?`)) {
+                                    addWorkoutFromChat(desc, kcal);
+                                }
+                            }, 500);
+                            return;
+                        }
+                    }
+                }
+            }
+
+            // Aggiungi alimento dal diario dalla chat
+            function addFoodFromChat(nome, qta) {
+                // Compila i campi del form
+                const builderDesc = document.getElementById('builder-desc');
+                const builderQta = document.getElementById('builder-qta');
+
+                if (builderDesc && builderQta) {
+                    builderDesc.value = nome.charAt(0).toUpperCase() + nome.slice(1);
+                    builderQta.value = qta;
+
+                    // Scrolling al form
+                    document.getElementById('food-adder').scrollIntoView({ behavior: 'smooth' });
+
+                    // Suggerisci di usare Compila AI
+                    addMessage(`✏️ Ho compilato <strong>${nome}</strong> (${qta}g) nel form. Clicca su <strong>Compila AI</strong> per ottenere i valori nutrizionali, poi <strong>Aggiungi al Diario</strong>!`, 'assistant');
+                }
+            }
+
+            // Aggiungi allenamento dal diario dalla chat
+            function addWorkoutFromChat(desc, kcal) {
+                const workoutDescInput = document.getElementById('workout-desc');
+                const workoutCaloriesInput = document.getElementById('workout-calories');
+
+                if (workoutDescInput && workoutCaloriesInput) {
+                    workoutDescInput.value = desc.charAt(0).toUpperCase() + desc.slice(1);
+                    workoutCaloriesInput.value = kcal;
+
+                    // Scrolling alla sezione allenamento
+                    document.getElementById('form-allenamento').scrollIntoView({ behavior: 'smooth' });
+
+                    addMessage(`✏️ Ho compilato l'allenamento <strong>${desc}</strong> (${kcal} kcal). Clicca su <strong>Aggiungi Allenamento</strong> per confermare!`, 'assistant');
+                }
             }
 
             // Analizza screenshot sonno
