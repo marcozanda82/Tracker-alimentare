@@ -3134,14 +3134,22 @@
             <span>🤖 Assistente AI Nutrizionale</span>
             <span class="ai-chat-toggle-icon">▲</span>
         </div>
-        <div class="ai-chat-body" id="ai-chat-body">
-    <div class="ai-chat-settings" id="ai-chat-settings" style="display: none;">
-        <h4>🔑 Gestione API Key</h4>
-        <input type="password" id="ai-api-key-input" placeholder="Incolla qui la chiave di Gemini...">
-        <div class="ai-chat-settings-buttons">
-            <button id="ai-save-api-key">💾 Salva</button>
-            <button id="ai-close-settings">❌ Chiudi</button>
+<div class="ai-chat-body" id="ai-chat-body">
+    <div class="ai-chat-settings" id="ai-chat-settings" style="display: none; padding: 15px; background: #f0f0f0; border-bottom: 1px solid #ccc;">
+        <h4>🔑 Configura API Key</h4>
+        <input type="password" id="ai-api-key-input" placeholder="Incolla chiave Gemini..." style="width: 100%; margin-bottom: 10px;">
+        <div style="display: flex; gap: 10px;">
+            <button id="ai-save-api-key" style="flex: 1; padding: 5px;">Salva</button>
+            <button id="ai-close-settings" style="flex: 1; padding: 5px; background: #666;">Chiudi</button>
         </div>
+    </div>
+
+    <div class="ai-chat-messages" id="ai-chat-messages">
+        <button id="ai-open-settings" title="Configura API" style="position: sticky; top: 0; float: right; background: none; border: none; cursor: pointer; font-size: 1.2em;">⚙️</button>
+        <div class="ai-message assistant">
+            <strong>Ciao!</strong> Sono integrato con il tuo database. Chiedimi pure cosa hai mangiato!
+        </div>
+    </div>
     </div>
 
     <div class="ai-chat-messages" id="ai-chat-messages">
@@ -3727,6 +3735,7 @@
 
 </body>
 </html>
+
 
 
 
