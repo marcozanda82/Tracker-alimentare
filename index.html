@@ -3654,12 +3654,24 @@
                 addMessageElement(div);
             }
 
+          
             // Event Listeners
             if (aiToggle) {
-                aiToggle.addEventListener('click', () => {
+                aiToggle.addEventListener('click', (e) => {
+                    // Non toggle se clicco sul bottone settings
+                    if (e.target.closest('#ai-open-settings')) return;
+                    
                     aiWidget.classList.toggle('minimized');
                     const icon = document.getElementById('ai-toggle-icon');
                     if (icon) icon.textContent = aiWidget.classList.contains('minimized') ? '▲' : '▼';
+                });
+            }
+
+            if (aiOpenSettings) {
+                aiOpenSettings.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    toggleSettings();
                 });
             }
 
@@ -3752,4 +3764,5 @@ Se non è una richiesta di aggiunta alimento, rispondi normalmente in italiano.`
     </script>
 </body>
 </html>
+
 
