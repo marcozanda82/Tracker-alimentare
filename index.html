@@ -563,27 +563,62 @@
         addMessage(`🎯 <strong>${item.desc}</strong> aggiunto al Costruttore.`, 'assistant');
     }
 
+// --- FUNZIONI DI SUPPORTO (Devono stare PRIMA del click) ---
     function addMessage(t, r) {
         const d = document.createElement('div');
         d.className = `ai-message ${r}`;
         d.innerHTML = t;
         chatMessages.appendChild(d);
         chatMessages.scrollTop = chatMessages.scrollHeight;
+        return d;
     }
 
+    function addMessageElement(el) {
+        const d = document.createElement('div');
+        d.className = 'ai-message assistant';
+        d.appendChild(el);
+        chatMessages.appendChild(d);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        return d;
+    }
+
+    // --- LOGICA DEL TASTO INVIO ---
     chatSend.onclick = async () => {
         const text = chatInput.value.trim();
         if (!text) return;
-        addMessage(text, 'user');
+
+        addMessage(text, 'user'); // Ora la funzione esiste e viene trovata
         chatInput.value = '';
+
+        const loadingMsg = addMessage("🤔 Sto elaborando...", "assistant loading");
+
         try {
-            const resp = await callGeminiAPI(`Analizza: ${text}. Se aggiungi cibo usa: [AGGIUNGI: nome | qta | pasto]`);
+            const promptAI = `L'utente dice: "${text}". 
+            Se mancano pesi/quantità, fai un elenco numerato e chiedi conferma. 
+            Altrimenti usa il formato: [AGGIUNGI: nome | quantità | pasto]`;
+
+            const resp = await callGeminiAPI(promptAI);
+            
+            if (loadingMsg) loadingMsg.remove();
             addMessage(resp, 'assistant');
-            const m = /\[AGGIUNGI:\s*([^|]+)\s*\|\s*(\d+)\s*\|\s*([^\]]+)\]/i.exec(resp);
-            if (m) addFoodDirectly(m[1].trim(), parseInt(m[2]), m[3].trim());
-        } catch (e) { addMessage("❌ " + e.message, "assistant"); }
+
+            const m = /\[AGGIUNGI:\s*([^|]+)\s*\|\s*([^|]+)\s*\|\s*([^\]]+)\]/i.exec(resp);
+            
+            if (m) {
+                const nome = m[1].trim();
+                const qtaRaw = m[2].trim();
+                const qta = parseInt(qtaRaw.replace(/\D/g, '')) || 0;
+                const pasto = m[3].trim().toLowerCase();
+
+                addFoodDirectly(nome, qta, pasto);
+            }
+        } catch (e) {
+            if (loadingMsg) loadingMsg.remove();
+            addMessage("❌ Errore: " + e.message, "assistant");
+        }
     };
-})();
+
+})(); // FINE DEL MODULO
     </style>
 </head>
 <body>
@@ -3660,6 +3695,7 @@ async function addFoodDirectly(nome, qta, pasto) {
 </script>
 </body>
 </html>
+
 
 
 
