@@ -3591,31 +3591,47 @@
                     throw new Error('API key non configurata. Inseriscila nelle impostazioni.');
                 }
 
-                const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        contents: [{
-                            parts: [{
-                                text: prompt
-                            }]
-                        }],
-                        generationConfig: {
-                            temperature: 0.7,
-                            maxOutputTokens: 2048
+                var url = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key=' + geminiApiKey;
+
+                var requestBody = {
+                    contents: [
+                        {
+                            parts: [
+                                { text: prompt }
+                            ]
                         }
-                    })
-                });
+                    ],
+                    generationConfig: {
+                        temperature: 0.7,
+                        maxOutputTokens: 2048
+                    }
+                };
+
+                var fetchOptions = {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                };
+
+                var response = await fetch(url, fetchOptions);
 
                 if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error?.message || 'Errore API Gemini');
+                    var errorData = await response.json();
+                    var errorMessage = 'Errore API Gemini';
+                    if (errorData.error && errorData.error.message) {
+                        errorMessage = errorData.error.message;
+                    }
+                    throw new Error(errorMessage);
                 }
 
-                const data = await response.json();
-                return data.candidates?.[0]?.content?.parts?.[0]?.text || 'Nessuna risposta';
+                var responseData = await response.json();
+                var text = 'Nessuna risposta';
+                if (responseData.candidates && responseData.candidates[0] && 
+                    responseData.candidates[0].content && responseData.candidates[0].content.parts &&
+                    responseData.candidates[0].content.parts[0]) {
+                    text = responseData.candidates[0].content.parts[0].text;
+                }
+                return text;
             }
 
 
@@ -4239,7 +4255,6 @@ ISTRUZIONI IMPORTANTI:
 
 </body>
 </html>
-
 
 
 
