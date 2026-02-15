@@ -3658,11 +3658,11 @@ async function addFoodDirectly(nome, qta, pasto) {
         const keys = Object.keys(window.foodDatabase || {});
         const matches = keys.filter(k => k.includes(query));
 
-        // Gestione scelta multipla (se il nome è generico)
+        // 1. Gestione Scelta Multipla
         if (matches.length > 1) {
             const div = document.createElement('div');
             div.className = 'ai-chat-meal-buttons';
-            div.innerHTML = `<p>Quale "<strong>${nome}</strong>" intendi?</p>`;
+            div.innerHTML = `<p>Quale "<strong>${nome}</strong>"?</p>`;
             matches.forEach(m => {
                 const btn = document.createElement('button');
                 btn.textContent = window.foodDatabase[m].desc;
@@ -3679,10 +3679,10 @@ async function addFoodDirectly(nome, qta, pasto) {
         const exactKey = window.sanitizeFirebaseKey(nome.toLowerCase());
         const dbEntry = (window.foodDatabase && window.foodDatabase[exactKey]) ? window.foodDatabase[exactKey] : (matches.length === 1 ? window.foodDatabase[matches[0]] : null);
         
-        // --- LOGICA MEMORIA QUANTITÀ ---
-        if (dbEntry && (qta <= 0)) {
-            const lastQta = dbEntry.lastQta || 100; // Se non c'è lastQta, usa 100 come fallback
-            addMessage(`Per <strong>${dbEntry.desc}</strong> non hai indicato il peso. L'ultima volta hai usato <strong>${lastQta}g</strong>. Confermi?`, 'assistant');
+        // 2. LOGICA MEMORIA QUANTITÀ (se qta è 0 o mancante)
+        if (dbEntry && (!qta || qta <= 0)) {
+            const lastQta = dbEntry.lastQta || 100;
+            addMessage(`Per <strong>${dbEntry.desc}</strong> uso l'ultima quantità (<strong>${lastQta}g</strong>)?`, 'assistant');
             
             const divConf = document.createElement('div');
             divConf.className = 'ai-chat-meal-buttons';
@@ -3699,7 +3699,7 @@ async function addFoodDirectly(nome, qta, pasto) {
             btnNo.style.backgroundColor = "#666";
             btnNo.onclick = () => {
                 divConf.parentElement.remove();
-                addMessage(`Ok, scrivi pure la quantità per ${dbEntry.desc} (es: 150g)`, "assistant");
+                addMessage(`Scrivi i grammi per ${dbEntry.desc}`, "assistant");
             };
 
             divConf.appendChild(btnSi);
@@ -3708,24 +3708,21 @@ async function addFoodDirectly(nome, qta, pasto) {
             return;
         }
 
+        // 3. Inserimento diretto
         if (dbEntry) {
             procediInserimento(dbEntry, qta || 100, pasto);
         } else {
-            // Se non è nel DB, chiediamo all'AI di stimare i valori nutrizionali
-            addMessage(`🔍 "${nome}" non trovato nel database. Recupero valori nutrizionali medi...`, 'assistant');
+            addMessage(`🔍 "${nome}" non in DB. Recupero valori medi...`, 'assistant');
             try {
-                const raw = await callGeminiAPI(`Rispondi SOLO in formato JSON per 100g di "${nome}": {"prot":0,"kcal":0,"carb":0,"zuccheri":0,"fatTotal":0}`);
+                const raw = await callGeminiAPI(`Rispondi SOLO JSON 100g "${nome}": {"prot":0,"kcal":0,"carb":0,"zuccheri":0,"fatTotal":0}`);
                 const jsonCleaned = raw.replace(/```json/g, '').replace(/```/g, '').trim();
-                const startJson = jsonCleaned.indexOf('{');
-                const endJson = jsonCleaned.lastIndexOf('}');
-                const d100 = JSON.parse(jsonCleaned.substring(startJson, endJson + 1));
+                const d100 = JSON.parse(jsonCleaned.substring(jsonCleaned.indexOf('{'), jsonCleaned.lastIndexOf('}') + 1));
                 procediInserimento({ desc: nome, ...d100 }, qta || 100, pasto);
             } catch (err) {
-                addMessage("⚠️ Non sono riuscito a recuperare i dati nutrizionali per questo alimento.", "assistant");
+                addMessage("⚠️ Errore dati AI per " + nome, "assistant");
             }
         }
     }
-
     // 3. EVENTI
     toggle.onclick = () => widget.classList.toggle('minimized');
 
@@ -3796,6 +3793,7 @@ sendBtn.onclick = async () => {
 </script>
 </body>
 </html>
+
 
 
 
