@@ -3575,201 +3575,92 @@
     }
 
 async function addFoodDirectly(nome, qta, pasto) {
-    const query = window.sanitizeFirebaseKey(nome.toLowerCase());
-    const keys = Object.keys(window.foodDatabase || {});
-    const matches = keys.filter(k => k.includes(query));
+        const query = window.sanitizeFirebaseKey(nome.toLowerCase());
+        const keys = Object.keys(window.foodDatabase || {});
+        const matches = keys.filter(k => k.includes(query));
 
-    // 1. GESTIONE SCELTE MULTIPLE (Se il nome è generico)
-    if (matches.length > 1) {
-        const div = document.createElement('div');
-        div.className = 'ai-chat-meal-buttons';
-        div.innerHTML = `<p>Ho trovato più corrispondenze per "<strong>${nome}</strong>":</p>`;
-        matches.forEach(m => {
-            const btn = document.createElement('button');
-            btn.textContent = window.foodDatabase[m].desc;
-            btn.onclick = () => { 
-                div.parentElement.remove(); 
-                addFoodDirectly(window.foodDatabase[m].desc, qta, pasto); 
-            };
-            div.appendChild(btn);
-        });
-        addMessageElement(div);
-        return;
-    }
+        if (matches.length > 1) {
+            const div = document.createElement('div');
+            div.className = 'ai-chat-meal-buttons';
+            div.innerHTML = `<p>Quale "<strong>${nome}</strong>"?</p>`;
+            matches.forEach(m => {
+                const btn = document.createElement('button');
+                btn.textContent = window.foodDatabase[m].desc;
+                btn.onclick = () => { div.parentElement.remove(); addFoodDirectly(window.foodDatabase[m].desc, qta, pasto); };
+                div.appendChild(btn);
+            });
+            addMessageElement(div);
+            return;
+        }
 
-    let item;
-    const exactKey = window.sanitizeFirebaseKey(nome.toLowerCase());
-    const dbEntry = window.foodDatabase ? window.foodDatabase[matches[0] || exactKey] : null;
-
-    // 2. LOGICA QUANTITÀ: Recupero lastQta se qta non è specificata o è minima
-    let finalQta = qta;
-    if (dbEntry && (qta <= 1 || !qta)) {
-        finalQta = dbEntry.lastQta || 100; // Usa l'ultima o 100 di default
-        addMessage(`L'ultima volta hai usato <strong>${finalQta}g</strong> di ${dbEntry.desc}. Ti va bene o vuoi cambiarla?`, 'assistant');
+        const exactKey = window.sanitizeFirebaseKey(nome.toLowerCase());
+        const dbEntry = (window.foodDatabase && window.foodDatabase[exactKey]) ? window.foodDatabase[exactKey] : (matches.length === 1 ? window.foodDatabase[matches[0]] : null);
         
-        // Creiamo i tasti di conferma rapida
-        const divConferma = document.createElement('div');
-        divConferma.className = 'ai-chat-meal-buttons';
-        
-        const btnOk = document.createElement('button');
-        btnOk.textContent = `Sì, ${finalQta}g`;
-        btnOk.onclick = () => {
-            divConferma.parentElement.remove();
-            procediInserimento(dbEntry, finalQta, pasto);
-        };
+        if (dbEntry && (qta <= 1 || !qta)) {
+            const finalQta = dbEntry.lastQta || 100;
+            addMessage(`L'ultima volta hai usato <strong>${finalQta}g</strong> di ${dbEntry.desc}. Confermi o vuoi cambiarla?`, 'assistant');
+            const divConf = document.createElement('div');
+            divConf.className = 'ai-chat-meal-buttons';
+            const btnOk = document.createElement('button');
+            btnOk.textContent = `Sì, ${finalQta}g`;
+            btnOk.onclick = () => { divConf.parentElement.remove(); procediInserimento(dbEntry, finalQta, pasto); };
+            const btnNo = document.createElement('button');
+            btnNo.textContent = `No, cambia`;
+            btnNo.style.background = "#666";
+            btnNo.onclick = () => { divConf.parentElement.remove(); addMessage("Ok, scrivi la quantità (es: 150g)", "assistant"); };
+            divConf.appendChild(btnOk); divConf.appendChild(btnNo);
+            addMessageElement(divConf);
+            return;
+        }
 
-        const btnNo = document.createElement('button');
-        btnNo.textContent = `No, cambia`;
-        btnNo.style.background = "#666";
-        btnNo.onclick = () => {
-            divConferma.parentElement.remove();
-            addMessage("Ok, scrivi pure la quantità (es: 150g)", "assistant");
-        };
-
-        divConferma.appendChild(btnOk);
-        divConferma.appendChild(btnNo);
-        addMessageElement(divConferma);
-        return; // Fermiamo l'esecuzione, aspettiamo il click o la risposta
-    }
-
-    // Se la quantità è già presente o l'alimento non è in DB, procedi normalmente
-    if (dbEntry) {
-        procediInserimento(dbEntry, finalQta, pasto);
-    } else {
-        // Logica per alimento nuovo (AI)
-        recuperoDatiAI(nome, finalQta, pasto);
-    }
-}
-
-// Funzione di supporto per l'inserimento finale
-function procediInserimento(data, qta, pasto) {
-    let item = { desc: data.desc, qta: qta, selezionato: true };
-    for (const k in data) {
-        if (!['desc', 'lastQta', 'ingredienti'].includes(k)) {
-            item[k] = (data[k] / 100) * qta;
+        if (dbEntry) {
+            procediInserimento(dbEntry, qta, pasto);
+        } else {
+            addMessage(`🔍 "${nome}" non in DB. Chiedo all'AI...`, 'assistant');
+            try {
+                const raw = await callGeminiAPI(`Rispondi SOLO JSON per 100g di "${nome}": {"prot":0,"kcal":0,"carb":0,"zuccheri":0,"fatTotal":0}`);
+                const jsonCleaned = raw.replace(/```json/g, '').replace(/```/g, '').trim();
+                const startJson = jsonCleaned.indexOf('{');
+                const endJson = jsonCleaned.lastIndexOf('}');
+                const d100 = JSON.parse(jsonCleaned.substring(startJson, endJson + 1));
+                procediInserimento({ desc: nome, ...d100 }, qta, pasto);
+            } catch (err) { addMessage("⚠️ Errore dati AI.", "assistant"); }
         }
     }
 
-    if (!window.pastoInCostruzione) window.pastoInCostruzione = [];
-    window.pastoInCostruzione.push(item);
-    localStorage.setItem('trackerPastoInCostruzione', JSON.stringify(window.pastoInCostruzione));
-
-    if (pasto) {
-        const selector = document.getElementById('meal-type-selector');
-        if (selector) selector.value = pasto;
-    }
-    
-    if (typeof window.renderMealBuilder === 'function') window.renderMealBuilder();
-    
-    document.getElementById('meal-builder-sezione').style.display = 'block';
-    addMessage(`✅ <strong>${item.desc}</strong> (${qta}g) aggiunto al costruttore.`, 'assistant');
-} else {
-    addMessage(`🔍 "${nome}" non in DB. Chiedo all'AI...`, 'assistant');
-    try {
-        const raw = await callGeminiAPI(`Rispondi SOLO con un oggetto JSON per 100g di "${nome}": {"prot":0,"kcal":0,"carb":0,"zuccheri":0,"fatTotal":0}. Non aggiungere testo.`);
-        
-        // PULIZIA: Rimuove eventuali spiegazioni o blocchi ```json prima del parse
-        const jsonCleaned = raw.replace(/```json/g, '').replace(/```/g, '').trim();
-        const startJson = jsonCleaned.indexOf('{');
-        const endJson = jsonCleaned.lastIndexOf('}');
-        
-        if (startJson === -1 || endJson === -1) throw new Error("Risposta AI non valida");
-        
-        const finalJson = jsonCleaned.substring(startJson, endJson + 1);
-        const d100 = JSON.parse(finalJson);
-        
-        item = { desc: nome, qta: qta, selezionato: true };
-        for (const k in d100) item[k] = (d100[k] / 100) * qta;
-    } catch (err) {
-        console.error("Errore parsing AI:", err);
-        addMessage("⚠️ Non sono riuscito a recuperare i dati tecnici. Inserimento fallito.", "assistant");
-        return; // Esce per evitare l'errore undefined
-    }
-}
-
-        // 3. FIX ERRORE: Inizializzazione array se undefined
+    function procediInserimento(data, qta, pasto) {
         if (!window.pastoInCostruzione) window.pastoInCostruzione = [];
-        
+        let item = { desc: data.desc, qta: qta, selezionato: true };
+        for (const k in data) { if (!['desc', 'lastQta', 'ingredienti'].includes(k)) item[k] = (data[k] / 100) * qta; }
         window.pastoInCostruzione.push(item);
         localStorage.setItem('trackerPastoInCostruzione', JSON.stringify(window.pastoInCostruzione));
-
-        // 4. Aggiornamento UI
-        if (pasto) {
-            const selector = document.getElementById('meal-type-selector');
-            if (selector) selector.value = pasto;
-        }
-        
-        if (typeof window.renderMealBuilder === 'function') {
-            window.renderMealBuilder();
-        }
-        
-        const builderSezione = document.getElementById('meal-builder-sezione');
-        if (builderSezione) builderSezione.style.display = 'block';
-        
-        addMessage(`🎯 <strong>${item.desc}</strong> aggiunto al Costruttore.`, 'assistant');
+        if (pasto && document.getElementById('meal-type-selector')) document.getElementById('meal-type-selector').value = pasto;
+        if (typeof window.renderMealBuilder === 'function') window.renderMealBuilder();
+        const builder = document.getElementById('meal-builder-sezione');
+        if (builder) builder.style.display = 'block';
+        addMessage(`✅ <strong>${item.desc}</strong> (${qta}g) aggiunto.`, 'assistant');
     }
 
-    function addMessage(t, r) {
-        const d = document.createElement('div');
-        d.className = `ai-message ${r}`;
-        d.innerHTML = t;
-        chatMessages.appendChild(d);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
-
-    function addMessageElement(el) {
-        const d = document.createElement('div');
-        d.className = 'ai-message assistant';
-        d.appendChild(el);
-        chatMessages.appendChild(d);
-        return d;
-    }
-
-chatSend.onclick = async () => {
+    chatSend.onclick = async () => {
         const text = chatInput.value.trim();
         if (!text) return;
-
         addMessage(text, 'user');
         chatInput.value = '';
-
-        // 1. QUESTO VA INCLUSO: crea l'attesa visiva
         const loadingMsg = addMessage("🤔 Sto elaborando...", "assistant loading");
-
         try {
-            // Chiediamo all'AI di essere secca e precisa
-           const promptAI = `L'utente dice: "${text}". 
-Se mancano le quantità di uno o più alimenti, fai un elenco numerato e chiedi conferma.
-Esempio: "Ho trovato questi nel database: 1. Pasta, 2. Olio. Confermi le ultime quantità usate o vuoi dirmi i pesi?"
-Altrimenti usa il formato: [AGGIUNGI: nome | quantità | pasto].`;
-
-            const resp = await callGeminiAPI(promptAI);
-            
-            // 2. Rimuove il "pensando..." quando arriva la risposta
-            if (loadingMsg && loadingMsg.remove) loadingMsg.remove();
-            
+            const resp = await callGeminiAPI(`L'utente dice: "${text}". Se mancano pesi, fai elenco numerato e chiedi conferma. Altrimenti usa: [AGGIUNGI: nome | quantità | pasto]`);
+            if (loadingMsg) loadingMsg.remove();
             addMessage(resp, 'assistant');
-
-            // 3. Legge il comando [AGGIUNGI: ...]
             const m = /\[AGGIUNGI:\s*([^|]+)\s*\|\s*([^|]+)\s*\|\s*([^\]]+)\]/i.exec(resp);
-            
-            if (m) {
-                const nome = m[1].trim();
-                const qtaRaw = m[2].trim();
-                const qta = parseInt(qtaRaw.replace(/\D/g, '')) || 100;
-                const pasto = m[3].trim().toLowerCase();
-
-                // Esegue l'inserimento nel costruttore
-                addFoodDirectly(nome, qta, pasto);
-            }
-        } catch (e) {
-            if (loadingMsg && loadingMsg.remove) loadingMsg.remove();
-            addMessage("❌ Errore: " + e.message, "assistant");
-        }
+            if (m) addFoodDirectly(m[1].trim(), parseInt(m[2].replace(/\D/g, '')) || 0, m[3].trim().toLowerCase());
+        } catch (e) { if (loadingMsg) loadingMsg.remove(); addMessage("❌ Errore: " + e.message, "assistant"); }
     };
-})();
+
+})(); 
 </script>
 </body>
 </html>
+
 
 
 
