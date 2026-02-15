@@ -3732,59 +3732,34 @@ sendBtn.onclick = async () => {
         
         addMessage(text, 'user');
         input.value = '';
-        const loading = addMessage("🤔 Sto elaborando...", "assistant loading");
+        const loading = addMessage("🤔 Elaboro...", "assistant loading");
 
         try {
-            // Prompt per forzare la brevità ed evitare il "rumore"
             const promptAI = `Utente: "${text}". 
             REGOLE:
-            1. Se mancano i pesi, fai SOLO un elenco numerato.
-            2. Se i pesi ci sono, usa SOLO: [AGGIUNGI: nome | quantità | pasto].
-            3. NON suggerire condimenti o proteine. Sii sintetico.`;
+            1. Se mancano i grammi, elenca solo i nomi.
+            2. Se ci sono, usa SOLO: [AGGIUNGI: nome | quantità | pasto].
+            3. Estrai TUTTI gli alimenti citati.`;
 
-            if (!geminiKey) throw new Error("Manca API Key nelle impostazioni");
-            
-            const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${geminiKey}`;
-            const resp = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: promptAI }] }] })
-            });
-            
-            const data = await resp.json();
-            
-            // --- FIX ERRORE 'text' UNDEFINED ---
-            if (!data || !data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-                console.error("Risposta API malformata:", data);
-                throw new Error("L'AI non ha risposto correttamente. Controlla la tua API Key.");
-            }
-
-            const respText = data.candidates[0].content.parts[0].text;
-            
+            const respText = await callGeminiAPI(promptAI);
             if (loading) loading.remove();
             addMessage(respText, 'assistant');
 
-            // --- LOGICA DI AGGIUNTA ---
-            // Usiamo matchAll per gestire più alimenti insieme (es. pasta e olio)
+            // Trova TUTTI i match, non solo il primo
             const matches = [...respText.matchAll(/\[AGGIUNGI:\s*([^|]+)\s*\|\s*([^|]+)\s*\|\s*([^\]]+)\]/gi)];
             
             if (matches.length > 0) {
-                matches.forEach(m => {
+                // Usiamo un piccolo ritardo tra un inserimento e l'altro per non sovrapporre le UI
+                for (const m of matches) {
                     const nome = m[1].trim();
                     const qta = parseInt(m[2].replace(/\D/g, '')) || 0;
                     const pasto = m[3].trim().toLowerCase();
-                    
-                    // Chiama la funzione di inserimento
-                    if (typeof addFoodDirectly === 'function') {
-                        addFoodDirectly(nome, qta, pasto);
-                    }
-                });
+                    await addFoodDirectly(nome, qta, pasto);
+                }
             }
-
         } catch (e) { 
             if (loading) loading.remove(); 
-            addMessage("❌ Errore: " + e.message, "assistant"); 
-            console.error("Dettaglio Errore:", e);
+            addMessage("❌ Errore", "assistant"); 
         }
     };
     input.onkeypress = (e) => { if (e.key === 'Enter') sendBtn.click(); };
@@ -3793,6 +3768,7 @@ sendBtn.onclick = async () => {
 </script>
 </body>
 </html>
+
 
 
 
