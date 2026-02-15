@@ -3542,7 +3542,7 @@
                     let fullPrompt = prompt;
                     if (includeData) {
                         const dailyData = getDailyDataJSON();
-                        fullPrompt = 'Contesto: Oggi è ' + dailyData.meta.data + ', giorno di ' + dailyData.meta.giorno_tipo + '.\n\nI miei dati nutrizionali attuali sono: ' + JSON.stringify(dailyData, null, 2) + '\n\nDomanda dell utente: ' + prompt + '\n\nRispondi in italiano, in modo conciso ma completo. Se l utente chiede cosa mangiare, suggerisci alimenti specifici con quantità approssimative.';
+                        fullPrompt = 'Contesto: Oggi è ' + dailyData.meta.data + ', giorno di ' + dailyData.meta.giorno_tipo + '.\n\nI miei dati nutrizionali attuali sono in formato json: ' + JSON.stringify(dailyData, null, 2) + '\n\nDomanda dell utente: ' + prompt + '\n\nRispondi in italiano usando formato json se necessario. Se l utente chiede cosa mangiare, suggerisci alimenti specifici con quantità approssimative.';
                     }
 
                     const result = await callGemini({ prompt: fullPrompt });
