@@ -3280,138 +3280,67 @@
 
     <style>
         /* CHAT AI STYLES */
+/* --- COPIA DA QUI --- */
 .ai-chat-widget {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    width: 380px;
-    max-width: calc(100vw - 40px);
-    background: white;
-    border-radius: 16px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-    z-index: 9999;
-    overflow: hidden;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    transition: all 0.3s ease-in-out; /* Transizione fluida per altezza e trasformazione */
-    max-height: 600px; /* Altezza massima da aperta */
+    position: fixed !important;
+    bottom: 20px !important;
+    right: 20px !important;
+    width: 380px !important;
+    background: white !important;
+    border-radius: 16px !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3) !important;
+    z-index: 99999 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    transition: all 0.3s ease-in-out !important;
+    border: 1px solid #ddd !important;
 }
 
 .ai-chat-widget.minimized {
-    transform: translateY(calc(100% - 50px)); /* Sposta quasi tutto fuori dallo schermo */
-    max-height: 50px; /* Forza l'altezza della sola barra viola */
+    height: 50px !important;
 }
 
-        .ai-chat-widget.minimized {
-            transform: translateY(calc(100% - 50px));
-        }
+.ai-chat-widget:not(.minimized) {
+    height: 500px !important;
+}
 
-        .ai-chat-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 15px 20px;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-weight: 600;
-            font-size: 1.1em;
-        }
+.ai-chat-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+    padding: 0 20px !important;
+    height: 50px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    cursor: pointer !important;
+    font-weight: bold !important;
+}
 
-        .ai-chat-toggle-icon {
-            transition: transform 0.3s ease;
-        }
+.ai-chat-messages {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    padding: 15px !important;
+    background: #f8f9fa !important;
+}
 
-        .ai-chat-widget.minimized .ai-chat-toggle-icon {
-            transform: rotate(180deg);
-        }
-
-        .ai-chat-body {
-            max-height: 500px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .ai-chat-messages {
-            flex: 1;
-            max-height: 350px;
-            overflow-y: auto;
-            padding: 15px;
-            background: #f8f9fa;
-        }
-
-        .ai-message {
-            margin-bottom: 12px;
-            padding: 12px 15px;
-            border-radius: 12px;
-            max-width: 85%;
-            word-wrap: break-word;
-            font-size: 0.95em;
-            line-height: 1.5;
-            animation: fadeInMessage 0.3s ease;
-        }
-
-        @keyframes fadeInMessage {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .ai-message.user {
-            background: #667eea;
-            color: white;
-            margin-left: auto;
-            border-bottom-right-radius: 4px;
-        }
-
-        .ai-message.assistant {
-            background: white;
-            color: #333;
-            margin-right: auto;
-            border-bottom-left-radius: 4px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        .ai-message.assistant strong {
-            color: #667eea;
-        }
-
-        .ai-message.ai-welcome {
-            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
-            color: #333;
-            max-width: 100%;
-            border: 1px solid #e0e0e0;
-        }
-
-        .ai-message.loading {
-            background: white;
-            color: #888;
-            font-style: italic;
-        }
-
-        .ai-message img {
-            max-width: 100%;
-            border-radius: 8px;
-            margin-top: 8px;
-        }
-
-        .ai-chat-input-area {
-            display: flex;
-            padding: 12px 15px;
-            background: white;
-            border-top: 1px solid #e0e0e0;
-            gap: 8px;
-        }
-
-        .ai-chat-input-area textarea {
-            flex: 1;
-            border: 1px solid #ddd;
-            border-radius: 20px;
-            padding: 10px 15px;
-            resize: none;
-            font-family: inherit;
-            font-size: 0.95em;
-            outline: none;
-            transition: border-color 0.3s;
-        }
+.ai-chat-input-area {
+    display: flex !important;
+    padding: 10px !important;
+    border-top: 1px solid #eee !important;
+}
+/* --- FINO A QUI --- */
+.ai-chat-input-area textarea {
+    flex: 1 !important;
+    border: 1px solid #ddd !important;
+    border-radius: 20px !important;
+    padding: 10px 15px !important;
+    resize: none !important;
+    font-family: inherit !important;
+    font-size: 0.95em !important;
+    outline: none !important;
+    height: 40px !important;
+}
 
         .ai-chat-input-area textarea:focus {
             border-color: #667eea;
@@ -3603,187 +3532,91 @@
 
     <script>
         // CHAT AI INTEGRATA - GESTIONE
-       (function() {
-    // 1. SELEZIONE ELEMENTI E RIFERIMENTI
+   (function() {
     const chatWidget = document.getElementById('ai-chat-widget');
     const chatToggle = document.getElementById('ai-chat-toggle');
     const chatMessages = document.getElementById('ai-chat-messages');
     const chatInput = document.getElementById('ai-chat-input');
     const chatSend = document.getElementById('ai-chat-send');
-    const chatSleepBtn = document.getElementById('ai-chat-sleep-btn');
-    const chatSleepInput = document.getElementById('ai-chat-sleep-input');
     const settingsPanel = document.getElementById('ai-chat-settings');
     const apiKeyInput = document.getElementById('ai-api-key-input');
     
     const API_KEY_STORAGE = 'gemini_api_key';
     let geminiApiKey = localStorage.getItem(API_KEY_STORAGE) || '';
 
-    // 2. GESTIONE APERTURA/CHIUSURA CHAT
-    chatToggle.addEventListener('click', (e) => {
-        // Se clicchi sull'ingranaggio o tasti interni, non chiudere la chat
+    chatToggle.onclick = (e) => {
         if (e.target.closest('button')) return; 
-        
         chatWidget.classList.toggle('minimized');
-        
-        // Scroll all'ultimo messaggio all'apertura
-        if (!chatWidget.classList.contains('minimized')) {
-            setTimeout(() => {
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-            }, 300);
-        }
-    });
+        document.getElementById('ai-toggle-icon').textContent = chatWidget.classList.contains('minimized') ? '▲' : '▼';
+    };
 
-    // 3. GESTIONE API KEY (Solo su richiesta)
     document.getElementById('ai-open-settings').onclick = (e) => {
         e.stopPropagation();
         settingsPanel.style.display = settingsPanel.style.display === 'none' ? 'block' : 'none';
-        apiKeyInput.value = localStorage.getItem(API_KEY_STORAGE) || '';
-    };
-
-    document.getElementById('ai-close-settings').onclick = () => {
-        settingsPanel.style.display = 'none';
     };
 
     document.getElementById('ai-save-api-key').onclick = () => {
-        const key = apiKeyInput.value.trim();
-        if (key) {
-            geminiApiKey = key;
-            localStorage.setItem(API_KEY_STORAGE, key);
-            settingsPanel.style.display = 'none';
-            alert("✅ API Key salvata!");
-        }
+        geminiApiKey = apiKeyInput.value.trim();
+        localStorage.setItem(API_KEY_STORAGE, geminiApiKey);
+        settingsPanel.style.display = 'none';
+        alert("Chiave salvata!");
     };
 
-    // 4. LOGICA DI COMUNICAZIONE AI
     async function callGeminiAPI(prompt) {
-        if (!geminiApiKey) {
-            settingsPanel.style.display = 'block';
-            throw new Error('Configura l\'API Key cliccando sull\'ingranaggio.');
-        }
-        
+        if (!geminiApiKey) { settingsPanel.style.display = 'block'; throw new Error('Manca API Key'); }
         const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
         const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
-            })
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
         });
-
-        if (!response.ok) throw new Error('Errore API: controlla la chiave.');
         const data = await response.json();
         return data.candidates[0].content.parts[0].text;
     }
 
-    // 5. FUNZIONE AGGIUNTA ALIMENTO (INTEGRATA COL DATABASE E COSTRUTTORE)
     async function addFoodDirectly(nome, qta, pasto) {
-        try {
-            const sanitizedInput = nome.toLowerCase().trim();
-            const keys = Object.keys(window.foodDatabase);
-            
-            // Cerca nel Database locale
-            const matches = keys.filter(k => k.includes(window.sanitizeFirebaseKey(sanitizedInput)));
-            
-            // Se trova più yogurt/alimenti simili -> Genera Bottoni
-            if (matches.length > 1) {
-                const choiceButtons = document.createElement('div');
-                choiceButtons.className = 'ai-chat-meal-buttons';
-                choiceButtons.innerHTML = `<p>Ho trovato più tipi di <strong>${nome}</strong>. Quale intendi?</p>`;
-                
-                matches.forEach(m => {
-                    const btn = document.createElement('button');
-                    btn.textContent = window.foodDatabase[m].desc;
-                    btn.onclick = () => {
-                        choiceButtons.parentElement.parentElement.remove();
-                        addFoodDirectly(window.foodDatabase[m].desc, qta, pasto);
-                    };
-                    choiceButtons.appendChild(btn);
-                });
-                
-                addMessageElement(choiceButtons);
-                return;
-            }
+        const query = window.sanitizeFirebaseKey(nome.toLowerCase());
+        const keys = Object.keys(window.foodDatabase);
+        const matches = keys.filter(k => k.includes(query));
 
-            let foodItem;
-            // Se lo trova nel DB
-            if (matches.length === 1 || window.foodDatabase[window.sanitizeFirebaseKey(sanitizedInput)]) {
-                const dbKey = matches[0] || window.sanitizeFirebaseKey(sanitizedInput);
-                const dbData = window.foodDatabase[dbKey];
-                
-                foodItem = {
-                    desc: dbData.desc,
-                    qta: qta,
-                    selezionato: true
-                };
-
-                for (const key in dbData) {
-                    if (key !== 'lastQta' && key !== 'desc' && key !== 'ingredienti') {
-                        foodItem[key] = ((dbData[key] ?? 0) / 100) * qta;
-                    }
-                }
-                addMessage(`✅ Uso i dati del tuo database per <strong>${dbData.desc}</strong>.`, 'assistant');
-            } 
-            // Se l'alimento è nuovo -> Chiedi conferma per salvataggio
-            else {
-                const saveConfirm = document.createElement('div');
-                saveConfirm.className = 'ai-chat-meal-buttons';
-                saveConfirm.innerHTML = `<p>"<strong>${nome}</strong>" è nuovo. Vuoi cercarlo online e <strong>salvarlo nel tuo database</strong>?</p>
-                    <button id="ai-save-db-yes">Sì, salva</button>
-                    <button id="ai-save-db-no">No, solo stavolta</button>`;
-                
-                const msgDiv = addMessageElement(saveConfirm);
-                
-                msgDiv.querySelector('#ai-save-db-yes').onclick = async () => {
-                    msgDiv.remove();
-                    const data = await fetchAIValues(nome, qta, true);
-                    finishAddition(data, pasto);
-                };
-                msgDiv.querySelector('#ai-save-db-no').onclick = async () => {
-                    msgDiv.remove();
-                    const data = await fetchAIValues(nome, qta, false);
-                    finishAddition(data, pasto);
-                };
-                return;
-            }
-
-            finishAddition(foodItem, pasto);
-        } catch (e) { addMessage("❌ Errore nel caricamento.", "assistant"); }
-    }
-
-    async function fetchAIValues(nome, qta, save) {
-        addMessage(`🔍 Ricerca valori per ${nome}...`, "assistant");
-        const prompt = `JSON nutrizionale per 100g di "${nome}". Formato: {"prot":g,"kcal":kcal,"carb":g,"zuccheri":g,"fatSat":g,"fatTrans":g,"fatMono":g,"fatPoly":g,"omega3":g,"omega6":g,"fibreTotali":g,"fibreSolubili":g,"fibreInsolubili":g,"na":mg,"mg":mg,"k":mg,"vitc":mg,"ca":mg,"vitA":ug,"vitB12":ug,"vitD":ug,"vitE":mg,"vitK":ug,"b9":ug,"b2":mg,"b6":mg,"fe":mg,"zn":mg,"cu":mg,"p":mg}`;
-        const raw = await callGeminiAPI(prompt);
-        const data100 = JSON.parse(raw.replace(/```json|```/g, '').trim());
-
-        if (save) {
-            const key = window.sanitizeFirebaseKey(nome.toLowerCase());
-            window.foodDatabase[key] = { desc: nome, ...data100 };
-            window.salvaFoodDatabase();
-            addMessage(`💾 Salvato nel database!`, "assistant");
+        if (matches.length > 1) {
+            const div = document.createElement('div');
+            div.innerHTML = `<p>Ho trovato più yogurt/alimenti per "${nome}":</p>`;
+            matches.forEach(m => {
+                const btn = document.createElement('button');
+                btn.textContent = window.foodDatabase[m].desc;
+                btn.onclick = () => { div.remove(); addFoodDirectly(window.foodDatabase[m].desc, qta, pasto); };
+                div.appendChild(btn);
+            });
+            addMessageElement(div);
+            return;
         }
 
-        const item = { desc: nome, qta: qta, selezionato: true };
-        for (const k in data100) { item[k] = (data100[k] / 100) * qta; }
-        return item;
-    }
+        let item;
+        if (matches.length === 1 || window.foodDatabase[query]) {
+            const data = window.foodDatabase[matches[0] || query];
+            item = { desc: data.desc, qta: qta, selezionato: true };
+            for (const k in data) if (!['desc','lastQta','ingredienti'].includes(k)) item[k] = (data[k]/100)*qta;
+            addMessage(`✅ Uso dati DB: ${data.desc}`, 'assistant');
+        } else {
+            addMessage(`🔍 "${nome}" non in DB. Chiedo all'AI...`, 'assistant');
+            const raw = await callGeminiAPI(`JSON 100g per "${nome}": {"prot":0,"kcal":0,"carb":0,"zuccheri":0,"fatTotal":0}`);
+            const d100 = JSON.parse(raw.replace(/```json|```/g, '').trim());
+            item = { desc: nome, qta: qta, selezionato: true };
+            for (const k in d100) item[k] = (d100[k]/100)*qta;
+        }
 
-    function finishAddition(item, pasto) {
         window.pastoInCostruzione.push(item);
         localStorage.setItem('trackerPastoInCostruzione', JSON.stringify(window.pastoInCostruzione));
         if (pasto) document.getElementById('meal-type-selector').value = pasto;
         window.renderMealBuilder();
-        document.getElementById('meal-builder-sezione').style.display = "block";
-        document.getElementById('meal-builder-sezione').scrollIntoView({ behavior: 'smooth' });
-        addMessage(`🎯 <strong>${item.desc}</strong> aggiunto al Costruttore Pasti.`, "assistant");
+        document.getElementById('meal-builder-sezione').style.display = 'block';
     }
 
-    // UTILS CHAT
-    function addMessage(text, role) {
+    function addMessage(t, r) {
         const d = document.createElement('div');
-        d.className = `ai-message ${role}`;
-        d.innerHTML = text.replace(/\n/g, '<br>');
+        d.className = `ai-message ${r}`;
+        d.innerHTML = t;
         chatMessages.appendChild(d);
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
@@ -3793,34 +3626,22 @@
         d.className = 'ai-message assistant';
         d.appendChild(el);
         chatMessages.appendChild(d);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
         return d;
     }
 
-    async function sendMessage() {
+    chatSend.onclick = async () => {
         const text = chatInput.value.trim();
         if (!text) return;
         addMessage(text, 'user');
         chatInput.value = '';
-        const loading = addMessageElement(document.createTextNode("🤔 Sto pensando..."));
         try {
-            const response = await callGeminiAPI(`Analizza: ${text}. Rispondi in italiano. Se aggiungi cibo usa: [AGGIUNGI: nome | qta | pasto]`);
-            loading.remove();
-            addMessage(response, 'assistant');
-            // Logica parsing AGGIUNGI
-            const match = /\[AGGIUNGI:\s*([^|]+)\s*\|\s*(\d+)\s*\|\s*([^\]]+)\]/i.exec(response);
-            if (match) addFoodDirectly(match[1].trim(), parseInt(match[2]), match[3].trim());
-        } catch (e) { loading.innerHTML = "❌ " + e.message; }
-    }
-
-    chatSend.onclick = sendMessage;
-    chatInput.onkeypress = (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } };
-
+            const resp = await callGeminiAPI(`Analizza: ${text}. Se aggiungi cibo usa: [AGGIUNGI: nome | qta | pasto]`);
+            addMessage(resp, 'assistant');
+            const m = /\[AGGIUNGI:\s*([^|]+)\s*\|\s*(\d+)\s*\|\s*([^\]]+)\]/i.exec(resp);
+            if (m) addFoodDirectly(m[1].trim(), parseInt(m[2]), m[3].trim());
+        } catch (e) { addMessage("❌ " + e.message, "assistant"); }
+    };
 })();
-        })();
-    </script>
-
+</script>
 </body>
 </html>
-
-
