@@ -3703,18 +3703,17 @@ sendBtn.onclick = async () => {
         
         addMessage(text, 'user');
         input.value = '';
-        const loading = addMessage("🤔 Elaboro...", "assistant loading");
+        const loading = addMessage("🤔 Sto elaborando...", "assistant loading");
 
         try {
-            // PROMPT AGGRESSIVO: ordiniamo all'AI di essere sintetica
+            // Prompt per forzare la brevità ed evitare il "rumore"
             const promptAI = `Utente: "${text}". 
             REGOLE:
-            1. Se mancano i grammi, scrivi SOLO l'elenco (es: 1. Pasta, 2. Olio).
-            2. Se i grammi ci sono, usa SOLO: [AGGIUNGI: nome | quantità | pasto].
-            3. NON suggerire altri cibi. NON fare commenti nutrizionali.
-            4. Se l'utente dà numeri (es: "1. 80g"), esegui l'inserimento.`;
+            1. Se mancano i pesi, fai SOLO un elenco numerato.
+            2. Se i pesi ci sono, usa SOLO: [AGGIUNGI: nome | quantità | pasto].
+            3. NON suggerire condimenti o proteine. Sii sintetico.`;
 
-            if (!geminiKey) throw new Error("Manca API Key");
+            if (!geminiKey) throw new Error("Manca API Key nelle impostazioni");
             
             const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${geminiKey}`;
             const resp = await fetch(url, {
@@ -3725,9 +3724,10 @@ sendBtn.onclick = async () => {
             
             const data = await resp.json();
             
-            // FIX ERRORE 'text' undefined: verifichiamo che la risposta esista
-            if (!data.candidates || !data.candidates[0].content || !data.candidates[0].content.parts) {
-                throw new Error("Risposta AI non valida o vuota");
+            // --- FIX ERRORE 'text' UNDEFINED ---
+            if (!data || !data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+                console.error("Risposta API malformata:", data);
+                throw new Error("L'AI non ha risposto correttamente. Controlla la tua API Key.");
             }
 
             const respText = data.candidates[0].content.parts[0].text;
@@ -3735,18 +3735,27 @@ sendBtn.onclick = async () => {
             if (loading) loading.remove();
             addMessage(respText, 'assistant');
 
-            // Parsing dei comandi AGGIUNGI
+            // --- LOGICA DI AGGIUNTA ---
+            // Usiamo matchAll per gestire più alimenti insieme (es. pasta e olio)
             const matches = [...respText.matchAll(/\[AGGIUNGI:\s*([^|]+)\s*\|\s*([^|]+)\s*\|\s*([^\]]+)\]/gi)];
-            matches.forEach(m => {
-                const nome = m[1].trim();
-                const qta = parseInt(m[2].replace(/\D/g, '')) || 0;
-                const pasto = m[3].trim().toLowerCase();
-                addFoodDirectly(nome, qta, pasto);
-            });
+            
+            if (matches.length > 0) {
+                matches.forEach(m => {
+                    const nome = m[1].trim();
+                    const qta = parseInt(m[2].replace(/\D/g, '')) || 0;
+                    const pasto = m[3].trim().toLowerCase();
+                    
+                    // Chiama la funzione di inserimento
+                    if (typeof addFoodDirectly === 'function') {
+                        addFoodDirectly(nome, qta, pasto);
+                    }
+                });
+            }
 
         } catch (e) { 
             if (loading) loading.remove(); 
             addMessage("❌ Errore: " + e.message, "assistant"); 
+            console.error("Dettaglio Errore:", e);
         }
     };
     input.onkeypress = (e) => { if (e.key === 'Enter') sendBtn.click(); };
@@ -3755,6 +3764,7 @@ sendBtn.onclick = async () => {
 </script>
 </body>
 </html>
+
 
 
 
