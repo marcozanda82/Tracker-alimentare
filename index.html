@@ -3574,18 +3574,23 @@
         return data.candidates[0].content.parts[0].text;
     }
 
-    async function addFoodDirectly(nome, qta, pasto) {
+async function addFoodDirectly(nome, qta, pasto) {
         const query = window.sanitizeFirebaseKey(nome.toLowerCase());
-        const keys = Object.keys(window.foodDatabase);
+        const keys = Object.keys(window.foodDatabase || {});
         const matches = keys.filter(k => k.includes(query));
 
+        // 1. Gestione Scelte Multiple
         if (matches.length > 1) {
             const div = document.createElement('div');
-            div.innerHTML = `<p>Ho trovato più yogurt/alimenti per "${nome}":</p>`;
+            div.className = 'ai-chat-meal-buttons';
+            div.innerHTML = `<p>Ho trovato più corrispondenze per "<strong>${nome}</strong>":</p>`;
             matches.forEach(m => {
                 const btn = document.createElement('button');
                 btn.textContent = window.foodDatabase[m].desc;
-                btn.onclick = () => { div.remove(); addFoodDirectly(window.foodDatabase[m].desc, qta, pasto); };
+                btn.onclick = () => { 
+                    div.parentElement.remove(); 
+                    addFoodDirectly(window.foodDatabase[m].desc, qta, pasto); 
+                };
                 div.appendChild(btn);
             });
             addMessageElement(div);
@@ -3593,24 +3598,44 @@
         }
 
         let item;
-        if (matches.length === 1 || window.foodDatabase[query]) {
-            const data = window.foodDatabase[matches[0] || query];
+        const exactKey = window.sanitizeFirebaseKey(nome.toLowerCase());
+        
+        // 2. Recupero dati (DB o AI)
+        if (matches.length === 1 || (window.foodDatabase && window.foodDatabase[exactKey])) {
+            const data = window.foodDatabase[matches[0] || exactKey];
             item = { desc: data.desc, qta: qta, selezionato: true };
-            for (const k in data) if (!['desc','lastQta','ingredienti'].includes(k)) item[k] = (data[k]/100)*qta;
-            addMessage(`✅ Uso dati DB: ${data.desc}`, 'assistant');
+            for (const k in data) {
+                if (!['desc', 'lastQta', 'ingredienti'].includes(k)) item[k] = (data[k] / 100) * qta;
+            }
+            addMessage(`✅ Usati dati DB: <strong>${data.desc}</strong>`, 'assistant');
         } else {
             addMessage(`🔍 "${nome}" non in DB. Chiedo all'AI...`, 'assistant');
             const raw = await callGeminiAPI(`JSON 100g per "${nome}": {"prot":0,"kcal":0,"carb":0,"zuccheri":0,"fatTotal":0}`);
             const d100 = JSON.parse(raw.replace(/```json|```/g, '').trim());
             item = { desc: nome, qta: qta, selezionato: true };
-            for (const k in d100) item[k] = (d100[k]/100)*qta;
+            for (const k in d100) item[k] = (d100[k] / 100) * qta;
         }
 
+        // 3. FIX ERRORE: Inizializzazione array se undefined
+        if (!window.pastoInCostruzione) window.pastoInCostruzione = [];
+        
         window.pastoInCostruzione.push(item);
         localStorage.setItem('trackerPastoInCostruzione', JSON.stringify(window.pastoInCostruzione));
-        if (pasto) document.getElementById('meal-type-selector').value = pasto;
-        window.renderMealBuilder();
-        document.getElementById('meal-builder-sezione').style.display = 'block';
+
+        // 4. Aggiornamento UI
+        if (pasto) {
+            const selector = document.getElementById('meal-type-selector');
+            if (selector) selector.value = pasto;
+        }
+        
+        if (typeof window.renderMealBuilder === 'function') {
+            window.renderMealBuilder();
+        }
+        
+        const builderSezione = document.getElementById('meal-builder-sezione');
+        if (builderSezione) builderSezione.style.display = 'block';
+        
+        addMessage(`🎯 <strong>${item.desc}</strong> aggiunto al Costruttore.`, 'assistant');
     }
 
     function addMessage(t, r) {
@@ -3674,5 +3699,6 @@ chatSend.onclick = async () => {
 </script>
 </body>
 </html>
+
 
 
