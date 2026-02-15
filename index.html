@@ -3575,40 +3575,95 @@
     }
 
 async function addFoodDirectly(nome, qta, pasto) {
-        const query = window.sanitizeFirebaseKey(nome.toLowerCase());
-        const keys = Object.keys(window.foodDatabase || {});
-        const matches = keys.filter(k => k.includes(query));
+    const query = window.sanitizeFirebaseKey(nome.toLowerCase());
+    const keys = Object.keys(window.foodDatabase || {});
+    const matches = keys.filter(k => k.includes(query));
 
-        // 1. Gestione Scelte Multiple
-        if (matches.length > 1) {
-            const div = document.createElement('div');
-            div.className = 'ai-chat-meal-buttons';
-            div.innerHTML = `<p>Ho trovato più corrispondenze per "<strong>${nome}</strong>":</p>`;
-            matches.forEach(m => {
-                const btn = document.createElement('button');
-                btn.textContent = window.foodDatabase[m].desc;
-                btn.onclick = () => { 
-                    div.parentElement.remove(); 
-                    addFoodDirectly(window.foodDatabase[m].desc, qta, pasto); 
-                };
-                div.appendChild(btn);
-            });
-            addMessageElement(div);
-            return;
-        }
+    // 1. GESTIONE SCELTE MULTIPLE (Se il nome è generico)
+    if (matches.length > 1) {
+        const div = document.createElement('div');
+        div.className = 'ai-chat-meal-buttons';
+        div.innerHTML = `<p>Ho trovato più corrispondenze per "<strong>${nome}</strong>":</p>`;
+        matches.forEach(m => {
+            const btn = document.createElement('button');
+            btn.textContent = window.foodDatabase[m].desc;
+            btn.onclick = () => { 
+                div.parentElement.remove(); 
+                addFoodDirectly(window.foodDatabase[m].desc, qta, pasto); 
+            };
+            div.appendChild(btn);
+        });
+        addMessageElement(div);
+        return;
+    }
 
-        let item;
-        const exactKey = window.sanitizeFirebaseKey(nome.toLowerCase());
+    let item;
+    const exactKey = window.sanitizeFirebaseKey(nome.toLowerCase());
+    const dbEntry = window.foodDatabase ? window.foodDatabase[matches[0] || exactKey] : null;
+
+    // 2. LOGICA QUANTITÀ: Recupero lastQta se qta non è specificata o è minima
+    let finalQta = qta;
+    if (dbEntry && (qta <= 1 || !qta)) {
+        finalQta = dbEntry.lastQta || 100; // Usa l'ultima o 100 di default
+        addMessage(`L'ultima volta hai usato <strong>${finalQta}g</strong> di ${dbEntry.desc}. Ti va bene o vuoi cambiarla?`, 'assistant');
         
-        // 2. Recupero dati (DB o AI)
-        if (matches.length === 1 || (window.foodDatabase && window.foodDatabase[exactKey])) {
-            const data = window.foodDatabase[matches[0] || exactKey];
-            item = { desc: data.desc, qta: qta, selezionato: true };
-            for (const k in data) {
-                if (!['desc', 'lastQta', 'ingredienti'].includes(k)) item[k] = (data[k] / 100) * qta;
-            }
-            addMessage(`✅ Usati dati DB: <strong>${data.desc}</strong>`, 'assistant');
- } else {
+        // Creiamo i tasti di conferma rapida
+        const divConferma = document.createElement('div');
+        divConferma.className = 'ai-chat-meal-buttons';
+        
+        const btnOk = document.createElement('button');
+        btnOk.textContent = `Sì, ${finalQta}g`;
+        btnOk.onclick = () => {
+            divConferma.parentElement.remove();
+            procediInserimento(dbEntry, finalQta, pasto);
+        };
+
+        const btnNo = document.createElement('button');
+        btnNo.textContent = `No, cambia`;
+        btnNo.style.background = "#666";
+        btnNo.onclick = () => {
+            divConferma.parentElement.remove();
+            addMessage("Ok, scrivi pure la quantità (es: 150g)", "assistant");
+        };
+
+        divConferma.appendChild(btnOk);
+        divConferma.appendChild(btnNo);
+        addMessageElement(divConferma);
+        return; // Fermiamo l'esecuzione, aspettiamo il click o la risposta
+    }
+
+    // Se la quantità è già presente o l'alimento non è in DB, procedi normalmente
+    if (dbEntry) {
+        procediInserimento(dbEntry, finalQta, pasto);
+    } else {
+        // Logica per alimento nuovo (AI)
+        recuperoDatiAI(nome, finalQta, pasto);
+    }
+}
+
+// Funzione di supporto per l'inserimento finale
+function procediInserimento(data, qta, pasto) {
+    let item = { desc: data.desc, qta: qta, selezionato: true };
+    for (const k in data) {
+        if (!['desc', 'lastQta', 'ingredienti'].includes(k)) {
+            item[k] = (data[k] / 100) * qta;
+        }
+    }
+
+    if (!window.pastoInCostruzione) window.pastoInCostruzione = [];
+    window.pastoInCostruzione.push(item);
+    localStorage.setItem('trackerPastoInCostruzione', JSON.stringify(window.pastoInCostruzione));
+
+    if (pasto) {
+        const selector = document.getElementById('meal-type-selector');
+        if (selector) selector.value = pasto;
+    }
+    
+    if (typeof window.renderMealBuilder === 'function') window.renderMealBuilder();
+    
+    document.getElementById('meal-builder-sezione').style.display = 'block';
+    addMessage(`✅ <strong>${item.desc}</strong> (${qta}g) aggiunto al costruttore.`, 'assistant');
+} else {
     addMessage(`🔍 "${nome}" non in DB. Chiedo all'AI...`, 'assistant');
     try {
         const raw = await callGeminiAPI(`Rispondi SOLO con un oggetto JSON per 100g di "${nome}": {"prot":0,"kcal":0,"carb":0,"zuccheri":0,"fatTotal":0}. Non aggiungere testo.`);
@@ -3682,10 +3737,10 @@ chatSend.onclick = async () => {
 
         try {
             // Chiediamo all'AI di essere secca e precisa
-            const promptAI = `L'utente ha mangiato: "${text}". 
-            Rispondi in modo brevissimo (max 10 parole) confermando l'alimento. 
-            DEVI includere il comando alla fine: [AGGIUNGI: nome | quantità | pasto]. 
-            Pasti validi: merenda1, pranzo, merenda2, cena.`;
+           const promptAI = `L'utente dice: "${text}". 
+Se mancano le quantità di uno o più alimenti, fai un elenco numerato e chiedi conferma.
+Esempio: "Ho trovato questi nel database: 1. Pasta, 2. Olio. Confermi le ultime quantità usate o vuoi dirmi i pesi?"
+Altrimenti usa il formato: [AGGIUNGI: nome | quantità | pasto].`;
 
             const resp = await callGeminiAPI(promptAI);
             
@@ -3715,6 +3770,7 @@ chatSend.onclick = async () => {
 </script>
 </body>
 </html>
+
 
 
 
