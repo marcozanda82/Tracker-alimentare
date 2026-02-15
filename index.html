@@ -3505,7 +3505,21 @@
     <script>
         // CHAT AI INTEGRATA - GESTIONE
         (function() {
-            // GESTIONE API KEY GEMINI
+                        const chatWidget = document.getElementById('ai-chat-widget');
+            const chatToggle = document.getElementById('ai-chat-toggle');
+            const chatMessages = document.getElementById('ai-chat-messages');
+            const chatInput = document.getElementById('ai-chat-input');
+            const chatSend = document.getElementById('ai-chat-send');
+            const chatSleepBtn = document.getElementById('ai-chat-sleep-btn');
+            const chatSleepInput = document.getElementById('ai-chat-sleep-input');
+            const chatExportBtn = document.getElementById('ai-chat-export-data');
+            const chatClearBtn = document.getElementById('ai-chat-clear');
+            const foodModal = document.getElementById('ai-chat-food-modal');
+            const foodDetails = document.getElementById('ai-chat-food-details');
+            const foodConfirm = document.getElementById('ai-chat-food-confirm');
+            const foodCancel = document.getElementById('ai-chat-food-cancel');
+
+// GESTIONE API KEY GEMINI
             const API_KEY_STORAGE = 'gemini_api_key';
             let geminiApiKey = localStorage.getItem(API_KEY_STORAGE) || '';
 
@@ -3604,19 +3618,6 @@
                 return data.candidates?.[0]?.content?.parts?.[0]?.text || 'Nessuna risposta';
             }
 
-            const chatWidget = document.getElementById('ai-chat-widget');
-            const chatToggle = document.getElementById('ai-chat-toggle');
-            const chatMessages = document.getElementById('ai-chat-messages');
-            const chatInput = document.getElementById('ai-chat-input');
-            const chatSend = document.getElementById('ai-chat-send');
-            const chatSleepBtn = document.getElementById('ai-chat-sleep-btn');
-            const chatSleepInput = document.getElementById('ai-chat-sleep-input');
-            const chatExportBtn = document.getElementById('ai-chat-export-data');
-            const chatClearBtn = document.getElementById('ai-chat-clear');
-            const foodModal = document.getElementById('ai-chat-food-modal');
-            const foodDetails = document.getElementById('ai-chat-food-details');
-            const foodConfirm = document.getElementById('ai-chat-food-confirm');
-            const foodCancel = document.getElementById('ai-chat-food-cancel');
 
             let pendingFoodData = null;
             let chatHistory = JSON.parse(localStorage.getItem('aiChatHistory') || '[]');
