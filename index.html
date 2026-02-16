@@ -1522,12 +1522,17 @@ function calcolaObiettiviPastoConArray(mealType, giornoCorrenteString, pastoArra
     };
 }
 function renderMealBuilder() {
-    // Usa sempre il riferimento globale per vedere gli aggiornamenti dalla Chat AI
+    // 1. SINCRONIZZAZIONE FONDAMENTALE:
+    // Prende i dati aggiornati dalla variabile globale window (dove scrive l'AI)
+    // e li passa alla variabile locale del modulo.
     if (window.pastoInCostruzione) {
-        pastoInCostruzione = window.pastoInCostruzione; 
+        pastoInCostruzione = window.pastoInCostruzione;
     }
-    const pastoCorrente = window.pastoInCostruzione || pastoInCostruzione;
+
+    // Usa sempre il riferimento aggiornato
+    const pastoCorrente = pastoInCostruzione;
     
+    // --- DA QUI IN POI È IL TUO CODICE ORIGINALE ---
     mealBuilderSezione.dataset.visible = pastoCorrente.length > 0;
     logPastoBuilderBody.innerHTML = ''; 
     
@@ -1574,7 +1579,10 @@ function renderMealBuilder() {
                         <td class="action-buttons"><button class="delete-btn" data-type="builder" data-index="${index}">&times;</button></td>`; 
     });
 }
-        window.renderMealBuilder = renderMealBuilder;
+
+// 2. ESPOSIZIONE GLOBALE:
+// Rende la funzione visibile allo script della Chat AI
+window.renderMealBuilder = renderMealBuilder;
 
         function renderSuggestions() {
             const value = builderDesc.value.toLowerCase();
@@ -4025,6 +4033,7 @@ Solo JSON, senza testo.`;
 </script>
 </body>
 </html>
+
 
 
 
