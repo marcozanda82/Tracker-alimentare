@@ -913,7 +913,9 @@
         let giornoVisualizzato = getTodayString('ymd');
         let datiGiornalieri = {};
         let foodDatabase = {};
-        let pastoInCostruzione = [];
+        // Inizializza pastoInCostruzione leggendo da window (se già creato dalla Chat AI) o da localStorage
+let pastoInCostruzione = window.pastoInCostruzione || JSON.parse(localStorage.getItem('trackerPastoInCostruzione')) || [];
+window.pastoInCostruzione = pastoInCostruzione; // Esporta immediatamente per la Chat AI
         
         let db; 
         let auth; 
@@ -1174,9 +1176,10 @@
         }
         
         function salvaPastoInCostruzione() { 
-            localStorage.setItem('trackerPastoInCostruzione', JSON.stringify(pastoInCostruzione)); 
-            localStorage.setItem(LOCAL_LAST_UPDATE_KEY, Date.now()); 
-            saveSingleItemToCloud('trackerPastoInCostruzione', pastoInCostruzione);
+    localStorage.setItem('trackerPastoInCostruzione', JSON.stringify(window.pastoInCostruzione)); 
+    localStorage.setItem(LOCAL_LAST_UPDATE_KEY, Date.now()); 
+    saveSingleItemToCloud('trackerPastoInCostruzione', window.pastoInCostruzione);
+}
         }
         
         function salvaGiorno(dataDaSalvare, datiDaSalvare) {
@@ -1272,7 +1275,8 @@
 
         function initAppUI() {
             foodDatabase = JSON.parse(localStorage.getItem('trackerFoodDatabase')) || {};
-            pastoInCostruzione = JSON.parse(localStorage.getItem('trackerPastoInCostruzione')) || [];
+            pastoInCostruzione = window.pastoInCostruzione || JSON.parse(localStorage.getItem('trackerPastoInCostruzione')) || [];
+window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
             pastoInCostruzione.forEach(item => {
                 if (item.cal && !item.kcal) {
                     item.kcal = item.cal;
@@ -3622,42 +3626,47 @@ function renderMealBuilder() {
 
     // 3. LOGICA DI INSERIMENTO CORRETTA
     function procediInserimento(data, qta, pasto) {
-        // Usa SEMPRE il riferimento globale, non crearne uno nuovo
-        if (!window.pastoInCostruzione) {
-            window.pastoInCostruzione = [];
+    // CRITICO: Sincronizza sempre con localStorage prima di modificare
+    // per evitare di sovrascrivere dati preesistenti
+    let currentData = JSON.parse(localStorage.getItem('trackerPastoInCostruzione')) || [];
+    
+    // Se window.pastoInCostruzione esiste, usa quello, altrimenti usa quello appena caricato
+    if (!window.pastoInCostruzione) {
+        window.pastoInCostruzione = currentData;
+    } else {
+        // Assicurati che window.pastoInCostruzione contenga tutti i dati attuali
+        // (nel caso fosse stato modificato altrove)
+        if (window.pastoInCostruzione.length < currentData.length) {
+            window.pastoInCostruzione = currentData;
         }
-        
-        let item = { desc: data.desc, qta: qta, selezionato: true };
-        for (const k in data) { 
-            if (!['desc', 'lastQta', 'ingredienti'].includes(k)) {
-                item[k] = (data[k] / 100) * qta; 
-            }
-        }
-        
-        window.pastoInCostruzione.push(item);
-        localStorage.setItem('trackerPastoInCostruzione', JSON.stringify(window.pastoInCostruzione));
-        
-        if (pasto && document.getElementById('meal-type-selector')) {
-            document.getElementById('meal-type-selector').value = pasto;
-            localStorage.setItem('lastMealTypeSelected_' + (window.getTodayString ? window.getTodayString() : new Date().toISOString().split('T')[0]), pasto);
-        }
-
-        // Aggiorna la UI immediatamente senza timeout
-        if (typeof window.renderMealBuilder === 'function') {
-            window.renderMealBuilder();
-            
-            // Scroll al costruttore
-            const builder = document.getElementById('meal-builder-sezione');
-            if (builder) {
-                builder.scrollIntoView({ behavior: 'smooth' });
-            }
-        } else {
-            // Fallback: ricarica la pagina se la funzione non è ancora disponibile
-            setTimeout(() => location.reload(), 100);
-        }
-        
-        addMessage(`✅ <strong>${item.desc}</strong> (${qta}g) aggiunto al costruttore pasti.`, 'assistant');
     }
+    
+    let item = { desc: data.desc, qta: qta, selezionato: true };
+    for (const k in data) { 
+        if (!['desc', 'lastQta', 'ingredienti'].includes(k)) {
+            item[k] = (data[k] / 100) * qta; 
+        }
+    }
+    
+    window.pastoInCostruzione.push(item);
+    localStorage.setItem('trackerPastoInCostruzione', JSON.stringify(window.pastoInCostruzione));
+    
+    if (pasto && document.getElementById('meal-type-selector')) {
+        document.getElementById('meal-type-selector').value = pasto;
+        localStorage.setItem('lastMealTypeSelected_' + (window.getTodayString ? window.getTodayString() : new Date().toISOString().split('T')[0]), pasto);
+    }
+
+    // Aggiorna la UI immediatamente
+    if (typeof window.renderMealBuilder === 'function') {
+        window.renderMealBuilder();
+        const builder = document.getElementById('meal-builder-sezione');
+        if (builder) {
+            builder.scrollIntoView({ behavior: 'smooth' });
+        }
+    }
+    
+    addMessage(`✅ <strong>${item.desc}</strong> (${qta}g) aggiunto.`, 'assistant');
+}
 
     async function addFoodDirectly(nome, qta, pasto) {
         const query = window.sanitizeFirebaseKey ? window.sanitizeFirebaseKey(nome.toLowerCase()) : nome.toLowerCase().replace(/[.#$[\]\/]/g, '_');
@@ -3839,6 +3848,7 @@ function renderMealBuilder() {
 </script>
 </body>
 </html>
+
 
 
 
