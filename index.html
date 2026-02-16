@@ -914,7 +914,7 @@
         let datiGiornalieri = {};
         let foodDatabase = {};
         // Inizializza pastoInCostruzione leggendo da window (se già creato dalla Chat AI) o da localStorage
-pastoInCostruzione = JSON.parse(localStorage.getItem('trackerPastoInCostruzione')) || [];
+        let pastoInCostruzione = JSON.parse(localStorage.getItem('trackerPastoInCostruzione')) || [];
 window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
         
         let db; 
@@ -4021,6 +4021,7 @@ Solo JSON, senza testo.`;
 </script>
 </body>
 </html>
+
 
 
 
