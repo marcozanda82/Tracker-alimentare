@@ -914,8 +914,8 @@
         let datiGiornalieri = {};
         let foodDatabase = {};
         // Inizializza pastoInCostruzione leggendo da window (se già creato dalla Chat AI) o da localStorage
-let pastoInCostruzione = window.pastoInCostruzione || JSON.parse(localStorage.getItem('trackerPastoInCostruzione')) || [];
-window.pastoInCostruzione = pastoInCostruzione; // Esporta immediatamente per la Chat AI
+pastoInCostruzione = JSON.parse(localStorage.getItem('trackerPastoInCostruzione')) || [];
+window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
         
         let db; 
         let auth; 
@@ -1175,10 +1175,12 @@ window.pastoInCostruzione = pastoInCostruzione; // Esporta immediatamente per la
             saveSingleItemToCloud('trackerFoodDatabase', sanitizedDb);
         }
         
-        function salvaPastoInCostruzione() { 
-    localStorage.setItem('trackerPastoInCostruzione', JSON.stringify(window.pastoInCostruzione)); 
+       function salvaPastoInCostruzione() { 
+    // Sincronizza sempre con window prima di salvare
+    window.pastoInCostruzione = pastoInCostruzione;
+    localStorage.setItem('trackerPastoInCostruzione', JSON.stringify(pastoInCostruzione)); 
     localStorage.setItem(LOCAL_LAST_UPDATE_KEY, Date.now()); 
-    saveSingleItemToCloud('trackerPastoInCostruzione', window.pastoInCostruzione);
+    saveSingleItemToCloud('trackerPastoInCostruzione', pastoInCostruzione);
 }
         
         
@@ -1768,6 +1770,7 @@ function renderMealBuilder() {
             if (item) {
                 if (isForMealBuilder) {
                     pastoInCostruzione.push(item);
+                    window.pastoInCostruzione = pastoInCostruzione;
                     salvaPastoInCostruzione();
                     renderMealBuilder();
                     mealBuilderSezione.scrollIntoView({ behavior: 'smooth' });
@@ -2528,15 +2531,16 @@ Regole:
            btnAggiungiSingolo.addEventListener('click', () => handleAlimentoAddition(false));
            btnCostruisciPasto.addEventListener('click', () => handleAlimentoAddition(true));
 
-            mealBuilderSezione.addEventListener('change', (e) => {
-                if (e.target.classList.contains('meal-item-checkbox')) { 
-                    const index = parseInt(e.target.dataset.index, 10);
-                    if (pastoInCostruzione[index]) {
-                        pastoInCostruzione[index].selezionato = e.target.checked;
-                        salvaPastoInCostruzione(); 
-                        renderMealBuilder(); 
-                    }
-                } else if (e.target.id === 'meal-type-selector') {
+mealBuilderSezione.addEventListener('change', (e) => {
+    if (e.target.classList.contains('meal-item-checkbox')) { 
+        const index = parseInt(e.target.dataset.index, 10);
+        if (pastoInCostruzione[index]) {
+            pastoInCostruzione[index].selezionato = e.target.checked;
+            window.pastoInCostruzione = pastoInCostruzione; // AGGIUNGI QUESTA
+            salvaPastoInCostruzione(); 
+            renderMealBuilder(); 
+        }
+    } else if (e.target.id === 'meal-type-selector') {
                     const value = e.target.value;
                     localStorage.setItem('lastMealTypeSelected_' + getTodayString(), value);
                     saveSingleItemToCloud('lastMealTypeSelected_' + getTodayString(), value);
@@ -2544,20 +2548,21 @@ Regole:
                 }
             });
 
-            btnSalvaPasto.addEventListener('click', () => {
-                const alimentiSelezionati = pastoInCostruzione.filter(item => item.selezionato !== false);
-                if (alimentiSelezionati.length === 0) { alert("Nessun alimento selezionato."); return; }
-                
-                const mealName = mealTypeSelector.options[mealTypeSelector.selectedIndex].text, mealId = mealTypeSelector.value;
-                const newMeal = { type: 'meal', desc: mealName, mealId: mealId, isExpanded: false, items: alimentiSelezionati };
-                if (!datiGiornalieri.log) datiGiornalieri.log = [];
-                datiGiornalieri.log.push(newMeal);
-                
-                pastoInCostruzione = []; 
-                salvaPastoInCostruzione(); 
-                aggiornaUI(); 
-                salvaGiorno(giornoVisualizzato, datiGiornalieri); 
-                renderMealBuilder(); 
+btnSalvaPasto.addEventListener('click', () => {
+    const alimentiSelezionati = pastoInCostruzione.filter(item => item.selezionato !== false);
+    if (alimentiSelezionati.length === 0) { alert("Nessun alimento selezionato."); return; }
+    
+    const mealName = mealTypeSelector.options[mealTypeSelector.selectedIndex].text, mealId = mealTypeSelector.value;
+    const newMeal = { type: 'meal', desc: mealName, mealId: mealId, isExpanded: false, items: alimentiSelezionati };
+    if (!datiGiornalieri.log) datiGiornalieri.log = [];
+    datiGiornalieri.log.push(newMeal);
+    
+    pastoInCostruzione = []; 
+    window.pastoInCostruzione = pastoInCostruzione; // AGGIUNGI QUESTA
+    salvaPastoInCostruzione(); 
+    aggiornaUI(); 
+    salvaGiorno(giornoVisualizzato, datiGiornalieri); 
+    renderMealBuilder(); 
 
                 const currentIndex = MEAL_TYPE_SEQUENCE.indexOf(mealId);
                 const nextMeal = (currentIndex !== -1 && currentIndex < MEAL_TYPE_SEQUENCE.length - 1) ? MEAL_TYPE_SEQUENCE[currentIndex + 1] : MEAL_TYPE_SEQUENCE[0];
@@ -2596,11 +2601,12 @@ Regole:
                     }
                 } else if (button && button.classList.contains('delete-btn')) {
                     if (!confirm('Cancellare la voce?')) return;
-                    if (button.dataset.type === 'builder') { 
-                        pastoInCostruzione.splice(index, 1);
-                        salvaPastoInCostruzione(); 
-                        renderMealBuilder();
-                    } else { 
+if (button.dataset.type === 'builder') { 
+    pastoInCostruzione.splice(index, 1);
+    window.pastoInCostruzione = pastoInCostruzione; // AGGIUNGI QUESTA
+    salvaPastoInCostruzione(); 
+    renderMealBuilder();
+} else { 
                         const itemToDelete = datiGiornalieri.log[index];
                         if (itemToDelete.type === 'workout') {
                             datiGiornalieri.workoutCalorie = Math.max(0, (datiGiornalieri.workoutCalorie || 0) - ((itemToDelete.kcal || itemToDelete.cal) || 0));
@@ -4015,6 +4021,7 @@ Solo JSON, senza testo.`;
 </script>
 </body>
 </html>
+
 
 
 
