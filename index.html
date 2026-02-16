@@ -3476,9 +3476,9 @@
         }
     </style>
 
-      <script>
+         <script>
 // ==========================================
-// BLOCCO CHAT AI - VERSIONE CORRETTA
+// BLOCCO CHAT AI - VERSIONE MULTI-APIKEY
 // ==========================================
 
 (function() {
@@ -3492,52 +3492,87 @@
     const aiChatSettings = document.getElementById('ai-chat-settings');
     const aiCloseSettings = document.getElementById('ai-close-settings');
     const aiSaveApiKey = document.getElementById('ai-save-api-key');
-    const aiApiKeyInput = document.getElementById('ai-api-key-input');
+    const aiApiKey1 = document.getElementById('ai-api-key-1');
+    const aiApiKey2 = document.getElementById('ai-api-key-2');
     const aiApiStatus = document.getElementById('ai-api-status');
     const aiToggleIcon = document.getElementById('ai-toggle-icon');
 
-    // Carica API Key esistente
-    if (aiApiKeyInput) {
-        aiApiKeyInput.value = localStorage.getItem('gemini_api_key') || '';
-    }
+    // Carica API Key esistenti
+    if (aiApiKey1) aiApiKey1.value = localStorage.getItem('gemini_api_key_1') || '';
+    if (aiApiKey2) aiApiKey2.value = localStorage.getItem('gemini_api_key_2') || '';
 
-    // 2. FUNZIONI DI SERVIZIO
-    function addMessage(text, role) {
-        if (!aiMessages) return;
-        const d = document.createElement('div');
-        d.className = `ai-message ${role}`;
-        d.style.cssText = role === 'user' 
-            ? 'background:#667eea; color:white; padding:10px 15px; border-radius:18px 18px 4px 18px; margin:5px 0 5px 20%; max-width:80%; align-self:flex-end;'
-            : 'background:white; color:#333; padding:10px 15px; border-radius:18px 18px 18px 4px; margin:5px 20% 5px 0; max-width:80%; border:1px solid #e0e0e0;';
-        d.innerHTML = text.replace(/\n/g, '<br>');
-        aiMessages.appendChild(d);
-        aiMessages.scrollTop = aiMessages.scrollHeight;
-        return d;
-    }
-
-    function addMessageElement(el) {
-        if (!aiMessages) return;
-        const d = document.createElement('div');
-        d.className = 'ai-message assistant';
-        d.style.cssText = 'margin:5px 20% 5px 0; max-width:80%;';
-        d.appendChild(el);
-        aiMessages.appendChild(d);
-        aiMessages.scrollTop = aiMessages.scrollHeight;
-        return d;
-    }
-
+    // 2. FUNZIONE CHIAMATA API CON FALLBACK
     async function callGeminiAPI(prompt) {
-        const key = localStorage.getItem('gemini_api_key') || '';
-        if (!key) throw new Error("Manca API Key. Clicca sulla ⚙️ in alto per inserirla.");
-        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${key}`;
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-        });
-        if (!response.ok) throw new Error("Errore API o Key non valida");
-        const data = await response.json();
-        return data.candidates[0].content.parts[0].text;
+        // Recupera entrambe le key, filtra quelle vuote
+        const keys = [
+            localStorage.getItem('gemini_api_key_1'),
+            localStorage.getItem('gemini_api_key_2')
+        ].filter(k => k && k.trim() !== '');
+        
+        if (keys.length === 0) {
+            throw new Error("⚠️ Nessuna API Key configurata. Clicca sulla ⚙️ per inserire almeno una chiave.");
+        }
+        
+        let lastError = null;
+        
+        // Prova le key in sequenza
+        for (let i = 0; i < keys.length; i++) {
+            const key = keys[i];
+            const keyType = i === 0 ? "Primaria" : "Secondaria";
+            
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${key}`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: { temperature: 0.1 }
+                    })
+                });
+                
+                // Gestione errore 429 (Quota esaurita) o 401 (Key non valida/scaduta)
+                if (response.status === 429 || response.status === 401 || response.status === 403) {
+                    console.log(`API Key ${keyType} non disponibile (${response.status}), provo backup...`);
+                    lastError = new Error(`API ${keyType}: ${response.status === 429 ? 'Token esauriti' : 'Key non valida'}`);
+                    continue; // Passa alla prossima key
+                }
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(`${errorData.error?.message || 'Errore API'} (${keyType})`);
+                }
+                
+                const data = await response.json();
+                if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+                    console.log(`✅ Successo con API Key ${keyType}`);
+                    return data.candidates[0].content.parts[0].text;
+                } else {
+                    throw new Error(`Risposta vuota da API ${keyType}`);
+                }
+                
+            } catch (e) {
+                // Se è un errore di rete, prova la prossima key
+                if (e.message.includes('fetch') || e.message.includes('network') || e.message.includes('Failed to fetch')) {
+                    console.log(`Network error con ${keyType}, provo backup...`);
+                    lastError = e;
+                    continue;
+                }
+                lastError = e;
+                // Se è un errore di quota, continua con la prossima
+                if (e.message.includes('Token esauriti') || e.message.includes('429')) {
+                    continue;
+                }
+                // Per altri errori, comunque proviamo la seconda key prima di arrenderci
+                if (i < keys.length - 1) continue;
+            }
+        }
+        
+        // Se arriviamo qui, tutte le key sono fallite
+        if (lastError && (lastError.message.includes('Token esauriti') || lastError.message.includes('esauriti'))) {
+            throw new Error("⚠️ Entrambe le API Key sono esaurite o non valide. Inserisci nuove chiavi nelle impostazioni.");
+        }
+        throw lastError || new Error("❌ Errore sconosciuto con tutte le API Key disponibili.");
     }
 
     // 3. LOGICA DI INSERIMENTO
@@ -3577,13 +3612,12 @@
 
         if (matches.length > 1) {
             const div = document.createElement('div');
-            div.className = 'ai-chat-meal-buttons';
             div.style.cssText = 'margin-top:10px;';
-            div.innerHTML = `<p style="margin-bottom:10px; color:#667eea;">Quale "<strong>${nome}</strong>"?</p>`;
+            div.innerHTML = `<p style="margin-bottom:10px; color:#667eea; font-weight:600;">Quale "<strong>${nome}</strong>"?</p>`;
             matches.forEach(m => {
                 const btn = document.createElement('button');
                 btn.textContent = db[m].desc;
-                btn.style.cssText = 'margin:5px; padding:8px 15px; border:1px solid #667eea; border-radius:20px; background:white; color:#667eea; cursor:pointer; transition:all 0.3s;';
+                btn.style.cssText = 'margin:5px; padding:8px 15px; border:1px solid #667eea; border-radius:20px; background:white; color:#667eea; cursor:pointer; transition:all 0.3s; font-size:0.9em;';
                 btn.onmouseover = () => { btn.style.background='#667eea'; btn.style.color='white'; };
                 btn.onmouseout = () => { btn.style.background='white'; btn.style.color='#667eea'; };
                 btn.onclick = () => { 
@@ -3603,13 +3637,12 @@
             const lastQta = dbEntry.lastQta || 100;
             addMessage(`Per <strong>${dbEntry.desc}</strong> uso l'ultima quantità (<strong>${lastQta}g</strong>)?`, 'assistant');
             const div = document.createElement('div');
-            div.className = 'ai-chat-meal-buttons';
             div.style.cssText = 'margin-top:10px;';
             const bSi = document.createElement('button'); bSi.textContent = "Sì";
-            bSi.style.cssText = 'margin:5px; padding:8px 15px; border:1px solid #4caf50; border-radius:20px; background:#4caf50; color:white; cursor:pointer;';
+            bSi.style.cssText = 'margin:5px; padding:8px 15px; border:1px solid #4caf50; border-radius:20px; background:#4caf50; color:white; cursor:pointer; font-size:0.9em;';
             bSi.onclick = () => { div.parentElement.remove(); procediInserimento(dbEntry, lastQta, pasto); };
             const bNo = document.createElement('button'); bNo.textContent = "No, cambia"; 
-            bNo.style.cssText = 'margin:5px; padding:8px 15px; border:1px solid #666; border-radius:20px; background:#666; color:white; cursor:pointer;';
+            bNo.style.cssText = 'margin:5px; padding:8px 15px; border:1px solid #666; border-radius:20px; background:#666; color:white; cursor:pointer; font-size:0.9em;';
             bNo.onclick = () => { div.parentElement.remove(); addMessage(`Scrivi i grammi per ${dbEntry.desc}`, "assistant"); };
             div.appendChild(bSi); div.appendChild(bNo);
             addMessageElement(div);
@@ -3629,19 +3662,37 @@
         }
     }
 
-    // 4. GESTIONE EVENTI
+    // 4. UTILITY UI
+    function addMessage(text, role) {
+        if (!aiMessages) return;
+        const d = document.createElement('div');
+        d.style.cssText = role === 'user' 
+            ? 'background:#667eea; color:white; padding:10px 15px; border-radius:18px 18px 4px 18px; margin:5px 0 5px auto; max-width:80%; word-wrap:break-word;'
+            : 'background:white; color:#333; padding:10px 15px; border-radius:18px 18px 18px 4px; margin:5px auto 5px 0; max-width:80%; border:1px solid #e0e0e0; word-wrap:break-word;';
+        d.innerHTML = text.replace(/\n/g, '<br>');
+        aiMessages.appendChild(d);
+        aiMessages.scrollTop = aiMessages.scrollHeight;
+        return d;
+    }
+
+    function addMessageElement(el) {
+        if (!aiMessages) return;
+        const d = document.createElement('div');
+        d.style.cssText = 'margin:5px auto 5px 0; max-width:80%;';
+        d.appendChild(el);
+        aiMessages.appendChild(d);
+        aiMessages.scrollTop = aiMessages.scrollHeight;
+        return d;
+    }
+
+    // 5. GESTIONE EVENTI
     
     // Toggle minimize/maximize
     if (aiToggle) {
         aiToggle.onclick = (e) => {
-            // Non toggle se clicco sul bottone impostazioni
             if (e.target === aiOpenSettings || e.target.closest('#ai-open-settings')) return;
-            
             aiWidget.classList.toggle('minimized');
-            if (aiToggleIcon) {
-                aiToggleIcon.textContent = aiWidget.classList.contains('minimized') ? '▲' : '▼';
-            }
-            // Chiudi settings quando minimizzo
+            if (aiToggleIcon) aiToggleIcon.textContent = aiWidget.classList.contains('minimized') ? '▲' : '▼';
             if (aiWidget.classList.contains('minimized') && aiChatSettings) {
                 aiChatSettings.style.display = 'none';
             }
@@ -3655,9 +3706,7 @@
             if (aiChatSettings) {
                 const isVisible = aiChatSettings.style.display === 'block';
                 aiChatSettings.style.display = isVisible ? 'none' : 'block';
-                if (!isVisible && aiApiKeyInput) {
-                    aiApiKeyInput.focus();
-                }
+                if (!isVisible && aiApiKey1) aiApiKey1.focus();
             }
         };
     }
@@ -3669,35 +3718,46 @@
         };
     }
     
+    // Salva entrambe le API Key
     if (aiSaveApiKey) {
         aiSaveApiKey.onclick = (e) => {
             e.stopPropagation();
-            const key = aiApiKeyInput ? aiApiKeyInput.value.trim() : '';
-            if (key) {
-                localStorage.setItem('gemini_api_key', key);
+            const key1 = aiApiKey1 ? aiApiKey1.value.trim() : '';
+            const key2 = aiApiKey2 ? aiApiKey2.value.trim() : '';
+            
+            if (!key1 && !key2) {
                 if (aiApiStatus) {
-                    aiApiStatus.textContent = '✅ Chiave salvata!';
-                    aiApiStatus.style.color = '#2e7d32';
-                }
-                setTimeout(() => {
-                    if (aiChatSettings) aiChatSettings.style.display = 'none';
-                }, 1000);
-            } else {
-                if (aiApiStatus) {
-                    aiApiStatus.textContent = '❌ Inserisci una chiave valida';
+                    aiApiStatus.textContent = '❌ Inserisci almeno una chiave';
                     aiApiStatus.style.color = '#d32f2f';
                 }
+                return;
             }
+            
+            if (key1) localStorage.setItem('gemini_api_key_1', key1);
+            if (key2) localStorage.setItem('gemini_api_key_2', key2);
+            
+            if (aiApiStatus) {
+                const msg = key1 && key2 ? '✅ Entrambe le chiavi salvate!' : 
+                           key1 ? '✅ Chiave primaria salvata!' : '✅ Chiave secondaria salvata!';
+                aiApiStatus.textContent = msg;
+                aiApiStatus.style.color = '#2e7d32';
+            }
+            setTimeout(() => {
+                if (aiChatSettings) aiChatSettings.style.display = 'none';
+            }, 1200);
         };
     }
 
+    // Invio messaggio
     if (aiSendBtn) {
         aiSendBtn.onclick = async () => {
             const text = aiInput.value.trim();
             if (!text) return;
             addMessage(text, 'user');
             aiInput.value = '';
-            const loading = addMessage("🤔 Elaboro...", "assistant loading");
+            const loading = addMessage("🤔 Elaboro...", "assistant");
+            loading.style.fontStyle = 'italic';
+            loading.style.color = '#666';
 
             try {
                 const prompt = `Utente: "${text}". Rispondi SOLO comandi: [AGGIUNGI: nome | quantità | pasto]. Se mancano grammi, metti 0. Calcola i totali (es. 56*2 = 112). Sii sintetico.`;
@@ -3717,13 +3777,19 @@
     }
 
     if (aiInput) {
-        aiInput.onkeypress = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); aiSendBtn.click(); } };
+        aiInput.onkeypress = (e) => { 
+            if (e.key === 'Enter' && !e.shiftKey) { 
+                e.preventDefault(); 
+                aiSendBtn.click(); 
+            } 
+        };
     }
 
 })();
     </script>
 </body>
 </html>
+
 
 
 
