@@ -3670,22 +3670,51 @@ if (button.dataset.type === 'builder') {
     }
 
 function gestisciQuantitaEInserimento(data, qtaUtente, pasto) {
-        // CASO 1: L'AI ha trovato una quantità specifica nel tuo messaggio (es. "200g")
+        // CASO 1: L'utente ha scritto esplicitamente i grammi nel messaggio (es. "pomodoro 200g")
+        // In questo caso, obbediamo subito.
         if (qtaUtente > 0) {
             procediInserimentoFinale(data, qtaUtente, pasto);
             return;
         }
         
-        // CASO 2: L'AI ha messo 0, ma nel DATABASE c'è un "lastQta" (Ultima quantità usata)
+        // CASO 2: L'utente NON ha messo i grammi, ma c'è uno storico (lastQta)
         if (data.lastQta && data.lastQta > 0) {
-            // Qui avviene la magia: usa l'ultimo valore automaticamente!
-            addMessage(`♻️ Uso l'ultima quantità nota: <strong>${data.lastQta}g</strong>`, 'assistant');
-            procediInserimentoFinale(data, data.lastQta, pasto);
+            // Creiamo un elemento visivo in chat per chiedere conferma
+            const div = document.createElement('div');
+            div.style.cssText = 'background:#e8f5e9; border:1px solid #4caf50; padding:10px; border-radius:8px; margin:5px 0; animation: fadeIn 0.3s;';
+            
+            div.innerHTML = `<p style="margin:0 0 10px 0; color:#2e7d32; font-weight:600;">
+                Trovato storico per <u>${data.desc}</u>.<br>
+                Usare <strong>${data.lastQta}g</strong>?</p>`;
+            
+            // Bottone SÌ (Usa storico)
+            const btnSi = document.createElement('button');
+            btnSi.textContent = "✅ Sì";
+            btnSi.style.cssText = 'margin-right:8px; padding:8px 15px; background:#4caf50; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold;';
+            btnSi.onclick = () => {
+                div.remove(); // Toglie la domanda
+                addMessage(`Ok, uso ${data.lastQta}g`, 'assistant');
+                procediInserimentoFinale(data, data.lastQta, pasto);
+            };
+            
+            // Bottone NO (Inserisci manualmente)
+            const btnNo = document.createElement('button');
+            btnNo.textContent = "✏️ No, cambia";
+            btnNo.style.cssText = 'padding:8px 15px; background:#fff; border:1px solid #ccc; color:#333; border-radius:5px; cursor:pointer;';
+            btnNo.onclick = () => {
+                div.remove(); // Toglie la domanda
+                chiediQuantitaManuale(data, pasto); // Passa alla funzione di input manuale
+            };
+            
+            div.appendChild(btnSi);
+            div.appendChild(btnNo);
+            
+            addMessageElement(div); // Aggiunge il blocco alla chat
             return;
-        } else {
-            // CASO 3: Nessuna quantità e nessun storico -> Chiedi all'utente
-            chiediQuantitaManuale(data, pasto);
         }
+
+        // CASO 3: Nessuna quantità specificata e nessun storico -> Chiedi manuale
+        chiediQuantitaManuale(data, pasto);
     }
 
     function mostraSelezioneMultipla(nomeOriginale, results, qtaUtente, pasto) {
@@ -4038,6 +4067,7 @@ if (aiSendBtn) {
 </script>
 </body>
 </html>
+
 
 
 
