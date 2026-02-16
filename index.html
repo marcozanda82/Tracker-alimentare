@@ -1472,47 +1472,99 @@
                 }
             });
         }
+function calcolaObiettiviPastoConArray(mealType, giornoCorrenteString, pastoArray) {
+    const dataVisualizzata = new Date(giornoCorrenteString);
+    const giornoSettimana = dataVisualizzata.getDay();
+    const pianoDelGiorno = PIANO_SETTIMANALE[giornoSettimana] || PIANO_SETTIMANALE[1];
 
-        function renderMealBuilder() {
-            mealBuilderSezione.dataset.visible = pastoInCostruzione.length > 0;
-            logPastoBuilderBody.innerHTML = ''; 
-            const selectedMealType = mealTypeSelector ? mealTypeSelector.value : MEAL_TYPE_SEQUENCE[0]; 
-            const selectedMealTypeText = mealTypeSelector?.options[mealTypeSelector.selectedIndex]?.text ?? '';
-            const obiettiviPasto = calcolaObiettiviPasto(selectedMealType, giornoVisualizzato);
-            const totaliPastoCorrenteSelezionati = pastoInCostruzione.filter(item => item.selezionato !== false).reduce((acc, item) => {
-                acc.prot += item.prot || 0; acc.kcal += (item.kcal || item.cal) || 0; return acc;
-            }, { prot: 0, kcal: 0 });
-            currentMealTypeDisplay.textContent = selectedMealTypeText;
-            mealProtCurrent.textContent = totaliPastoCorrenteSelezionati.prot.toFixed(1);
-            mealProtTarget.textContent = obiettiviPasto.targetProt.toFixed(0);
-            mealProtRemaining.textContent = `${(obiettiviPasto.targetProt - totaliPastoCorrenteSelezionati.prot).toFixed(1)} g`;
-            mealProgressProt.max = obiettiviPasto.targetProt;
-            mealProgressProt.value = totaliPastoCorrenteSelezionati.prot;
-            mealCalCurrent.textContent = totaliPastoCorrenteSelezionati.kcal.toFixed(0);
-            mealCalTarget.textContent = obiettiviPasto.targetCal.toFixed(0);
-            mealCalRemaining.textContent = `${(obiettiviPasto.targetCal - totaliPastoCorrenteSelezionati.kcal).toFixed(0)} kcal`;
-            mealProgressCal.max = obiettiviPasto.targetCal;
-            mealProgressCal.value = totaliPastoCorrenteSelezionati.kcal;
-            
-            const createBuilderDescriptionCellHTML = (item) => {
-                let html = '';
-                if (item.ingredienti && item.ingredienti.trim() !== '') {
-                    html += `<span class="ingredient-icon" title="Visualizza ingredienti" data-food-name="${item.desc}">📜</span>`;
-                }
-                html += item.desc;
-                return html;
-            };
+    const obiettivoCalTotaleGiornaliero = pianoDelGiorno.cal_base + (datiGiornalieri.workoutCalorie || 0) + (datiGiornalieri.calorieAdjustment || 0);
+    const obiettivoProtTotaleGiornaliero = pianoDelGiorno.prot;
 
-            pastoInCostruzione.forEach((item, index) => { 
-                const riga = logPastoBuilderBody.insertRow(); 
-                riga.innerHTML = `<td><input type="checkbox" class="meal-item-checkbox" data-index="${index}" ${item.selezionato !== false ? 'checked' : ''}></td>
-                                <td>${createBuilderDescriptionCellHTML(item)}</td>
-                                <td>${item.qta}</td>
-                                <td>${(item.prot || 0).toFixed(1)}</td>
-                                <td>${((item.kcal || item.cal) || 0).toFixed(0)}</td>
-                                <td class="action-buttons"><button class="delete-btn" data-type="builder" data-index="${index}">&times;</button></td>`; 
-            });
+    let obiettivoPastoProt = 0, obiettivoPastoCal = 0;
+    const calRatio = OBIETTIVI_MACRO_PASTO_BASE_FORZA[mealType]?.cal_perc ?? 0;
+    const protRatio = OBIETTIVI_MACRO_PASTO_BASE_FORZA[mealType]?.prot_perc ?? 0;
+
+    if (mealType === 'cena') {
+        let consumatoProtAltriPasti = 0, consumatoCalAltriPasti = 0;
+        (datiGiornalieri.log || []).forEach(entry => {
+            if (entry.mealId && entry.mealId !== 'cena') {
+                const items = entry.type === 'meal' ? entry.items : [entry];
+                items.forEach(item => {
+                   consumatoProtAltriPasti += item.prot || 0;
+                   consumatoCalAltriPasti += (item.kcal || item.cal) || 0;
+                });
+            }
+        });
+        obiettivoPastoProt = Math.max(0, Math.round(obiettivoProtTotaleGiornaliero - consumatoProtAltriPasti));
+        obiettivoPastoCal = Math.max(0, Math.round(obiettivoCalTotaleGiornaliero - consumatoCalAltriPasti));
+    } else {
+        obiettivoPastoProt = Math.round(obiettivoProtTotaleGiornaliero * protRatio);
+        obiettivoPastoCal = Math.round(obiettivoCalTotaleGiornaliero * calRatio);
+    }
+    
+    const totaliPastoInCostruzione = pastoArray.reduce((acc, item) => {
+        acc.prot += item.prot || 0; acc.kcal += (item.kcal || item.cal) || 0; return acc;
+    }, { prot: 0, kcal: 0 });
+
+    return {
+        currentProt: totaliPastoInCostruzione.prot, 
+        targetProt: obiettivoPastoProt, 
+        remainingProt: obiettivoPastoProt - totaliPastoInCostruzione.prot,
+        currentCal: totaliPastoInCostruzione.kcal, 
+        targetCal: obiettivoPastoCal, 
+        remainingCal: obiettivoPastoCal - totaliPastoInCostruzione.kcal
+    };
+}
+function renderMealBuilder() {
+    // Usa sempre il riferimento globale per vedere gli aggiornamenti dalla Chat AI
+    const pastoCorrente = window.pastoInCostruzione || pastoInCostruzione;
+    
+    mealBuilderSezione.dataset.visible = pastoCorrente.length > 0;
+    logPastoBuilderBody.innerHTML = ''; 
+    
+    const selectedMealType = mealTypeSelector ? mealTypeSelector.value : MEAL_TYPE_SEQUENCE[0]; 
+    const selectedMealTypeText = mealTypeSelector?.options[mealTypeSelector.selectedIndex]?.text ?? '';
+    
+    // Passa pastoCorrente alla funzione di calcolo
+    const obiettiviPasto = calcolaObiettiviPastoConArray(selectedMealType, giornoVisualizzato, pastoCorrente);
+    
+    const totaliPastoCorrenteSelezionati = pastoCorrente.filter(item => item.selezionato !== false).reduce((acc, item) => {
+        acc.prot += item.prot || 0; 
+        acc.kcal += (item.kcal || item.cal) || 0; 
+        return acc;
+    }, { prot: 0, kcal: 0 });
+    
+    currentMealTypeDisplay.textContent = selectedMealTypeText;
+    mealProtCurrent.textContent = totaliPastoCorrenteSelezionati.prot.toFixed(1);
+    mealProtTarget.textContent = obiettiviPasto.targetProt.toFixed(0);
+    mealProtRemaining.textContent = `${(obiettiviPasto.targetProt - totaliPastoCorrenteSelezionati.prot).toFixed(1)} g`;
+    mealProgressProt.max = obiettiviPasto.targetProt;
+    mealProgressProt.value = totaliPastoCorrenteSelezionati.prot;
+    mealCalCurrent.textContent = totaliPastoCorrenteSelezionati.kcal.toFixed(0);
+    mealCalTarget.textContent = obiettiviPasto.targetCal.toFixed(0);
+    mealCalRemaining.textContent = `${(obiettiviPasto.targetCal - totaliPastoCorrenteSelezionati.kcal).toFixed(0)} kcal`;
+    mealProgressCal.max = obiettiviPasto.targetCal;
+    mealProgressCal.value = totaliPastoCorrenteSelezionati.kcal;
+    
+    const createBuilderDescriptionCellHTML = (item) => {
+        let html = '';
+        if (item.ingredienti && item.ingredienti.trim() !== '') {
+            html += `<span class="ingredient-icon" title="Visualizza ingredienti" data-food-name="${item.desc}">📜</span>`;
         }
+        html += item.desc;
+        return html;
+    };
+
+    pastoCorrente.forEach((item, index) => { 
+        const riga = logPastoBuilderBody.insertRow(); 
+        riga.innerHTML = `<td><input type="checkbox" class="meal-item-checkbox" data-index="${index}" ${item.selezionato !== false ? 'checked' : ''}></td>
+                        <td>${createBuilderDescriptionCellHTML(item)}</td>
+                        <td>${item.qta}</td>
+                        <td>${(item.prot || 0).toFixed(1)}</td>
+                        <td>${((item.kcal || item.cal) || 0).toFixed(0)}</td>
+                        <td class="action-buttons"><button class="delete-btn" data-type="builder" data-index="${index}">&times;</button></td>`; 
+    });
+}
 
         function renderSuggestions() {
             const value = builderDesc.value.toLowerCase();
@@ -3476,9 +3528,9 @@
         }
     </style>
 
-         <script>
+<script>
 // ==========================================
-// BLOCCO CHAT AI - VERSIONE MULTI-APIKEY
+// BLOCCO CHAT AI - VERSIONE CORRETTA SINCRONIZZAZIONE
 // ==========================================
 
 (function() {
@@ -3503,7 +3555,6 @@
 
     // 2. FUNZIONE CHIAMATA API CON FALLBACK
     async function callGeminiAPI(prompt) {
-        // Recupera entrambe le key, filtra quelle vuote
         const keys = [
             localStorage.getItem('gemini_api_key_1'),
             localStorage.getItem('gemini_api_key_2')
@@ -3515,7 +3566,6 @@
         
         let lastError = null;
         
-        // Prova le key in sequenza
         for (let i = 0; i < keys.length; i++) {
             const key = keys[i];
             const keyType = i === 0 ? "Primaria" : "Secondaria";
@@ -3531,11 +3581,10 @@
                     })
                 });
                 
-                // Gestione errore 429 (Quota esaurita) o 401 (Key non valida/scaduta)
                 if (response.status === 429 || response.status === 401 || response.status === 403) {
                     console.log(`API Key ${keyType} non disponibile (${response.status}), provo backup...`);
                     lastError = new Error(`API ${keyType}: ${response.status === 429 ? 'Token esauriti' : 'Key non valida'}`);
-                    continue; // Passa alla prossima key
+                    continue;
                 }
                 
                 if (!response.ok) {
@@ -3552,36 +3601,37 @@
                 }
                 
             } catch (e) {
-                // Se è un errore di rete, prova la prossima key
                 if (e.message.includes('fetch') || e.message.includes('network') || e.message.includes('Failed to fetch')) {
                     console.log(`Network error con ${keyType}, provo backup...`);
                     lastError = e;
                     continue;
                 }
                 lastError = e;
-                // Se è un errore di quota, continua con la prossima
                 if (e.message.includes('Token esauriti') || e.message.includes('429')) {
                     continue;
                 }
-                // Per altri errori, comunque proviamo la seconda key prima di arrenderci
                 if (i < keys.length - 1) continue;
             }
         }
         
-        // Se arriviamo qui, tutte le key sono fallite
         if (lastError && (lastError.message.includes('Token esauriti') || lastError.message.includes('esauriti'))) {
             throw new Error("⚠️ Entrambe le API Key sono esaurite o non valide. Inserisci nuove chiavi nelle impostazioni.");
         }
         throw lastError || new Error("❌ Errore sconosciuto con tutte le API Key disponibili.");
     }
 
-    // 3. LOGICA DI INSERIMENTO
+    // 3. LOGICA DI INSERIMENTO CORRETTA
     function procediInserimento(data, qta, pasto) {
-        if (!window.pastoInCostruzione) window.pastoInCostruzione = [];
+        // Usa SEMPRE il riferimento globale, non crearne uno nuovo
+        if (!window.pastoInCostruzione) {
+            window.pastoInCostruzione = [];
+        }
         
         let item = { desc: data.desc, qta: qta, selezionato: true };
         for (const k in data) { 
-            if (!['desc', 'lastQta', 'ingredienti'].includes(k)) item[k] = (data[k] / 100) * qta; 
+            if (!['desc', 'lastQta', 'ingredienti'].includes(k)) {
+                item[k] = (data[k] / 100) * qta; 
+            }
         }
         
         window.pastoInCostruzione.push(item);
@@ -3589,24 +3639,28 @@
         
         if (pasto && document.getElementById('meal-type-selector')) {
             document.getElementById('meal-type-selector').value = pasto;
+            localStorage.setItem('lastMealTypeSelected_' + (window.getTodayString ? window.getTodayString() : new Date().toISOString().split('T')[0]), pasto);
         }
 
-        setTimeout(() => {
-            if (typeof window.renderMealBuilder === 'function') {
-                window.renderMealBuilder();
-            }
+        // Aggiorna la UI immediatamente senza timeout
+        if (typeof window.renderMealBuilder === 'function') {
+            window.renderMealBuilder();
+            
+            // Scroll al costruttore
             const builder = document.getElementById('meal-builder-sezione');
             if (builder) {
-                builder.style.display = 'block';
                 builder.scrollIntoView({ behavior: 'smooth' });
             }
-        }, 50);
+        } else {
+            // Fallback: ricarica la pagina se la funzione non è ancora disponibile
+            setTimeout(() => location.reload(), 100);
+        }
         
-        addMessage(`✅ <strong>${item.desc}</strong> (${qta}g) aggiunto al pasto.`, 'assistant');
+        addMessage(`✅ <strong>${item.desc}</strong> (${qta}g) aggiunto al costruttore pasti.`, 'assistant');
     }
 
     async function addFoodDirectly(nome, qta, pasto) {
-        const query = window.sanitizeFirebaseKey(nome.toLowerCase());
+        const query = window.sanitizeFirebaseKey ? window.sanitizeFirebaseKey(nome.toLowerCase()) : nome.toLowerCase().replace(/[.#$[\]\/]/g, '_');
         const db = window.foodDatabase || {};
         const matches = Object.keys(db).filter(k => k.includes(query));
 
@@ -3630,7 +3684,7 @@
             return;
         }
 
-        const exactKey = window.sanitizeFirebaseKey(nome.toLowerCase());
+        const exactKey = window.sanitizeFirebaseKey ? window.sanitizeFirebaseKey(nome.toLowerCase()) : nome.toLowerCase().replace(/[.#$[\]\/]/g, '_');
         const dbEntry = db[exactKey] || (matches.length === 1 ? db[matches[0]] : null);
         
         if (dbEntry && (!qta || qta <= 0)) {
@@ -3687,7 +3741,6 @@
 
     // 5. GESTIONE EVENTI
     
-    // Toggle minimize/maximize
     if (aiToggle) {
         aiToggle.onclick = (e) => {
             if (e.target === aiOpenSettings || e.target.closest('#ai-open-settings')) return;
@@ -3699,7 +3752,6 @@
         };
     }
     
-    // Apri/chiudi impostazioni
     if (aiOpenSettings) {
         aiOpenSettings.onclick = (e) => {
             e.stopPropagation();
@@ -3718,7 +3770,6 @@
         };
     }
     
-    // Salva entrambe le API Key
     if (aiSaveApiKey) {
         aiSaveApiKey.onclick = (e) => {
             e.stopPropagation();
@@ -3748,7 +3799,6 @@
         };
     }
 
-    // Invio messaggio
     if (aiSendBtn) {
         aiSendBtn.onclick = async () => {
             const text = aiInput.value.trim();
@@ -3786,9 +3836,10 @@
     }
 
 })();
-    </script>
+</script>
 </body>
 </html>
+
 
 
 
