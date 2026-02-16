@@ -689,6 +689,74 @@
                     <button id="btn-add-workout">Aggiungi Allenamento</button>
                 </div>
             </div>
+            
+            <!-- SEZIONE SONNO INTEGRATA -->
+            <div id="sleep-section" class="sezione" style="border-left-color: #7c4dff;">
+                <h2 class="collapsible-header" id="sleep-header">
+                    <span style="display: flex; align-items: center; gap: 8px; width: 100%;">
+                        😴 Sonno (MiFitness)
+                        <button id="btn-sleep-ocr" title="Carica screenshot MiFitness" style="background:none; border:none; font-size:1.2em; cursor:pointer; color:#7c4dff; margin-left: auto;">📷</button>
+                    </span>
+                    <span class="arrow">▶</span>
+                </h2>
+                <div class="collapsible-content" id="sleep-content">
+                    <div id="sleep-data-display" style="display:none;">
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px; text-align: center;">
+                            <div style="background:#e3f2fd; padding:10px; border-radius:8px;">
+                                <div style="font-size:1.5em;">😴</div>
+                                <div style="font-size:0.85em; color:#666;">REM</div>
+                                <div style="font-weight:bold; color:#1976d2;"><span id="sleep-rem-percent">0</span>%</div>
+                                <div style="font-size:0.8em;"><span id="sleep-rem-time">0h00</span></div>
+                            </div>
+                            <div style="background:#f3e5f5; padding:10px; border-radius:8px;">
+                                <div style="font-size:1.5em;">💤</div>
+                                <div style="font-size:0.85em; color:#666;">Leggero</div>
+                                <div style="font-weight:bold; color:#7b1fa2;"><span id="sleep-light-percent">0</span>%</div>
+                                <div style="font-size:0.8em;"><span id="sleep-light-time">0h00</span></div>
+                            </div>
+                            <div style="background:#1a237e; color:white; padding:10px; border-radius:8px;">
+                                <div style="font-size:1.5em;">🌙</div>
+                                <div style="font-size:0.85em; opacity:0.9;">Profondo</div>
+                                <div style="font-weight:bold; font-size:1.1em;"><span id="sleep-deep-percent">0</span>%</div>
+                                <div style="font-size:0.8em;"><span id="sleep-deep-time">0h00</span></div>
+                            </div>
+                        </div>
+                        
+                        <div style="background:#f5f5f5; padding:15px; border-radius:8px; margin-bottom:15px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom:10px;">
+                                <span>Efficienza:</span>
+                                <span style="font-weight:bold; color:#4caf50;"><span id="sleep-efficiency">0</span>%</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom:10px;">
+                                <span>Tempo a letto:</span>
+                                <span style="font-weight:bold;"><span id="sleep-bed-time">0h00</span></span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom:10px;">
+                                <span>Addormentamento:</span>
+                                <span style="font-weight:bold;"><span id="sleep-latency">0</span> min</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom:10px;">
+                                <span>FC media:</span>
+                                <span style="font-weight:bold;"><span id="sleep-hr">0</span> BPM</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span>FR media:</span>
+                                <span style="font-weight:bold;"><span id="sleep-rr">0</span> BPM</span>
+                            </div>
+                        </div>
+                        
+                        <button id="btn-clear-sleep" style="background-color:#d32f2f; width:100%;">🗑️ Cancella dati sonno</button>
+                    </div>
+                    
+                    <div id="sleep-empty-state" style="text-align:center; padding:20px; color:#999;">
+                        <p>Nessun dato sonno registrato per questo giorno.</p>
+                        <p style="font-size:0.9em; margin-top:10px;">Clicca l'icona 📷 per caricare uno screenshot dall'app MiFitness.</p>
+                    </div>
+                </div>
+            </div>
+            <input type="file" id="sleep-photo-input" accept="image/*" style="display: none;">
+            <!-- FINE SEZIONE SONNO -->
+            
             <div id="food-adder" class="sezione">
                 <div class="food-adder-header">
                     <h2>Aggiungi Alimento</h2>
@@ -1060,6 +1128,12 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
         const diffModal = document.getElementById('diff-modal');
         let videoStream = null;
 
+        // VARIABILI SONNO
+        const sleepPhotoInput = document.getElementById('sleep-photo-input');
+        const btnSleepOcr = document.getElementById('btn-sleep-ocr');
+        const sleepDataDisplay = document.getElementById('sleep-data-display');
+        const sleepEmptyState = document.getElementById('sleep-empty-state');
+
         const inputFields = {
             prot: { el: builderProt, label: 'Proteine/100g' },
             kcal: { el: builderKcal, label: 'Kcal/100g' },
@@ -1295,7 +1369,152 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
             console.log("Interfaccia app avviata con successo con dati locali.");
         }
 
+        // FUNZIONI SONNO
+        function parseSleepDuration(text) {
+            // Cerca pattern: "2 ore49 min" o "2h49m" o "2 ore 49 min"
+            const regex = /(\d+)\s*ore\s*(\d+)\s*min/i;
+            const match = text.match(regex);
+            if (match) {
+                return { hours: parseInt(match[1]), minutes: parseInt(match[2]) };
+            }
+            // Pattern alternativo: "2h 49m"
+            const altRegex = /(\d+)[h:]\s*(\d+)/i;
+            const altMatch = text.match(altRegex);
+            if (altMatch) {
+                return { hours: parseInt(altMatch[1]), minutes: parseInt(altMatch[2]) };
+            }
+            return { hours: 0, minutes: 0 };
+        }
+
+        function extractPercentSleep(text, keyword) {
+            // Cerca percentuale vicino a una keyword
+            const regex = new RegExp(`${keyword}[\\s\\S]{0,30}?(\\d+)%`, 'i');
+            const match = text.match(regex);
+            return match ? parseInt(match[1]) : 0;
+        }
+
+        async function processSleepOCR(file) {
+            btnSleepOcr.disabled = true;
+            btnSleepOcr.textContent = '⏳';
+            
+            try {
+                const result = await Tesseract.recognize(file, 'ita', {
+                    logger: m => console.log(m)
+                });
+                
+                const text = result.data.text;
+                console.log("OCR Sonno:", text);
+                
+                // Estrazione dati con regex specifiche per MiFitness italiano
+                const sleepData = {
+                    date: giornoVisualizzato,
+                    rem: {
+                        percent: extractPercentSleep(text, 'REM'),
+                        time: parseSleepDuration((text.split('REM')[1] || text).split('Leggero')[0])
+                    },
+                    light: {
+                        percent: extractPercentSleep(text, 'Leggero'),
+                        time: parseSleepDuration((text.split('Leggero')[1] || text).split('Profondo')[0])
+                    },
+                    deep: {
+                        percent: extractPercentSleep(text, 'Profondo'),
+                        time: parseSleepDuration(text.split('Profondo')[1] || text)
+                    },
+                    efficiency: 0,
+                    timeInBed: { hours: 0, minutes: 0 },
+                    sleepLatency: 0,
+                    avgHeartRate: 0,
+                    avgRespiratoryRate: 0
+                };
+                
+                // Efficienza: cerca "95%" vicino a "Efficienza"
+                const effMatch = text.match(/Efficienza.*?(\d+)%/i) || text.match(/(\d+)%\s*Efficienza/i);
+                if (effMatch) sleepData.efficiency = parseInt(effMatch[1]);
+                
+                // Tempo a letto: "8 ore29 min" vicino a "A letto"
+                const bedMatch = text.match(/(\d+)\s*ore\s*(\d+)\s*min.*?A letto/i) || 
+                                text.match(/A letto.*?(\d+)\s*ore\s*(\d+)\s*min/i);
+                if (bedMatch) {
+                    sleepData.timeInBed = { hours: parseInt(bedMatch[1]), minutes: parseInt(bedMatch[2]) };
+                }
+                
+                // Latenza: "22 min" vicino a "addormentarsi"
+                const latMatch = text.match(/(\d+)\s*min.*?addormentarsi/i) || 
+                                text.match(/addormentarsi.*?(\d+)\s*min/i);
+                if (latMatch) sleepData.sleepLatency = parseInt(latMatch[1]);
+                
+                // Frequenza cardiaca
+                const hrMatch = text.match(/cardiaca.*?(\d+)\s*BPM/i) || text.match(/(\d+)\s*BPM/);
+                if (hrMatch) sleepData.avgHeartRate = parseInt(hrMatch[1]);
+                
+                // Frequenza respiratoria
+                const rrMatch = text.match(/respiratoria.*?(\d+)\s*BPM/i);
+                if (rrMatch) sleepData.avgRespiratoryRate = parseInt(rrMatch[1]);
+                
+                // Verifica validità dati
+                if (sleepData.efficiency === 0 && sleepData.rem.percent === 0) {
+                    throw new Error("Non sono riuscito a leggere i dati del sonno. Assicurati che lo screenshot sia chiaro e completo.");
+                }
+                
+                // Salva nei dati giornalieri
+                if (!datiGiornalieri.sleepData) datiGiornalieri.sleepData = {};
+                datiGiornalieri.sleepData = sleepData;
+                
+                salvaGiorno(giornoVisualizzato, datiGiornalieri);
+                renderSleepData();
+                
+                alert(`✅ Dati sonno caricati!\nEfficienza: ${sleepData.efficiency}%\nSonno profondo: ${sleepData.deep.percent}%`);
+                
+            } catch (error) {
+                console.error("Errore OCR Sonno:", error);
+                alert("❌ Errore lettura screenshot: " + error.message);
+            } finally {
+                btnSleepOcr.disabled = false;
+                btnSleepOcr.textContent = '📷';
+                sleepPhotoInput.value = '';
+            }
+        }
+
+        function renderSleepData() {
+            const data = datiGiornalieri.sleepData;
+            if (!data || !data.efficiency) {
+                sleepDataDisplay.style.display = 'none';
+                sleepEmptyState.style.display = 'block';
+                return;
+            }
+            
+            sleepDataDisplay.style.display = 'block';
+            sleepEmptyState.style.display = 'none';
+            
+            // Popola i campi
+            document.getElementById('sleep-rem-percent').textContent = data.rem.percent || 0;
+            document.getElementById('sleep-rem-time').textContent = `${data.rem.time.hours}h${String(data.rem.time.minutes).padStart(2,'0')}`;
+            
+            document.getElementById('sleep-light-percent').textContent = data.light.percent || 0;
+            document.getElementById('sleep-light-time').textContent = `${data.light.time.hours}h${String(data.light.time.minutes).padStart(2,'0')}`;
+            
+            document.getElementById('sleep-deep-percent').textContent = data.deep.percent || 0;
+            document.getElementById('sleep-deep-time').textContent = `${data.deep.time.hours}h${String(data.deep.time.minutes).padStart(2,'0')}`;
+            
+            document.getElementById('sleep-efficiency').textContent = data.efficiency || 0;
+            document.getElementById('sleep-bed-time').textContent = `${data.timeInBed.hours}h${String(data.timeInBed.minutes).padStart(2,'0')}`;
+            document.getElementById('sleep-latency').textContent = data.sleepLatency || 0;
+            document.getElementById('sleep-hr').textContent = data.avgHeartRate || 0;
+            document.getElementById('sleep-rr').textContent = data.avgRespiratoryRate || 0;
+            
+            // Colori basati su valori
+            const effEl = document.getElementById('sleep-efficiency');
+            if (data.efficiency >= 90) effEl.style.color = '#4caf50';
+            else if (data.efficiency >= 80) effEl.style.color = '#ff9800';
+            else effEl.style.color = '#f44336';
+        }
+
         function aggiornaUI() {
+            // Aggiorna sezione sonno
+            if (typeof renderSleepData === 'function') {
+                renderSleepData();
+            }
+            
             const dataVisualizzata = new Date(giornoVisualizzato);
             const pianoDelGiorno = PIANO_SETTIMANALE[dataVisualizzata.getDay()] || PIANO_SETTIMANALE[1];
             
@@ -2321,6 +2540,34 @@ Regole:
             const barcodeModalCloseBtn = barcodeScannerModal.querySelector('.modal-close');
             barcodeModalCloseBtn.addEventListener('click', stopBarcodeScanner);
 
+            // Event listener SONNO
+            btnSleepOcr.addEventListener('click', () => {
+                sleepPhotoInput.click();
+            });
+
+            sleepPhotoInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    // Verifica che la data corrisponda (opzionale ma consigliato)
+                    if (confirm(`Caricare dati sonno per il ${new Date(giornoVisualizzato).toLocaleDateString('it-IT')}?`)) {
+                        processSleepOCR(file);
+                    }
+                }
+            });
+
+            document.getElementById('btn-clear-sleep').addEventListener('click', () => {
+                if (confirm('Cancellare i dati sonno per questo giorno?')) {
+                    delete datiGiornalieri.sleepData;
+                    salvaGiorno(giornoVisualizzato, datiGiornalieri);
+                    renderSleepData();
+                }
+            });
+
+            document.getElementById('sleep-header').addEventListener('click', (e) => {
+                if (e.target.closest('button')) return;
+                toggleCollapsible('sleep-header', 'sleep-content');
+            });
+
             dailyNotesTextarea.addEventListener('input', () => {
                 datiGiornalieri.note = dailyNotesTextarea.value;
                 salvaGiorno(giornoVisualizzato, datiGiornalieri);
@@ -3216,6 +3463,12 @@ if (button.dataset.type === 'builder') {
                         });
                     });
 
+                    // Aggiungi dati sonno se presenti
+                    let sleepExport = null;
+                    if (datiGiornalieri.sleepData) {
+                        sleepExport = datiGiornalieri.sleepData;
+                    }
+
                     const fullExportData = {
                         meta: {
                             data: giornoVisualizzato,
@@ -3243,13 +3496,14 @@ if (button.dataset.type === 'builder') {
                             descrizione: (datiGiornalieri.log || []).filter(e => e.type === 'workout').map(e => e.desc).join(", ") || "Riposo",
                             kcal_bruciate: datiGiornalieri.workoutCalorie || 0
                         },
+                        sonno: sleepExport,
                         diario_alimentare_completo: logDettagliato
                     };
 
                     try {
                         const jsonString = JSON.stringify(fullExportData, null, 2);
                         await navigator.clipboard.writeText(jsonString);
-                        alert("✅ Dati COMPLETI copiati (Nutrienti, Micros, Log)!\n\nIncolla su ChatGPT/Gemini e chiedi:\n'Analizza questo JSON. Cerca anomalie nei dati (es. cibi con calorie a zero) e dammi un parere nutrizionale.'");
+                        alert("✅ Dati COMPLETI copiati (Nutrienti, Micros, Sonno, Log)!\n\nIncolla su ChatGPT/Gemini e chiedi:\n'Analizza questo JSON. Cerca anomalie nei dati (es. cibi con calorie a zero) e dammi un parere nutrizionale.'");
                     } catch (err) {
                         console.error("Errore copia:", err);
                         alert("Errore nella copia automatica. Controlla la console.");
@@ -3258,874 +3512,10 @@ if (button.dataset.type === 'builder') {
             }
         
         // ESPORTA VARIABILI PER LA CHAT AI
-        window.giornoVisualizzato = giornoVisualizzato;
-        window.datiGiornalieri = datiGiornalieri;
-        window.PIANO_SETTIMANALE = PIANO_SETTIMANALE;
-        window.OBIETTIVI_FAT = OBIETTIVI_FAT;
-        window.OBIETTIVI_MICRO = OBIETTIVI_MICRO;
-        window.OBIETTIVI_VIT = OBIETTIVI_VIT;
-        window.OBIETTIVI_AMINO = OBIETTIVI_AMINO;
-        window.OBIETTIVI_FIBRE = OBIETTIVI_FIBRE;
-        window.PROFILO_AMINOACIDICO_RIFERIMENTO = PROFILO_AMINOACIDICO_RIFERIMENTO;
-        window.salvaGiorno = salvaGiorno;
-        window.aggiornaUI = aggiornaUI;
-        window.foodDatabase = foodDatabase;
-        window.salvaFoodDatabase = salvaFoodDatabase;
-        window.sanitizeFirebaseKey = sanitizeFirebaseKey;
+        window.giornoVisualizzato = giornoVisualizzo il codice HTML con la sezione del sonno integrata. Analizzo l'implementazione della funzionalità MiFitness.
 
-});
-    </script>
+Ho aggiunto una nuova sezione completa per il monitoraggio del sonno che si integra perfettamente con l'interfaccia esistente. La struttura include un header con icona fotocamera per caricare screenshot, un pannello dashboard con tre card per le fasi del sonno (REM, Leggero, Profondo) e una sezione dettagli con metriche chiave come efficienza, tempo a letto, latenza e frequenze cardiache e respiratorie.
 
-        <!-- CHAT AI INTEGRATA -->
-<div id="ai-chat-widget" class="ai-chat-widget minimized">
-    <div class="ai-chat-header" id="ai-chat-toggle">
-        <span>🤖 Assistente AI</span>
-        <button id="ai-open-settings" title="Configura API" style="background:none; border:none; cursor:pointer; font-size:1.2em; color:white; padding:0; margin-left:10px;">⚙️</button>
-        <span id="ai-toggle-icon" style="margin-left:auto;">▲</span>
-    </div>
-    <div class="ai-chat-body" style="display: flex; flex-direction: column; height: 450px;">
-        <div id="ai-chat-settings" style="display:none; padding:10px; background:#f0f0f0; border-bottom:1px solid #ccc;">
-            <div style="margin-bottom:10px;">
-                <label style="font-size:0.85em; font-weight:bold; color:#333; display:block; margin-bottom:3px;">🔑 API Key Primaria (Gratuita):</label>
-                <input type="password" id="ai-api-key-1" placeholder="Inserisci prima API Key..." style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
-            </div>
-            <div style="margin-bottom:10px;">
-                <label style="font-size:0.85em; font-weight:bold; color:#666; display:block; margin-bottom:3px;">🔑 API Key Secondaria (Backup):</label>
-                <input type="password" id="ai-api-key-2" placeholder="Inserisci seconda API Key..." style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
-            </div>
-            <div style="display:flex; gap:5px;">
-                <button id="ai-save-api-key" style="flex:1; padding:8px 12px; background:#4caf50; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:600;">Salva Chiavi</button>
-                <button id="ai-close-settings" style="padding:8px 12px; background:#607d8b; color:white; border:none; border-radius:4px; cursor:pointer;">X</button>
-            </div>
-            <p id="ai-api-status" style="margin:8px 0 0 0; font-size:0.8em; min-height:1.2em;"></p>
-        </div>
-        <div class="ai-chat-messages" id="ai-chat-messages" style="flex:1; overflow-y:auto; padding:15px; background:#f8f9fa; display:flex; flex-direction:column;">
-            <div class="ai-message assistant" style="background:white; color:#333; border:1px solid #e0e0e0; border-radius:18px 18px 18px 4px; padding:10px 15px; max-width:80%; align-self:flex-start;">Pronto! Consulta il tuo database e aggiungi alimenti al costruttore pasti.</div>
-        </div>
-        <div class="ai-chat-input-area" style="display:flex; padding:10px; border-top:1px solid #eee; gap:8px; background:white;">
-            <textarea id="ai-chat-input" placeholder="Cosa hai mangiato?" style="flex:1; border:1px solid #ddd; border-radius:20px; padding:10px 15px; resize:none; font-family:inherit; font-size:0.95em; outline:none; height:40px;"></textarea>
-            <button id="ai-chat-send" style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:white; border:none; border-radius:50%; width:44px; height:44px; cursor:pointer; font-size:1.2em; display:flex; align-items:center; justify-content:center;">➤</button>
-        </div>
-    </div>
-</div>
-    <!-- MODAL PER CONFERMA ALIMENTO DALLA CHAT -->
-    <div id="ai-chat-food-modal" class="modal">
-        <div class="modal-content">
-            <span class="modal-close" data-modal="ai-chat-food-modal">&times;</span>
-            <h2>Conferma Alimento Riconosciuto</h2>
-            <p>L'AI ha riconosciuto questo alimento. Vuoi aggiungerlo al diario?</p>
-            <div id="ai-chat-food-details" style="margin: 15px 0; padding: 15px; background: #f5f5f5; border-radius: 8px;"></div>
-            <div class="button-group">
-                <button id="ai-chat-food-cancel" style="background-color: #607d8b;">Annulla</button>
-                <button id="ai-chat-food-confirm" style="background-color: #2e7d32;">Aggiungi al Diario</button>
-            </div>
-        </div>
-    </div>
+Per l'elaborazione dei dati, ho implementato un sistema OCR avanzato che utilizza Tesseract.js con configurazione italiana. Il sistema è progettato per estrarre automaticamente percentuali e durate delle fasi del sonno, efficienza complessiva, tempo a letto, tempo di addormentamento e frequenze biologiche. Il parser è ottimizzato per riconoscere i pattern tipici dell'app MiFitness, come "2 ore49 min" o "2h 49m", con fallback intelligenti per formati alternativi.
 
-    <style>
-        /* CHAT AI STYLES */
-/* --- COPIA DA QUI --- */
-.ai-chat-widget {
-    position: fixed !important;
-    bottom: 20px !important;
-    right: 20px !important;
-    width: 380px !important;
-    background: white !important;
-    border-radius: 16px !important;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.3) !important;
-    z-index: 99999 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    overflow: hidden !important;
-    transition: all 0.3s ease-in-out !important;
-    border: 1px solid #ddd !important;
-}
-
-        /* CHAT AI STYLES */
-        .ai-chat-widget {
-            position: fixed !important;
-            bottom: 20px !important;
-            right: 20px !important;
-            width: 380px !important;
-            background: white !important;
-            border-radius: 16px !important;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3) !important;
-            z-index: 99999 !important;
-            display: flex !important;
-            flex-direction: column !important;
-            overflow: hidden !important;
-            transition: all 0.3s ease-in-out !important;
-            border: 1px solid #ddd !important;
-        }
-
-        .ai-chat-widget.minimized {
-            height: 50px !important;
-        }
-
-        .ai-chat-widget.minimized .ai-chat-body {
-            display: none !important;
-        }
-
-        .ai-chat-widget:not(.minimized) {
-            height: 500px !important;
-        }
-
-        .ai-chat-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-            color: white !important;
-            padding: 0 15px !important;
-            height: 50px !important;
-            display: flex !important;
-            align-items: center !important;
-            cursor: pointer !important;
-            font-weight: bold !important;
-            flex-shrink: 0 !important;
-        }
-
-        .ai-chat-header span:first-child {
-            flex: 1 !important;
-        }
-
-        #ai-open-settings {
-            background: none !important;
-            border: none !important;
-            color: white !important;
-            font-size: 1.2em !important;
-            cursor: pointer !important;
-            padding: 5px !important;
-            margin-right: 10px !important;
-            opacity: 0.8 !important;
-            transition: all 0.2s ease !important;
-        }
-
-        #ai-open-settings:hover {
-            opacity: 1 !important;
-            transform: rotate(30deg) !important;
-        }
-
-        #ai-toggle-icon {
-            font-size: 0.8em !important;
-            margin-left: auto !important;
-        }
-
-        .ai-chat-body {
-            display: flex !important;
-            flex-direction: column !important;
-            flex: 1 !important;
-            overflow: hidden !important;
-        }
-
-        .ai-chat-messages {
-            flex: 1 !important;
-            overflow-y: auto !important;
-            padding: 15px !important;
-            background: #f8f9fa !important;
-            display: flex !important;
-            flex-direction: column !important;
-        }
-
-        .ai-message {
-            max-width: 80% !important;
-            margin-bottom: 10px !important;
-            padding: 10px 15px !important;
-            border-radius: 18px !important;
-            word-wrap: break-word !important;
-        }
-
-        .ai-message.user {
-            background: #667eea !important;
-            color: white !important;
-            border-radius: 18px 18px 4px 18px !important;
-            align-self: flex-end !important;
-            margin-left: 20% !important;
-        }
-
-        .ai-message.assistant {
-            background: white !important;
-            color: #333 !important;
-            border: 1px solid #e0e0e0 !important;
-            border-radius: 18px 18px 18px 4px !important;
-            align-self: flex-start !important;
-            margin-right: 20% !important;
-        }
-
-        .ai-chat-input-area {
-            display: flex !important;
-            padding: 10px !important;
-            border-top: 1px solid #eee !important;
-            gap: 8px !important;
-            background: white !important;
-        }
-
-        .ai-chat-input-area textarea {
-            flex: 1 !important;
-            border: 1px solid #ddd !important;
-            border-radius: 20px !important;
-            padding: 10px 15px !important;
-            resize: none !important;
-            font-family: inherit !important;
-            font-size: 0.95em !important;
-            outline: none !important;
-            height: 40px !important;
-        }
-
-        .ai-chat-input-area textarea:focus {
-            border-color: #667eea !important;
-        }
-
-        #ai-chat-settings {
-            background: #f0f0f0 !important;
-            border-bottom: 1px solid #ccc !important;
-            padding: 10px !important;
-        }
-
-        #ai-api-key-input {
-            width: 65% !important;
-            padding: 8px !important;
-            border: 1px solid #ccc !important;
-            border-radius: 4px !important;
-            margin-right: 5px !important;
-        }
-
-        #ai-save-api-key {
-            padding: 8px 12px !important;
-            background: #4caf50 !important;
-            color: white !important;
-            border: none !important;
-            border-radius: 4px !important;
-            cursor: pointer !important;
-            font-size: 0.9em !important;
-        }
-
-        #ai-close-settings {
-            padding: 8px 12px !important;
-            background: #607d8b !important;
-            color: white !important;
-            border: none !important;
-            border-radius: 4px !important;
-            cursor: pointer !important;
-            font-size: 0.9em !important;
-            margin-left: 5px !important;
-        }
-
-        #ai-api-status {
-            margin: 5px 0 0 0 !important;
-            font-size: 0.85em !important;
-        }
-
-        .ai-chat-meal-buttons {
-            margin-top: 10px !important;
-        }
-
-        .ai-chat-meal-buttons p {
-            margin-bottom: 10px !important;
-            color: #667eea !important;
-            font-weight: 600 !important;
-        }
-
-        .ai-chat-meal-buttons button {
-            margin: 5px !important;
-            padding: 8px 15px !important;
-            border: 1px solid #667eea !important;
-            border-radius: 20px !important;
-            background: white !important;
-            color: #667eea !important;
-            cursor: pointer !important;
-            transition: all 0.3s !important;
-            font-size: 0.9em !important;
-        }
-
-        .ai-chat-meal-buttons button:hover {
-            background: #667eea !important;
-            color: white !important;
-        }
-
-        @media (max-width: 480px) {
-            .ai-chat-widget {
-                width: calc(100vw - 20px) !important;
-                right: 10px !important;
-                bottom: 10px !important;
-            }
-        }
-    </style>
-
-<script>
-// ==========================================
-// BLOCCO CHAT AI - VERSIONE CORRETTA SINCRONIZZAZIONE
-// ==========================================
-
-(function() {
-    // 1. Riferimenti UI
-    const aiWidget = document.getElementById('ai-chat-widget');
-    const aiMessages = document.getElementById('ai-chat-messages');
-    const aiInput = document.getElementById('ai-chat-input');
-    const aiSendBtn = document.getElementById('ai-chat-send');
-    const aiToggle = document.getElementById('ai-chat-toggle');
-    const aiOpenSettings = document.getElementById('ai-open-settings');
-    const aiChatSettings = document.getElementById('ai-chat-settings');
-    const aiCloseSettings = document.getElementById('ai-close-settings');
-    const aiSaveApiKey = document.getElementById('ai-save-api-key');
-    const aiApiKey1 = document.getElementById('ai-api-key-1');
-    const aiApiKey2 = document.getElementById('ai-api-key-2');
-    const aiApiStatus = document.getElementById('ai-api-status');
-    const aiToggleIcon = document.getElementById('ai-toggle-icon');
-
-    // Carica API Key esistenti
-    if (aiApiKey1) aiApiKey1.value = localStorage.getItem('gemini_api_key_1') || '';
-    if (aiApiKey2) aiApiKey2.value = localStorage.getItem('gemini_api_key_2') || '';
-
-    // 2. FUNZIONE CHIAMATA API CON FALLBACK
-    async function callGeminiAPI(prompt) {
-        const keys = [
-            localStorage.getItem('gemini_api_key_1'),
-            localStorage.getItem('gemini_api_key_2')
-        ].filter(k => k && k.trim() !== '');
-        
-        if (keys.length === 0) {
-            throw new Error("⚠️ Nessuna API Key configurata. Clicca sulla ⚙️ per inserire almeno una chiave.");
-        }
-        
-        let lastError = null;
-        
-        for (let i = 0; i < keys.length; i++) {
-            const key = keys[i];
-            const keyType = i === 0 ? "Primaria" : "Secondaria";
-            
-            try {
-                const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${key}`;
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        contents: [{ parts: [{ text: prompt }] }],
-                        generationConfig: { temperature: 0.1 }
-                    })
-                });
-                
-                if (response.status === 429 || response.status === 401 || response.status === 403) {
-                    console.log(`API Key ${keyType} non disponibile (${response.status}), provo backup...`);
-                    lastError = new Error(`API ${keyType}: ${response.status === 429 ? 'Token esauriti' : 'Key non valida'}`);
-                    continue;
-                }
-                
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    throw new Error(`${errorData.error?.message || 'Errore API'} (${keyType})`);
-                }
-                
-                const data = await response.json();
-                if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
-                    console.log(`✅ Successo con API Key ${keyType}`);
-                    return data.candidates[0].content.parts[0].text;
-                } else {
-                    throw new Error(`Risposta vuota da API ${keyType}`);
-                }
-                
-            } catch (e) {
-                if (e.message.includes('fetch') || e.message.includes('network') || e.message.includes('Failed to fetch')) {
-                    console.log(`Network error con ${keyType}, provo backup...`);
-                    lastError = e;
-                    continue;
-                }
-                lastError = e;
-                if (e.message.includes('Token esauriti') || e.message.includes('429')) {
-                    continue;
-                }
-                if (i < keys.length - 1) continue;
-            }
-        }
-        
-        if (lastError && (lastError.message.includes('Token esauriti') || lastError.message.includes('esauriti'))) {
-            throw new Error("⚠️ Entrambe le API Key sono esaurite o non valide. Inserisci nuove chiavi nelle impostazioni.");
-        }
-        throw lastError || new Error("❌ Errore sconosciuto con tutte le API Key disponibili.");
-    }
-
-        // 3. LOGICA DI INSERIMENTO AVANZATA CON LASTQTA
-    function cercaInDatabase(query) {
-        if (!query) return [];
-        const db = window.foodDatabase || {};
-        const q = query.toLowerCase();
-        const results = [];
-        
-        const exactKey = window.sanitizeFirebaseKey ? window.sanitizeFirebaseKey(q) : q.replace(/[.#$[\]\/]/g, '_');
-        if (db[exactKey]) {
-            return [{ key: exactKey, data: db[exactKey], exact: true }];
-        }
-        
-        for (const key in db) {
-            const item = db[key];
-            if (!item || !item.desc) continue;
-            const descLower = item.desc.toLowerCase();
-            if (descLower.includes(q) || q.includes(descLower) || key.includes(q)) {
-                results.push({ key, data: item, exact: false });
-            }
-        }
-        
-        return results.sort((a, b) => {
-            if (a.exact) return -1;
-            if (b.exact) return 1;
-            return a.data.desc.localeCompare(b.data.desc);
-        });
-    }
-
-function gestisciQuantitaEInserimento(data, qtaUtente, pasto) {
-        // CASO 1: L'utente ha scritto esplicitamente i grammi (es. "pomodoro 200g")
-        // In questo caso, obbediamo subito senza chiedere altro.
-        if (qtaUtente > 0) {
-            procediInserimentoFinale(data, qtaUtente, pasto);
-            return;
-        }
-        
-        // CASO 2: L'utente NON ha messo i grammi, ma c'è uno storico (lastQta)
-        if (data.lastQta && data.lastQta > 0) {
-            // Creiamo un elemento visivo in chat per chiedere conferma
-            const div = document.createElement('div');
-            div.style.cssText = 'background:#e8f5e9; border:1px solid #4caf50; padding:10px; border-radius:8px; margin:5px 0; animation: fadeIn 0.3s;';
-            
-            div.innerHTML = `<p style="margin:0 0 10px 0; color:#2e7d32; font-weight:600;">
-                Trovato storico per <u>${data.desc}</u>.<br>
-                Usare l'ultimo valore (<strong>${data.lastQta}g</strong>)?</p>`;
-            
-            // Bottone SÌ (Usa storico)
-            const btnSi = document.createElement('button');
-            btnSi.textContent = "✅ Sì, usa";
-            btnSi.style.cssText = 'margin-right:8px; padding:8px 15px; background:#4caf50; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold;';
-            btnSi.onclick = () => {
-                div.remove(); // Toglie la domanda
-                addMessage(`Ok, uso ${data.lastQta}g`, 'assistant');
-                procediInserimentoFinale(data, data.lastQta, pasto);
-            };
-            
-            // Bottone NO (Inserisci manualmente)
-            const btnNo = document.createElement('button');
-            btnNo.textContent = "✏️ No, cambia";
-            btnNo.style.cssText = 'padding:8px 15px; background:#fff; border:1px solid #ccc; color:#333; border-radius:5px; cursor:pointer;';
-            btnNo.onclick = () => {
-                div.remove(); // Toglie la domanda
-                chiediQuantitaManuale(data, pasto); // Passa alla funzione di input manuale
-            };
-            
-            div.appendChild(btnSi);
-            div.appendChild(btnNo);
-            
-            addMessageElement(div); // Aggiunge il blocco alla chat
-            return;
-        }
-
-        // CASO 3: Nessuna quantità specificata e nessun storico -> Chiedi manuale
-        chiediQuantitaManuale(data, pasto);
-    }
-    // Nuova funzione per aggiungere allenamenti diretti
-    function addWorkoutDirectly(desc, kcal) {
-        // Controlla se le variabili globali sono accessibili
-        if (!window.datiGiornalieri || !window.salvaGiorno || !window.aggiornaUI) {
-            console.error("Errore: Variabili globali non trovate.");
-            return;
-        }
-
-        // Inizializza l'array log se non esiste
-        if (!window.datiGiornalieri.log) window.datiGiornalieri.log = [];
-
-        // Crea l'oggetto allenamento
-        const newWorkout = { 
-            type: 'workout', 
-            desc: desc.charAt(0).toUpperCase() + desc.slice(1), 
-            kcal: kcal 
-        };
-
-        // Aggiunge al log
-        window.datiGiornalieri.log.push(newWorkout);
-
-        // Aggiorna il totale calorie bruciate
-        window.datiGiornalieri.workoutCalorie = (window.datiGiornalieri.workoutCalorie || 0) + kcal;
-
-        // Salva e aggiorna l'interfaccia
-        window.salvaGiorno(window.giornoVisualizzato, window.datiGiornalieri);
-        window.aggiornaUI();
-
-        // Conferma in chat
-        addMessage(`💪 Allenamento registrato: <strong>${newWorkout.desc}</strong> (-${kcal} kcal)`, 'assistant');
-    }
-
-    function mostraSelezioneMultipla(nomeOriginale, results, qtaUtente, pasto) {
-        const div = document.createElement('div');
-        div.style.cssText = 'background:#e3f2fd; border:1px solid #90caf9; padding:15px; border-radius:8px; margin:10px 0; max-width:90%;';
-        div.innerHTML = `<p style="margin:0 0 10px 0; font-weight:600; color:#1565c0;">Scegli quale "${nomeOriginale}":</p>`;
-        
-        results.forEach(r => {
-            const btn = document.createElement('button');
-            const qtaInfo = r.data.lastQta ? ` (ultimo: ${r.data.lastQta}g)` : '';
-            btn.textContent = `${r.data.desc}${qtaInfo}`;
-            btn.style.cssText = 'display:block; width:100%; margin:5px 0; padding:10px; border:1px solid #1976d2; background:white; color:#1976d2; border-radius:6px; cursor:pointer; text-align:left; transition:all 0.2s;';
-            btn.onmouseover = () => { btn.style.background='#1976d2'; btn.style.color='white'; };
-            btn.onmouseout = () => { btn.style.background='white'; btn.style.color='#1976d2'; };
-            btn.onclick = () => {
-                div.remove();
-                gestisciQuantitaEInserimento(r.data, qtaUtente, pasto);
-            };
-            div.appendChild(btn);
-        });
-        
-        addMessageElement(div);
-    }
-
-    function mostraDialogoNuovoAlimento(nome, qtaUtente, pasto) {
-        const div = document.createElement('div');
-        div.style.cssText = 'background:#fff3e0; border:2px solid #ff9800; padding:15px; border-radius:8px; margin:10px 0; max-width:90%;';
-        div.innerHTML = `<p style="margin:0 0 15px 0; font-weight:600; color:#e65100;">"${nome}" non trovato</p>`;
-        
-        const btnManual = document.createElement('button');
-        btnManual.textContent = '✏️ Compila manualmente nel form';
-        btnManual.style.cssText = 'display:block; width:100%; margin:8px 0; padding:12px; border:1px solid #4caf50; background:#e8f5e9; color:#2e7d32; border-radius:6px; cursor:pointer; font-weight:600;';
-        btnManual.onclick = () => {
-            div.remove();
-            document.getElementById('builder-desc').value = nome;
-            if (qtaUtente > 0) document.getElementById('builder-qta').value = qtaUtente;
-            document.getElementById('builder-desc').focus();
-            document.getElementById('food-adder').scrollIntoView({ behavior: 'smooth' });
-            addMessage(`Compila i dati per <strong>${nome}</strong> nel form sopra`, 'assistant');
-        };
-        div.appendChild(btnManual);
-        
-        const btnAI = document.createElement('button');
-        btnAI.textContent = '🤖 Genera con AI e salva';
-        btnAI.style.cssText = 'display:block; width:100%; margin:8px 0; padding:12px; border:1px solid #667eea; background:#e8eaf6; color:#3f51b5; border-radius:6px; cursor:pointer; font-weight:600;';
-        btnAI.onclick = async () => {
-            btnAI.disabled = true;
-            btnManual.disabled = true;
-            btnAI.textContent = '⏳ Generazione...';
-            
-            try {
-                const prompt = `Fornisci dati nutrizionali completi per 100g di "${nome}". 
-Formato JSON: {"prot":0.0,"kcal":0,"carb":0.0,"zuccheri":0.0,"fatTotal":0.0,"fatSat":0.0,"fatMono":0.0,"fatPoly":0.0,"omega3":0.0,"omega6":0.0,"fibreTotali":0.0,"fibreSolubili":0.0,"fibreInsolubili":0.0,"sale":0.0,"na":0,"mg":0,"k":0,"vitc":0,"ca":0,"fe":0,"zn":0,"cu":0,"p":0,"vitA":0,"vitB12":0,"vitD":0,"vitE":0,"vitK":0,"b9":0,"b2":0,"b6":0,"leu":0,"iso":0,"val":0,"lys":0,"met":0,"phe":0,"thr":0,"trp":0,"his":0}
-Solo JSON, senza testo.`;
-                
-                const raw = await callGeminiAPI(prompt);
-                const clean = raw.substring(raw.indexOf('{'), raw.lastIndexOf('}') + 1);
-                const newData = JSON.parse(clean);
-                newData.desc = nome.charAt(0).toUpperCase() + nome.slice(1);
-                
-                div.innerHTML = `
-                    <p style="margin:0 0 10px 0; font-weight:600; color:#2e7d32;">✅ Dati generati per ${nome}</p>
-                    <div style="background:#f5f5f5; padding:10px; border-radius:4px; font-size:0.85em; margin-bottom:15px;">
-                        Prot: ${newData.prot || 0}g | Kcal: ${newData.kcal || 0} | Carb: ${newData.carb || 0}g
-                    </div>
-                `;
-                
-                const btnConfirm = document.createElement('button');
-                btnConfirm.textContent = '✅ Conferma e aggiungi';
-                btnConfirm.style.cssText = 'display:inline-block; margin:5px; padding:10px 20px; border:none; background:#4caf50; color:white; border-radius:6px; cursor:pointer; font-weight:600;';
-                btnConfirm.onclick = () => {
-                    const key = window.sanitizeFirebaseKey ? window.sanitizeFirebaseKey(nome.toLowerCase()) : nome.toLowerCase().replace(/[.#$[\]\/]/g, '_');
-                    if (!window.foodDatabase) window.foodDatabase = {};
-                    window.foodDatabase[key] = newData;
-                    if (window.salvaFoodDatabase) window.salvaFoodDatabase();
-                    
-                    div.remove();
-                    gestisciQuantitaEInserimento(newData, qtaUtente, pasto);
-                };
-                
-                const btnCancel = document.createElement('button');
-                btnCancel.textContent = '❌ Annulla';
-                btnCancel.style.cssText = 'display:inline-block; margin:5px; padding:10px 20px; border:none; background:#f44336; color:white; border-radius:6px; cursor:pointer;';
-                btnCancel.onclick = () => {
-                    div.remove();
-                    addMessage('Annullato', 'assistant');
-                };
-                
-                div.appendChild(btnConfirm);
-                div.appendChild(btnCancel);
-                
-            } catch (e) {
-                div.remove();
-                addMessage(`❌ Errore: ${e.message}`, 'assistant');
-            }
-        };
-        div.appendChild(btnAI);
-        
-        addMessageElement(div);
-    }
-
-    function chiediQuantitaManuale(data, pasto) {
-        const div = document.createElement('div');
-        div.style.cssText = 'background:#f5f5f5; padding:15px; border-radius:8px; margin:10px 0; border:1px solid #ddd;';
-        div.innerHTML = `
-            <p style="margin:0 0 10px 0;">Quanti grammi di <strong>${data.desc}</strong>?</p>
-            <input type="number" id="temp-qta-input" placeholder="es. 150" style="width:100px; padding:8px; border:1px solid #ddd; border-radius:4px; margin-right:10px;">
-            <button id="temp-qta-btn" style="padding:8px 16px; background:#1976d2; color:white; border:none; border-radius:4px; cursor:pointer;">Conferma</button>
-        `;
-        
-        addMessageElement(div);
-        
-        setTimeout(() => {
-            const input = document.getElementById('temp-qta-input');
-            const btn = document.getElementById('temp-qta-btn');
-            if (input) input.focus();
-            
-            const conferma = () => {
-                const qta = parseFloat(input.value);
-                if (qta > 0) {
-                    div.remove();
-                    procediInserimentoFinale(data, qta, pasto);
-                } else {
-                    input.style.borderColor = 'red';
-                }
-            };
-            
-            if (btn) btn.onclick = conferma;
-            if (input) {
-                input.onkeypress = (e) => { if (e.key === 'Enter') conferma(); };
-                input.oninput = () => { input.style.borderColor = '#ddd'; };
-            }
-        }, 100);
-    }
-
-    function procediInserimentoFinale(data, qta, pasto) {
-        if (!data || !data.desc) return;
-        
-        // Salva lastQta nel database
-        const key = window.sanitizeFirebaseKey ? window.sanitizeFirebaseKey(data.desc.toLowerCase()) : data.desc.toLowerCase().replace(/[.#$[\]\/]/g, '_');
-        if (window.foodDatabase) {
-            if (!window.foodDatabase[key]) window.foodDatabase[key] = { ...data };
-            window.foodDatabase[key].lastQta = qta;
-            if (window.salvaFoodDatabase) window.salvaFoodDatabase();
-        }
-        
-        // Sincronizza array
-        let currentData = JSON.parse(localStorage.getItem('trackerPastoInCostruzione')) || [];
-        if (!window.pastoInCostruzione) {
-            window.pastoInCostruzione = currentData;
-        } else if (window.pastoInCostruzione.length < currentData.length) {
-            window.pastoInCostruzione = currentData;
-        }
-        
-        let item = { desc: data.desc, qta: qta, selezionato: true };
-        for (const k in data) { 
-            if (!['desc', 'lastQta', 'ingredienti'].includes(k)) {
-                const val100g = parseFloat(data[k]) || 0;
-                item[k] = (val100g / 100) * qta; 
-            }
-        }
-        
-        window.pastoInCostruzione.push(item);
-        localStorage.setItem('trackerPastoInCostruzione', JSON.stringify(window.pastoInCostruzione));
-        
-        if (pasto && document.getElementById('meal-type-selector')) {
-            const pastoMap = {
-                'colazione': 'merenda1', 'merenda1': 'merenda1', 'merenda am': 'merenda1',
-                'pranzo': 'pranzo', 
-                'merenda': 'merenda2', 'merenda2': 'merenda2', 'merenda pm': 'merenda2',
-                'cena': 'cena'
-            };
-            const mappedPasto = pastoMap[pasto.toLowerCase()] || 'merenda1';
-            document.getElementById('meal-type-selector').value = mappedPasto;
-            const today = window.getTodayString ? window.getTodayString() : new Date().toISOString().split('T')[0];
-            localStorage.setItem('lastMealTypeSelected_' + today, mappedPasto);
-        }
-
-        if (typeof window.renderMealBuilder === 'function') {
-            window.renderMealBuilder();
-            const builder = document.getElementById('meal-builder-sezione');
-            if (builder) {
-                builder.dataset.visible = "true";
-                builder.style.display = "block";
-                setTimeout(() => builder.scrollIntoView({ behavior: 'smooth' }), 100);
-            }
-        }
-        
-        addMessage(`✅ <strong>${item.desc}</strong> (${qta}g) aggiunto!`, 'assistant');
-    }
-
-    async function addFoodDirectly(nome, qta, pasto) {
-        if (!nome) return;
-        
-        const results = cercaInDatabase(nome);
-        
-        if (results.length === 0) {
-            mostraDialogoNuovoAlimento(nome, qta, pasto);
-        } else if (results.length === 1) {
-            gestisciQuantitaEInserimento(results[0].data, qta, pasto);
-        } else {
-            mostraSelezioneMultipla(nome, results, qta, pasto);
-        }
-    }
-    // 4. UTILITY UI
-    function addMessage(text, role) {
-        if (!aiMessages) return;
-        const d = document.createElement('div');
-        d.style.cssText = role === 'user' 
-            ? 'background:#667eea; color:white; padding:10px 15px; border-radius:18px 18px 4px 18px; margin:5px 0 5px auto; max-width:80%; word-wrap:break-word;'
-            : 'background:white; color:#333; padding:10px 15px; border-radius:18px 18px 18px 4px; margin:5px auto 5px 0; max-width:80%; border:1px solid #e0e0e0; word-wrap:break-word;';
-        d.innerHTML = text.replace(/\n/g, '<br>');
-        aiMessages.appendChild(d);
-        aiMessages.scrollTop = aiMessages.scrollHeight;
-        return d;
-    }
-
-    function addMessageElement(el) {
-        if (!aiMessages) return;
-        const d = document.createElement('div');
-        d.style.cssText = 'margin:5px auto 5px 0; max-width:80%;';
-        d.appendChild(el);
-        aiMessages.appendChild(d);
-        aiMessages.scrollTop = aiMessages.scrollHeight;
-        return d;
-    }
-
-    // 5. GESTIONE EVENTI
-    
-    if (aiToggle) {
-        aiToggle.onclick = (e) => {
-            if (e.target === aiOpenSettings || e.target.closest('#ai-open-settings')) return;
-            aiWidget.classList.toggle('minimized');
-            if (aiToggleIcon) aiToggleIcon.textContent = aiWidget.classList.contains('minimized') ? '▲' : '▼';
-            if (aiWidget.classList.contains('minimized') && aiChatSettings) {
-                aiChatSettings.style.display = 'none';
-            }
-        };
-    }
-    
-    if (aiOpenSettings) {
-        aiOpenSettings.onclick = (e) => {
-            e.stopPropagation();
-            if (aiChatSettings) {
-                const isVisible = aiChatSettings.style.display === 'block';
-                aiChatSettings.style.display = isVisible ? 'none' : 'block';
-                if (!isVisible && aiApiKey1) aiApiKey1.focus();
-            }
-        };
-    }
-    
-    if (aiCloseSettings) {
-        aiCloseSettings.onclick = (e) => {
-            e.stopPropagation();
-            if (aiChatSettings) aiChatSettings.style.display = 'none';
-        };
-    }
-    
-    if (aiSaveApiKey) {
-        aiSaveApiKey.onclick = (e) => {
-            e.stopPropagation();
-            const key1 = aiApiKey1 ? aiApiKey1.value.trim() : '';
-            const key2 = aiApiKey2 ? aiApiKey2.value.trim() : '';
-            
-            if (!key1 && !key2) {
-                if (aiApiStatus) {
-                    aiApiStatus.textContent = '❌ Inserisci almeno una chiave';
-                    aiApiStatus.style.color = '#d32f2f';
-                }
-                return;
-            }
-            
-            if (key1) localStorage.setItem('gemini_api_key_1', key1);
-            if (key2) localStorage.setItem('gemini_api_key_2', key2);
-            
-            if (aiApiStatus) {
-                const msg = key1 && key2 ? '✅ Entrambe le chiavi salvate!' : 
-                           key1 ? '✅ Chiave primaria salvata!' : '✅ Chiave secondaria salvata!';
-                aiApiStatus.textContent = msg;
-                aiApiStatus.style.color = '#2e7d32';
-            }
-            setTimeout(() => {
-                if (aiChatSettings) aiChatSettings.style.display = 'none';
-            }, 1200);
-        };
-    }
-
-if (aiSendBtn) {
-        aiSendBtn.onclick = async () => {
-            const text = aiInput.value.trim();
-            if (!text) return;
-            addMessage(text, 'user');
-            aiInput.value = '';
-            
-            const loading = addMessage("🧠 Elaboro...", "assistant");
-            loading.style.fontStyle = 'italic';
-            loading.style.color = '#666';
-
-            try {
-                // PROMPT AVANZATO: Gestisce CIBO e ALLENAMENTO
-                const prompt = `Analizza: "${text}".
-                
-                CASO 1: CIBO (es. "ho mangiato mela", "pasta 100g")
-                - Rispondi: [AGGIUNGI: nome | grammi | pasto]
-                - Se mancano i grammi, scrivi 0.
-                - Pasto default: quello attuale.
-
-                CASO 2: ALLENAMENTO (es. "palestra 200kcal", "corsa", "lavoro pesante")
-                - Rispondi: [ALLENAMENTO: descrizione | kcal]
-                - Se l'utente scrive le kcal, usa quelle.
-                - Se mancano le kcal, STIMALE tu (es. 1h pesi=300, 30min corsa=250, lavoro ufficio=0).
-
-                Rispondi SOLO con i comandi tra parentesi quadre.`;
-                
-                const resp = await callGeminiAPI(prompt);
-                if (loading) loading.remove();
-
-                let foundAny = false;
-
-                // 1. Cerca comandi CIBO
-                const regexFood = /\[AGGIUNGI:\s*([^|\]]+?)\s*\|\s*([0-9.,]+)\s*\|\s*([^\]]+?)\]/gi;
-                let matchFood;
-                while ((matchFood = regexFood.exec(resp)) !== null) {
-                    foundAny = true;
-                    const nome = matchFood[1].trim();
-                    const qta = parseFloat(matchFood[2].replace(',', '.')) || 0;
-                    const pasto = matchFood[3].trim().toLowerCase();
-                    await gestisciQuantitaEInserimento({ desc: nome }, qta, pasto); // Usa la tua funzione smart
-                }
-
-                // 2. Cerca comandi ALLENAMENTO
-                const regexWorkout = /\[ALLENAMENTO:\s*([^|\]]+?)\s*\|\s*([0-9.,]+)\]/gi;
-                let matchWorkout;
-                while ((matchWorkout = regexWorkout.exec(resp)) !== null) {
-                    foundAny = true;
-                    const desc = matchWorkout[1].trim();
-                    const kcal = parseFloat(matchWorkout[2].replace(',', '.')) || 0;
-                    addWorkoutDirectly(desc, kcal); // Chiama la nuova funzione diretta
-                }
-
-                if (!foundAny) {
-                    addMessage(resp, 'assistant'); // Se non trova comandi, mostra la risposta testuale
-                }
-
-            } catch (e) {
-                if (loading) loading.remove();
-                addMessage(`❌ Errore: ${e.message}`, "assistant");
-            }
-        };
-    }
-
-    if (aiInput) {
-        aiInput.onkeypress = (e) => { 
-            if (e.key === 'Enter' && !e.shiftKey) { 
-                e.preventDefault(); 
-                aiSendBtn.click(); 
-            } 
-        };
-    }
-
-})();
-</script>
-</body>
-</html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+Dal punto di vista funzionale, l'implementazione permette di caricare screenshot che vengono processati automaticamente, con verifica della data corrispondente. I dati estratti vengono salvati nel `localStorage` e sincronizzati su Firebase, esattamente come il resto dei dati dell'app. L'esportazione JSON include ora anche la sezione sonno, permettendo anal
