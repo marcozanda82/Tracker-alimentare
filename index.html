@@ -3670,8 +3670,8 @@ if (button.dataset.type === 'builder') {
     }
 
 function gestisciQuantitaEInserimento(data, qtaUtente, pasto) {
-        // CASO 1: L'utente ha scritto esplicitamente i grammi nel messaggio (es. "pomodoro 200g")
-        // In questo caso, obbediamo subito.
+        // CASO 1: L'utente ha scritto esplicitamente i grammi (es. "pomodoro 200g")
+        // In questo caso, obbediamo subito senza chiedere altro.
         if (qtaUtente > 0) {
             procediInserimentoFinale(data, qtaUtente, pasto);
             return;
@@ -3685,11 +3685,11 @@ function gestisciQuantitaEInserimento(data, qtaUtente, pasto) {
             
             div.innerHTML = `<p style="margin:0 0 10px 0; color:#2e7d32; font-weight:600;">
                 Trovato storico per <u>${data.desc}</u>.<br>
-                Usare <strong>${data.lastQta}g</strong>?</p>`;
+                Usare l'ultimo valore (<strong>${data.lastQta}g</strong>)?</p>`;
             
             // Bottone SÌ (Usa storico)
             const btnSi = document.createElement('button');
-            btnSi.textContent = "✅ Sì";
+            btnSi.textContent = "✅ Sì, usa";
             btnSi.style.cssText = 'margin-right:8px; padding:8px 15px; background:#4caf50; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold;';
             btnSi.onclick = () => {
                 div.remove(); // Toglie la domanda
@@ -4067,6 +4067,7 @@ if (aiSendBtn) {
 </script>
 </body>
 </html>
+
 
 
 
