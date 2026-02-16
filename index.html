@@ -3669,41 +3669,21 @@ if (button.dataset.type === 'builder') {
         });
     }
 
-    function gestisciQuantitaEInserimento(data, qtaUtente, pasto) {
-        // Se l'utente HA specificato grammi nel testo (es. "pomodoro 200g"), usa quelli
-        if (qtaUtente && qtaUtente > 0) {
+function gestisciQuantitaEInserimento(data, qtaUtente, pasto) {
+        // CASO 1: L'AI ha trovato una quantità specifica nel tuo messaggio (es. "200g")
+        if (qtaUtente > 0) {
             procediInserimentoFinale(data, qtaUtente, pasto);
             return;
         }
         
-        // Se NON ha specificato quantità (0), guarda lastQta nel database
+        // CASO 2: L'AI ha messo 0, ma nel DATABASE c'è un "lastQta" (Ultima quantità usata)
         if (data.lastQta && data.lastQta > 0) {
-            // Chiede: "Pomodoro 150g?" con Sì/No
-            const div = document.createElement('div');
-            div.style.cssText = 'background:#e8f5e9; border:2px solid #4caf50; padding:15px; border-radius:10px; margin:10px 0; max-width:90%; box-shadow:0 2px 4px rgba(0,0,0,0.1);';
-            div.innerHTML = `<p style="margin:0 0 15px 0; font-size:1.1em; color:#2e7d32;"><strong>${data.desc} ${data.lastQta}g?</strong></p>`;
-            
-            const btnSi = document.createElement('button');
-            btnSi.textContent = 'Sì';
-            btnSi.style.cssText = 'margin:0 10px 0 0; padding:10px 25px; border:none; background:#4caf50; color:white; border-radius:6px; cursor:pointer; font-weight:600; font-size:1em;';
-            btnSi.onclick = () => {
-                div.remove();
-                procediInserimentoFinale(data, data.lastQta, pasto);
-            };
-            
-            const btnNo = document.createElement('button');
-            btnNo.textContent = 'No';
-            btnNo.style.cssText = 'margin:0; padding:10px 25px; border:1px solid #666; background:white; color:#666; border-radius:6px; cursor:pointer; font-size:1em;';
-            btnNo.onclick = () => {
-                div.remove();
-                chiediQuantitaManuale(data, pasto);
-            };
-            
-            div.appendChild(btnSi);
-            div.appendChild(btnNo);
-            addMessageElement(div);
+            // Qui avviene la magia: usa l'ultimo valore automaticamente!
+            addMessage(`♻️ Uso l'ultima quantità nota: <strong>${data.lastQta}g</strong>`, 'assistant');
+            procediInserimentoFinale(data, data.lastQta, pasto);
+            return;
         } else {
-            // Nessuna lastQta salvata, chiedi la quantità
+            // CASO 3: Nessuna quantità e nessun storico -> Chiedi all'utente
             chiediQuantitaManuale(data, pasto);
         }
     }
@@ -3993,29 +3973,54 @@ Solo JSON, senza testo.`;
         };
     }
 
-    if (aiSendBtn) {
+if (aiSendBtn) {
         aiSendBtn.onclick = async () => {
             const text = aiInput.value.trim();
             if (!text) return;
             addMessage(text, 'user');
             aiInput.value = '';
-            const loading = addMessage("🤔 Elaboro...", "assistant");
+            
+            // Messaggio di caricamento
+            const loading = addMessage("🔍 Cerco nel diario...", "assistant");
             loading.style.fontStyle = 'italic';
             loading.style.color = '#666';
 
             try {
-                const prompt = `Utente: "${text}". Rispondi SOLO comandi: [AGGIUNGI: nome | quantità | pasto]. Se mancano grammi, metti 0. Calcola i totali (es. 56*2 = 112). Sii sintetico.`;
+                // PROMPT MODIFICATO: Ordina all'AI di mettere 0 se non ci sono grammi espliciti
+                const prompt = `Analizza la frase: "${text}".
+                Estrai gli alimenti.
+                Rispondi SOLO con: [AGGIUNGI: nome_alimento | grammi | pasto].
+                REGOLE FONDAMENTALI:
+                1. Se l'utente scrive i grammi (es. "100g", "una mela da 200g"), usa quelli.
+                2. Se l'utente NON scrive i grammi (es. "ho mangiato pane", "pomodoro"), SCRIVI 0. Non inventare stime.
+                3. Se ci sono più cibi, fai più righe.
+                4. Pasto default: quello attuale (colazione/pranzo/cena).`;
+                
                 const resp = await callGeminiAPI(prompt);
                 if (loading) loading.remove();
-                addMessage(resp, 'assistant');
 
-                const matches = [...resp.matchAll(/\[AGGIUNGI:\s*([^|]+)\s*\|\s*([^|]+)\s*\|\s*([^\]]+)\]/gi)];
-                for (const m of matches) {
-                    await addFoodDirectly(m[1].trim(), parseInt(m[2].replace(/\D/g, '')) || 0, m[3].trim().toLowerCase());
+                // Regex per leggere la risposta
+                const regex = /\[AGGIUNGI:\s*([^|\]]+?)\s*\|\s*([0-9.,]+)\s*\|\s*([^\]]+?)\]/gi;
+                let match;
+                let foundAny = false;
+
+                while ((match = regex.exec(resp)) !== null) {
+                    foundAny = true;
+                    const nome = match[1].trim();
+                    const qta = parseFloat(match[2].replace(',', '.')) || 0; // Se AI mette 0, qta sarà 0
+                    const pasto = match[3].trim().toLowerCase();
+                    
+                    // Chiama la funzione che ora gestisce l'intelligenza dello storico
+                    await addFoodDirectly(nome, qta, pasto);
                 }
+
+                if (!foundAny) {
+                    addMessage("Non ho capito cosa aggiungere. Prova con 'mela 200g'.", 'assistant');
+                }
+
             } catch (e) {
                 if (loading) loading.remove();
-                addMessage(`❌ ${e.message}`, "assistant");
+                addMessage(`❌ Errore: ${e.message}`, "assistant");
             }
         };
     }
@@ -4033,6 +4038,7 @@ Solo JSON, senza testo.`;
 </script>
 </body>
 </html>
+
 
 
 
