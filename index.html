@@ -3623,14 +3623,218 @@ Regole:
         throw lastError || new Error("❌ Errore sconosciuto con tutte le API Key disponibili.");
     }
 
-      // 3. LOGICA DI INSERIMENTO CORRETTA E ROBUSTA
-    function procediInserimento(data, qta, pasto) {
-        if (!data || !data.desc) {
-            addMessage("❌ Errore: dati alimento mancanti", "assistant");
+        // 3. LOGICA DI INSERIMENTO AVANZATA CON LASTQTA
+    function cercaInDatabase(query) {
+        if (!query) return [];
+        const db = window.foodDatabase || {};
+        const q = query.toLowerCase();
+        const results = [];
+        
+        const exactKey = window.sanitizeFirebaseKey ? window.sanitizeFirebaseKey(q) : q.replace(/[.#$[\]\/]/g, '_');
+        if (db[exactKey]) {
+            return [{ key: exactKey, data: db[exactKey], exact: true }];
+        }
+        
+        for (const key in db) {
+            const item = db[key];
+            if (!item || !item.desc) continue;
+            const descLower = item.desc.toLowerCase();
+            if (descLower.includes(q) || q.includes(descLower) || key.includes(q)) {
+                results.push({ key, data: item, exact: false });
+            }
+        }
+        
+        return results.sort((a, b) => {
+            if (a.exact) return -1;
+            if (b.exact) return 1;
+            return a.data.desc.localeCompare(b.data.desc);
+        });
+    }
+
+    function gestisciQuantitaEInserimento(data, qtaUtente, pasto) {
+        // Se l'utente HA specificato grammi nel testo (es. "pomodoro 200g"), usa quelli
+        if (qtaUtente && qtaUtente > 0) {
+            procediInserimentoFinale(data, qtaUtente, pasto);
             return;
         }
+        
+        // Se NON ha specificato quantità (0), guarda lastQta nel database
+        if (data.lastQta && data.lastQta > 0) {
+            // Chiede: "Pomodoro 150g?" con Sì/No
+            const div = document.createElement('div');
+            div.style.cssText = 'background:#e8f5e9; border:2px solid #4caf50; padding:15px; border-radius:10px; margin:10px 0; max-width:90%; box-shadow:0 2px 4px rgba(0,0,0,0.1);';
+            div.innerHTML = `<p style="margin:0 0 15px 0; font-size:1.1em; color:#2e7d32;"><strong>${data.desc} ${data.lastQta}g?</strong></p>`;
+            
+            const btnSi = document.createElement('button');
+            btnSi.textContent = 'Sì';
+            btnSi.style.cssText = 'margin:0 10px 0 0; padding:10px 25px; border:none; background:#4caf50; color:white; border-radius:6px; cursor:pointer; font-weight:600; font-size:1em;';
+            btnSi.onclick = () => {
+                div.remove();
+                procediInserimentoFinale(data, data.lastQta, pasto);
+            };
+            
+            const btnNo = document.createElement('button');
+            btnNo.textContent = 'No';
+            btnNo.style.cssText = 'margin:0; padding:10px 25px; border:1px solid #666; background:white; color:#666; border-radius:6px; cursor:pointer; font-size:1em;';
+            btnNo.onclick = () => {
+                div.remove();
+                chiediQuantitaManuale(data, pasto);
+            };
+            
+            div.appendChild(btnSi);
+            div.appendChild(btnNo);
+            addMessageElement(div);
+        } else {
+            // Nessuna lastQta salvata, chiedi la quantità
+            chiediQuantitaManuale(data, pasto);
+        }
+    }
 
-        // Sincronizza con localStorage
+    function mostraSelezioneMultipla(nomeOriginale, results, qtaUtente, pasto) {
+        const div = document.createElement('div');
+        div.style.cssText = 'background:#e3f2fd; border:1px solid #90caf9; padding:15px; border-radius:8px; margin:10px 0; max-width:90%;';
+        div.innerHTML = `<p style="margin:0 0 10px 0; font-weight:600; color:#1565c0;">Scegli quale "${nomeOriginale}":</p>`;
+        
+        results.forEach(r => {
+            const btn = document.createElement('button');
+            const qtaInfo = r.data.lastQta ? ` (ultimo: ${r.data.lastQta}g)` : '';
+            btn.textContent = `${r.data.desc}${qtaInfo}`;
+            btn.style.cssText = 'display:block; width:100%; margin:5px 0; padding:10px; border:1px solid #1976d2; background:white; color:#1976d2; border-radius:6px; cursor:pointer; text-align:left; transition:all 0.2s;';
+            btn.onmouseover = () => { btn.style.background='#1976d2'; btn.style.color='white'; };
+            btn.onmouseout = () => { btn.style.background='white'; btn.style.color='#1976d2'; };
+            btn.onclick = () => {
+                div.remove();
+                gestisciQuantitaEInserimento(r.data, qtaUtente, pasto);
+            };
+            div.appendChild(btn);
+        });
+        
+        addMessageElement(div);
+    }
+
+    function mostraDialogoNuovoAlimento(nome, qtaUtente, pasto) {
+        const div = document.createElement('div');
+        div.style.cssText = 'background:#fff3e0; border:2px solid #ff9800; padding:15px; border-radius:8px; margin:10px 0; max-width:90%;';
+        div.innerHTML = `<p style="margin:0 0 15px 0; font-weight:600; color:#e65100;">"${nome}" non trovato</p>`;
+        
+        const btnManual = document.createElement('button');
+        btnManual.textContent = '✏️ Compila manualmente nel form';
+        btnManual.style.cssText = 'display:block; width:100%; margin:8px 0; padding:12px; border:1px solid #4caf50; background:#e8f5e9; color:#2e7d32; border-radius:6px; cursor:pointer; font-weight:600;';
+        btnManual.onclick = () => {
+            div.remove();
+            document.getElementById('builder-desc').value = nome;
+            if (qtaUtente > 0) document.getElementById('builder-qta').value = qtaUtente;
+            document.getElementById('builder-desc').focus();
+            document.getElementById('food-adder').scrollIntoView({ behavior: 'smooth' });
+            addMessage(`Compila i dati per <strong>${nome}</strong> nel form sopra`, 'assistant');
+        };
+        div.appendChild(btnManual);
+        
+        const btnAI = document.createElement('button');
+        btnAI.textContent = '🤖 Genera con AI e salva';
+        btnAI.style.cssText = 'display:block; width:100%; margin:8px 0; padding:12px; border:1px solid #667eea; background:#e8eaf6; color:#3f51b5; border-radius:6px; cursor:pointer; font-weight:600;';
+        btnAI.onclick = async () => {
+            btnAI.disabled = true;
+            btnManual.disabled = true;
+            btnAI.textContent = '⏳ Generazione...';
+            
+            try {
+                const prompt = `Fornisci dati nutrizionali completi per 100g di "${nome}". 
+Formato JSON: {"prot":0.0,"kcal":0,"carb":0.0,"zuccheri":0.0,"fatTotal":0.0,"fatSat":0.0,"fatMono":0.0,"fatPoly":0.0,"omega3":0.0,"omega6":0.0,"fibreTotali":0.0,"fibreSolubili":0.0,"fibreInsolubili":0.0,"sale":0.0,"na":0,"mg":0,"k":0,"vitc":0,"ca":0,"fe":0,"zn":0,"cu":0,"p":0,"vitA":0,"vitB12":0,"vitD":0,"vitE":0,"vitK":0,"b9":0,"b2":0,"b6":0,"leu":0,"iso":0,"val":0,"lys":0,"met":0,"phe":0,"thr":0,"trp":0,"his":0}
+Solo JSON, senza testo.`;
+                
+                const raw = await callGeminiAPI(prompt);
+                const clean = raw.substring(raw.indexOf('{'), raw.lastIndexOf('}') + 1);
+                const newData = JSON.parse(clean);
+                newData.desc = nome.charAt(0).toUpperCase() + nome.slice(1);
+                
+                div.innerHTML = `
+                    <p style="margin:0 0 10px 0; font-weight:600; color:#2e7d32;">✅ Dati generati per ${nome}</p>
+                    <div style="background:#f5f5f5; padding:10px; border-radius:4px; font-size:0.85em; margin-bottom:15px;">
+                        Prot: ${newData.prot || 0}g | Kcal: ${newData.kcal || 0} | Carb: ${newData.carb || 0}g
+                    </div>
+                `;
+                
+                const btnConfirm = document.createElement('button');
+                btnConfirm.textContent = '✅ Conferma e aggiungi';
+                btnConfirm.style.cssText = 'display:inline-block; margin:5px; padding:10px 20px; border:none; background:#4caf50; color:white; border-radius:6px; cursor:pointer; font-weight:600;';
+                btnConfirm.onclick = () => {
+                    const key = window.sanitizeFirebaseKey ? window.sanitizeFirebaseKey(nome.toLowerCase()) : nome.toLowerCase().replace(/[.#$[\]\/]/g, '_');
+                    if (!window.foodDatabase) window.foodDatabase = {};
+                    window.foodDatabase[key] = newData;
+                    if (window.salvaFoodDatabase) window.salvaFoodDatabase();
+                    
+                    div.remove();
+                    gestisciQuantitaEInserimento(newData, qtaUtente, pasto);
+                };
+                
+                const btnCancel = document.createElement('button');
+                btnCancel.textContent = '❌ Annulla';
+                btnCancel.style.cssText = 'display:inline-block; margin:5px; padding:10px 20px; border:none; background:#f44336; color:white; border-radius:6px; cursor:pointer;';
+                btnCancel.onclick = () => {
+                    div.remove();
+                    addMessage('Annullato', 'assistant');
+                };
+                
+                div.appendChild(btnConfirm);
+                div.appendChild(btnCancel);
+                
+            } catch (e) {
+                div.remove();
+                addMessage(`❌ Errore: ${e.message}`, 'assistant');
+            }
+        };
+        div.appendChild(btnAI);
+        
+        addMessageElement(div);
+    }
+
+    function chiediQuantitaManuale(data, pasto) {
+        const div = document.createElement('div');
+        div.style.cssText = 'background:#f5f5f5; padding:15px; border-radius:8px; margin:10px 0; border:1px solid #ddd;';
+        div.innerHTML = `
+            <p style="margin:0 0 10px 0;">Quanti grammi di <strong>${data.desc}</strong>?</p>
+            <input type="number" id="temp-qta-input" placeholder="es. 150" style="width:100px; padding:8px; border:1px solid #ddd; border-radius:4px; margin-right:10px;">
+            <button id="temp-qta-btn" style="padding:8px 16px; background:#1976d2; color:white; border:none; border-radius:4px; cursor:pointer;">Conferma</button>
+        `;
+        
+        addMessageElement(div);
+        
+        setTimeout(() => {
+            const input = document.getElementById('temp-qta-input');
+            const btn = document.getElementById('temp-qta-btn');
+            if (input) input.focus();
+            
+            const conferma = () => {
+                const qta = parseFloat(input.value);
+                if (qta > 0) {
+                    div.remove();
+                    procediInserimentoFinale(data, qta, pasto);
+                } else {
+                    input.style.borderColor = 'red';
+                }
+            };
+            
+            if (btn) btn.onclick = conferma;
+            if (input) {
+                input.onkeypress = (e) => { if (e.key === 'Enter') conferma(); };
+                input.oninput = () => { input.style.borderColor = '#ddd'; };
+            }
+        }, 100);
+    }
+
+    function procediInserimentoFinale(data, qta, pasto) {
+        if (!data || !data.desc) return;
+        
+        // Salva lastQta nel database
+        const key = window.sanitizeFirebaseKey ? window.sanitizeFirebaseKey(data.desc.toLowerCase()) : data.desc.toLowerCase().replace(/[.#$[\]\/]/g, '_');
+        if (window.foodDatabase) {
+            if (!window.foodDatabase[key]) window.foodDatabase[key] = { ...data };
+            window.foodDatabase[key].lastQta = qta;
+            if (window.salvaFoodDatabase) window.salvaFoodDatabase();
+        }
+        
+        // Sincronizza array
         let currentData = JSON.parse(localStorage.getItem('trackerPastoInCostruzione')) || [];
         if (!window.pastoInCostruzione) {
             window.pastoInCostruzione = currentData;
@@ -3638,116 +3842,54 @@ Regole:
             window.pastoInCostruzione = currentData;
         }
         
-        // Se qta è 0 o mancante, usa 100g di default o l'ultima quantità nota
-        let finalQta = qta;
-        if (!finalQta || finalQta <= 0) {
-            finalQta = data.lastQta || 100;
-            addMessage(`ℹ️ Quantità non specificata, uso <strong>${finalQta}g</strong> per ${data.desc}`, "assistant");
-        }
-        
-        let item = { desc: data.desc, qta: finalQta, selezionato: true };
-        
-        // Calcola nutrienti per la quantità specificata
+        let item = { desc: data.desc, qta: qta, selezionato: true };
         for (const k in data) { 
             if (!['desc', 'lastQta', 'ingredienti'].includes(k)) {
                 const val100g = parseFloat(data[k]) || 0;
-                item[k] = (val100g / 100) * finalQta; 
+                item[k] = (val100g / 100) * qta; 
             }
         }
         
         window.pastoInCostruzione.push(item);
         localStorage.setItem('trackerPastoInCostruzione', JSON.stringify(window.pastoInCostruzione));
         
-        // Seleziona il tipo pasto nel selettore
         if (pasto && document.getElementById('meal-type-selector')) {
             const pastoMap = {
                 'colazione': 'merenda1', 'merenda1': 'merenda1', 'merenda am': 'merenda1',
                 'pranzo': 'pranzo', 
-                'merenda2': 'merenda2', 'merenda pm': 'merenda2', 'merenda': 'merenda2',
+                'merenda': 'merenda2', 'merenda2': 'merenda2', 'merenda pm': 'merenda2',
                 'cena': 'cena'
             };
-            const mappedPasto = pastoMap[pasto.toLowerCase()] || pasto;
+            const mappedPasto = pastoMap[pasto.toLowerCase()] || 'merenda1';
             document.getElementById('meal-type-selector').value = mappedPasto;
-            localStorage.setItem('lastMealTypeSelected_' + (window.getTodayString ? window.getTodayString() : new Date().toISOString().split('T')[0]), mappedPasto);
+            const today = window.getTodayString ? window.getTodayString() : new Date().toISOString().split('T')[0];
+            localStorage.setItem('lastMealTypeSelected_' + today, mappedPasto);
         }
 
-        // Aggiorna UI
         if (typeof window.renderMealBuilder === 'function') {
             window.renderMealBuilder();
             const builder = document.getElementById('meal-builder-sezione');
             if (builder) {
                 builder.dataset.visible = "true";
                 builder.style.display = "block";
-                builder.scrollIntoView({ behavior: 'smooth' });
+                setTimeout(() => builder.scrollIntoView({ behavior: 'smooth' }), 100);
             }
         }
         
-        addMessage(`✅ <strong>${item.desc}</strong> (${finalQta}g) aggiunto al costruttore!`, 'assistant');
+        addMessage(`✅ <strong>${item.desc}</strong> (${qta}g) aggiunto!`, 'assistant');
     }
 
     async function addFoodDirectly(nome, qta, pasto) {
         if (!nome) return;
         
-        const query = window.sanitizeFirebaseKey ? window.sanitizeFirebaseKey(nome.toLowerCase()) : nome.toLowerCase().replace(/[.#$[\]\/]/g, '_');
-        const db = window.foodDatabase || {};
+        const results = cercaInDatabase(nome);
         
-        // Cerca corrispondenze
-        let dbEntry = null;
-        const exactKey = window.sanitizeFirebaseKey ? window.sanitizeFirebaseKey(nome.toLowerCase()) : nome.toLowerCase().replace(/[.#$[\]\/]/g, '_');
-        
-        if (db[exactKey]) {
-            dbEntry = db[exactKey];
+        if (results.length === 0) {
+            mostraDialogoNuovoAlimento(nome, qta, pasto);
+        } else if (results.length === 1) {
+            gestisciQuantitaEInserimento(results[0].data, qta, pasto);
         } else {
-            // Cerca parziali
-            const matches = Object.keys(db).filter(k => k.includes(query));
-            if (matches.length === 1) {
-                dbEntry = db[matches[0]];
-            } else if (matches.length > 1) {
-                // Mostra scelta multipla
-                const div = document.createElement('div');
-                div.style.cssText = 'margin-top:10px; padding:10px; background:#f0f0f0; border-radius:8px;';
-                div.innerHTML = `<p style="margin-bottom:10px; color:#667eea; font-weight:600;">Quale "<strong>${nome}</strong>" intendi?</p>`;
-                
-                matches.slice(0, 5).forEach(m => { // Max 5 risultati
-                    const btn = document.createElement('button');
-                    btn.textContent = db[m].desc;
-                    btn.style.cssText = 'margin:5px; padding:8px 15px; border:1px solid #667eea; border-radius:20px; background:white; color:#667eea; cursor:pointer; transition:all 0.3s; font-size:0.9em; display:block; width:100%; text-align:left;';
-                    btn.onmouseover = () => { btn.style.background='#667eea'; btn.style.color='white'; };
-                    btn.onmouseout = () => { btn.style.background='white'; btn.style.color='#667eea'; };
-                    btn.onclick = () => { 
-                        div.remove(); 
-                        procediInserimento(db[m], qta, pasto); 
-                    };
-                    div.appendChild(btn);
-                });
-                addMessageElement(div);
-                return;
-            }
-        }
-        
-        if (dbEntry) {
-            procediInserimento(dbEntry, qta, pasto);
-        } else {
-            // Chiama AI per dati nutrizionali
-            try {
-                addMessage(`🔍 Cerco dati per "${nome}"...`, "assistant");
-                const prompt = `Fornisci SOLO questo JSON per 100g di "${nome}": {"prot":0,"kcal":0,"carb":0,"zuccheri":0,"fatTotal":0,"fatSat":0,"fibreTotali":0,"na":0}. Solo numeri, senza testo extra.`;
-                const raw = await callGeminiAPI(prompt);
-                const clean = raw.substring(raw.indexOf('{'), raw.lastIndexOf('}') + 1);
-                const data = JSON.parse(clean);
-                data.desc = nome.charAt(0).toUpperCase() + nome.slice(1);
-                
-                // Salva nel database per futuro uso
-                const key = window.sanitizeFirebaseKey ? window.sanitizeFirebaseKey(nome.toLowerCase()) : nome.toLowerCase().replace(/[.#$[\]\/]/g, '_');
-                if (window.foodDatabase) {
-                    window.foodDatabase[key] = data;
-                    if (window.salvaFoodDatabase) window.salvaFoodDatabase();
-                }
-                
-                procediInserimento(data, qta, pasto);
-            } catch (e) { 
-                addMessage(`❌ Errore nel recupero dati: ${e.message}`, "assistant"); 
-            }
+            mostraSelezioneMultipla(nome, results, qta, pasto);
         }
     }
     // 4. UTILITY UI
@@ -3873,6 +4015,7 @@ Regole:
 </script>
 </body>
 </html>
+
 
 
 
