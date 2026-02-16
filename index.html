@@ -3203,25 +3203,26 @@
 });
     </script>
 
-    <!-- CHAT AI INTEGRATA -->
+     <!-- CHAT AI INTEGRATA -->
 <div id="ai-chat-widget" class="ai-chat-widget minimized">
     <div class="ai-chat-header" id="ai-chat-toggle">
         <span>🤖 Assistente AI</span>
-        <span id="ai-toggle-icon">▲</span>
+        <button id="ai-open-settings" title="Configura API" style="background:none; border:none; cursor:pointer; font-size:1.2em; color:white; padding:0; margin-left:10px;">⚙️</button>
+        <span id="ai-toggle-icon" style="margin-left:auto;">▲</span>
     </div>
     <div class="ai-chat-body" style="display: flex; flex-direction: column; height: 450px;">
         <div id="ai-chat-settings" style="display:none; padding:10px; background:#f0f0f0; border-bottom:1px solid #ccc;">
-            <input type="password" id="ai-api-key-input" placeholder="Chiave Gemini..." style="width:70%;">
-            <button id="ai-save-api-key">Salva</button>
-            <button id="ai-close-settings">X</button>
+            <input type="password" id="ai-api-key-input" placeholder="Chiave Gemini..." style="width:70%; padding:8px;">
+            <button id="ai-save-api-key" style="padding:8px 12px; background:#4caf50; color:white; border:none; border-radius:4px; cursor:pointer;">Salva</button>
+            <button id="ai-close-settings" style="padding:8px 12px; background:#607d8b; color:white; border:none; border-radius:4px; cursor:pointer; margin-left:5px;">X</button>
+            <p id="ai-api-status" style="margin:5px 0 0 0; font-size:0.85em;"></p>
         </div>
-        <div class="ai-chat-messages" id="ai-chat-messages">
-            <button id="ai-open-settings" title="Configura API" style="float:right; background:none; border:none; cursor:pointer; font-size:1.2em;">⚙️</button>
+        <div class="ai-chat-messages" id="ai-chat-messages" style="flex:1; overflow-y:auto; padding:15px; background:#f8f9fa;">
             <div class="ai-message assistant">Pronto! Consulta il tuo database e aggiungi alimenti al costruttore pasti.</div>
         </div>
-        <div class="ai-chat-input-area">
-            <textarea id="ai-chat-input" placeholder="Cosa hai mangiato?"></textarea>
-            <button id="ai-chat-send" style="margin-left:5px;">➤</button>
+        <div class="ai-chat-input-area" style="display:flex; padding:10px; border-top:1px solid #eee; gap:5px;">
+            <textarea id="ai-chat-input" placeholder="Cosa hai mangiato?" style="flex:1; border:1px solid #ddd; border-radius:20px; padding:10px 15px; resize:none; font-family:inherit; font-size:0.95em; outline:none; height:40px;"></textarea>
+            <button id="ai-chat-send" style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:white; border:none; border-radius:50%; width:44px; height:44px; cursor:pointer; font-size:1.2em;">➤</button>
         </div>
     </div>
 </div>
@@ -3665,3 +3666,4 @@
     </script>
 </body>
 </html>
+
