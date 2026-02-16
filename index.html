@@ -3203,7 +3203,7 @@
 });
     </script>
 
-     <!-- CHAT AI INTEGRATA -->
+    <!-- CHAT AI INTEGRATA -->
 <div id="ai-chat-widget" class="ai-chat-widget minimized">
     <div class="ai-chat-header" id="ai-chat-toggle">
         <span>🤖 Assistente AI</span>
@@ -3212,17 +3212,26 @@
     </div>
     <div class="ai-chat-body" style="display: flex; flex-direction: column; height: 450px;">
         <div id="ai-chat-settings" style="display:none; padding:10px; background:#f0f0f0; border-bottom:1px solid #ccc;">
-            <input type="password" id="ai-api-key-input" placeholder="Chiave Gemini..." style="width:70%; padding:8px;">
-            <button id="ai-save-api-key" style="padding:8px 12px; background:#4caf50; color:white; border:none; border-radius:4px; cursor:pointer;">Salva</button>
-            <button id="ai-close-settings" style="padding:8px 12px; background:#607d8b; color:white; border:none; border-radius:4px; cursor:pointer; margin-left:5px;">X</button>
-            <p id="ai-api-status" style="margin:5px 0 0 0; font-size:0.85em;"></p>
+            <div style="margin-bottom:10px;">
+                <label style="font-size:0.85em; font-weight:bold; color:#333; display:block; margin-bottom:3px;">🔑 API Key Primaria (Gratuita):</label>
+                <input type="password" id="ai-api-key-1" placeholder="Inserisci prima API Key..." style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+            </div>
+            <div style="margin-bottom:10px;">
+                <label style="font-size:0.85em; font-weight:bold; color:#666; display:block; margin-bottom:3px;">🔑 API Key Secondaria (Backup):</label>
+                <input type="password" id="ai-api-key-2" placeholder="Inserisci seconda API Key..." style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+            </div>
+            <div style="display:flex; gap:5px;">
+                <button id="ai-save-api-key" style="flex:1; padding:8px 12px; background:#4caf50; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:600;">Salva Chiavi</button>
+                <button id="ai-close-settings" style="padding:8px 12px; background:#607d8b; color:white; border:none; border-radius:4px; cursor:pointer;">X</button>
+            </div>
+            <p id="ai-api-status" style="margin:8px 0 0 0; font-size:0.8em; min-height:1.2em;"></p>
         </div>
-        <div class="ai-chat-messages" id="ai-chat-messages" style="flex:1; overflow-y:auto; padding:15px; background:#f8f9fa;">
-            <div class="ai-message assistant">Pronto! Consulta il tuo database e aggiungi alimenti al costruttore pasti.</div>
+        <div class="ai-chat-messages" id="ai-chat-messages" style="flex:1; overflow-y:auto; padding:15px; background:#f8f9fa; display:flex; flex-direction:column;">
+            <div class="ai-message assistant" style="background:white; color:#333; border:1px solid #e0e0e0; border-radius:18px 18px 18px 4px; padding:10px 15px; max-width:80%; align-self:flex-start;">Pronto! Consulta il tuo database e aggiungi alimenti al costruttore pasti.</div>
         </div>
-        <div class="ai-chat-input-area" style="display:flex; padding:10px; border-top:1px solid #eee; gap:5px;">
+        <div class="ai-chat-input-area" style="display:flex; padding:10px; border-top:1px solid #eee; gap:8px; background:white;">
             <textarea id="ai-chat-input" placeholder="Cosa hai mangiato?" style="flex:1; border:1px solid #ddd; border-radius:20px; padding:10px 15px; resize:none; font-family:inherit; font-size:0.95em; outline:none; height:40px;"></textarea>
-            <button id="ai-chat-send" style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:white; border:none; border-radius:50%; width:44px; height:44px; cursor:pointer; font-size:1.2em;">➤</button>
+            <button id="ai-chat-send" style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:white; border:none; border-radius:50%; width:44px; height:44px; cursor:pointer; font-size:1.2em; display:flex; align-items:center; justify-content:center;">➤</button>
         </div>
     </div>
 </div>
@@ -3716,5 +3725,6 @@
     </script>
 </body>
 </html>
+
 
 
