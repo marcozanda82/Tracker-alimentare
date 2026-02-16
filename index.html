@@ -1523,6 +1523,9 @@ function calcolaObiettiviPastoConArray(mealType, giornoCorrenteString, pastoArra
 }
 function renderMealBuilder() {
     // Usa sempre il riferimento globale per vedere gli aggiornamenti dalla Chat AI
+    if (window.pastoInCostruzione) {
+        pastoInCostruzione = window.pastoInCostruzione; 
+    }
     const pastoCorrente = window.pastoInCostruzione || pastoInCostruzione;
     
     mealBuilderSezione.dataset.visible = pastoCorrente.length > 0;
@@ -1571,6 +1574,7 @@ function renderMealBuilder() {
                         <td class="action-buttons"><button class="delete-btn" data-type="builder" data-index="${index}">&times;</button></td>`; 
     });
 }
+        window.renderMealBuilder = renderMealBuilder;
 
         function renderSuggestions() {
             const value = builderDesc.value.toLowerCase();
@@ -4021,6 +4025,7 @@ Solo JSON, senza testo.`;
 </script>
 </body>
 </html>
+
 
 
 
