@@ -3716,6 +3716,37 @@ function gestisciQuantitaEInserimento(data, qtaUtente, pasto) {
         // CASO 3: Nessuna quantità specificata e nessun storico -> Chiedi manuale
         chiediQuantitaManuale(data, pasto);
     }
+    // Nuova funzione per aggiungere allenamenti diretti
+    function addWorkoutDirectly(desc, kcal) {
+        // Controlla se le variabili globali sono accessibili
+        if (!window.datiGiornalieri || !window.salvaGiorno || !window.aggiornaUI) {
+            console.error("Errore: Variabili globali non trovate.");
+            return;
+        }
+
+        // Inizializza l'array log se non esiste
+        if (!window.datiGiornalieri.log) window.datiGiornalieri.log = [];
+
+        // Crea l'oggetto allenamento
+        const newWorkout = { 
+            type: 'workout', 
+            desc: desc.charAt(0).toUpperCase() + desc.slice(1), 
+            kcal: kcal 
+        };
+
+        // Aggiunge al log
+        window.datiGiornalieri.log.push(newWorkout);
+
+        // Aggiorna il totale calorie bruciate
+        window.datiGiornalieri.workoutCalorie = (window.datiGiornalieri.workoutCalorie || 0) + kcal;
+
+        // Salva e aggiorna l'interfaccia
+        window.salvaGiorno(window.giornoVisualizzato, window.datiGiornalieri);
+        window.aggiornaUI();
+
+        // Conferma in chat
+        addMessage(`💪 Allenamento registrato: <strong>${newWorkout.desc}</strong> (-${kcal} kcal)`, 'assistant');
+    }
 
     function mostraSelezioneMultipla(nomeOriginale, results, qtaUtente, pasto) {
         const div = document.createElement('div');
@@ -4009,42 +4040,54 @@ if (aiSendBtn) {
             addMessage(text, 'user');
             aiInput.value = '';
             
-            // Messaggio di caricamento
-            const loading = addMessage("🔍 Cerco nel diario...", "assistant");
+            const loading = addMessage("🧠 Elaboro...", "assistant");
             loading.style.fontStyle = 'italic';
             loading.style.color = '#666';
 
             try {
-                // PROMPT MODIFICATO: Ordina all'AI di mettere 0 se non ci sono grammi espliciti
-                const prompt = `Analizza la frase: "${text}".
-                Estrai gli alimenti.
-                Rispondi SOLO con: [AGGIUNGI: nome_alimento | grammi | pasto].
-                REGOLE FONDAMENTALI:
-                1. Se l'utente scrive i grammi (es. "100g", "una mela da 200g"), usa quelli.
-                2. Se l'utente NON scrive i grammi (es. "ho mangiato pane", "pomodoro"), SCRIVI 0. Non inventare stime.
-                3. Se ci sono più cibi, fai più righe.
-                4. Pasto default: quello attuale (colazione/pranzo/cena).`;
+                // PROMPT AVANZATO: Gestisce CIBO e ALLENAMENTO
+                const prompt = `Analizza: "${text}".
+                
+                CASO 1: CIBO (es. "ho mangiato mela", "pasta 100g")
+                - Rispondi: [AGGIUNGI: nome | grammi | pasto]
+                - Se mancano i grammi, scrivi 0.
+                - Pasto default: quello attuale.
+
+                CASO 2: ALLENAMENTO (es. "palestra 200kcal", "corsa", "lavoro pesante")
+                - Rispondi: [ALLENAMENTO: descrizione | kcal]
+                - Se l'utente scrive le kcal, usa quelle.
+                - Se mancano le kcal, STIMALE tu (es. 1h pesi=300, 30min corsa=250, lavoro ufficio=0).
+
+                Rispondi SOLO con i comandi tra parentesi quadre.`;
                 
                 const resp = await callGeminiAPI(prompt);
                 if (loading) loading.remove();
 
-                // Regex per leggere la risposta
-                const regex = /\[AGGIUNGI:\s*([^|\]]+?)\s*\|\s*([0-9.,]+)\s*\|\s*([^\]]+?)\]/gi;
-                let match;
                 let foundAny = false;
 
-                while ((match = regex.exec(resp)) !== null) {
+                // 1. Cerca comandi CIBO
+                const regexFood = /\[AGGIUNGI:\s*([^|\]]+?)\s*\|\s*([0-9.,]+)\s*\|\s*([^\]]+?)\]/gi;
+                let matchFood;
+                while ((matchFood = regexFood.exec(resp)) !== null) {
                     foundAny = true;
-                    const nome = match[1].trim();
-                    const qta = parseFloat(match[2].replace(',', '.')) || 0; // Se AI mette 0, qta sarà 0
-                    const pasto = match[3].trim().toLowerCase();
-                    
-                    // Chiama la funzione che ora gestisce l'intelligenza dello storico
-                    await addFoodDirectly(nome, qta, pasto);
+                    const nome = matchFood[1].trim();
+                    const qta = parseFloat(matchFood[2].replace(',', '.')) || 0;
+                    const pasto = matchFood[3].trim().toLowerCase();
+                    await gestisciQuantitaEInserimento({ desc: nome }, qta, pasto); // Usa la tua funzione smart
+                }
+
+                // 2. Cerca comandi ALLENAMENTO
+                const regexWorkout = /\[ALLENAMENTO:\s*([^|\]]+?)\s*\|\s*([0-9.,]+)\]/gi;
+                let matchWorkout;
+                while ((matchWorkout = regexWorkout.exec(resp)) !== null) {
+                    foundAny = true;
+                    const desc = matchWorkout[1].trim();
+                    const kcal = parseFloat(matchWorkout[2].replace(',', '.')) || 0;
+                    addWorkoutDirectly(desc, kcal); // Chiama la nuova funzione diretta
                 }
 
                 if (!foundAny) {
-                    addMessage("Non ho capito cosa aggiungere. Prova con 'mela 200g'.", 'assistant');
+                    addMessage(resp, 'assistant'); // Se non trova comandi, mostra la risposta testuale
                 }
 
             } catch (e) {
@@ -4067,6 +4110,7 @@ if (aiSendBtn) {
 </script>
 </body>
 </html>
+
 
 
 
