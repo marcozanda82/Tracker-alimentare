@@ -3260,259 +3260,247 @@
     border: 1px solid #ddd !important;
 }
 
-.ai-chat-widget.minimized {
-    height: 50px !important;
-}
+        /* CHAT AI STYLES */
+        .ai-chat-widget {
+            position: fixed !important;
+            bottom: 20px !important;
+            right: 20px !important;
+            width: 380px !important;
+            background: white !important;
+            border-radius: 16px !important;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3) !important;
+            z-index: 99999 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            overflow: hidden !important;
+            transition: all 0.3s ease-in-out !important;
+            border: 1px solid #ddd !important;
+        }
 
-.ai-chat-widget:not(.minimized) {
-    height: 500px !important;
-}
+        .ai-chat-widget.minimized {
+            height: 50px !important;
+        }
 
-.ai-chat-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-    color: white !important;
-    padding: 0 20px !important;
-    height: 50px !important;
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    cursor: pointer !important;
-    font-weight: bold !important;
-}
+        .ai-chat-widget.minimized .ai-chat-body {
+            display: none !important;
+        }
 
-.ai-chat-messages {
-    flex: 1 !important;
-    overflow-y: auto !important;
-    padding: 15px !important;
-    background: #f8f9fa !important;
-}
+        .ai-chat-widget:not(.minimized) {
+            height: 500px !important;
+        }
 
-.ai-chat-input-area {
-    display: flex !important;
-    padding: 10px !important;
-    border-top: 1px solid #eee !important;
-}
-/* --- FINO A QUI --- */
-.ai-chat-input-area textarea {
-    flex: 1 !important;
-    border: 1px solid #ddd !important;
-    border-radius: 20px !important;
-    padding: 10px 15px !important;
-    resize: none !important;
-    font-family: inherit !important;
-    font-size: 0.95em !important;
-    outline: none !important;
-    height: 40px !important;
-}
+        .ai-chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            color: white !important;
+            padding: 0 15px !important;
+            height: 50px !important;
+            display: flex !important;
+            align-items: center !important;
+            cursor: pointer !important;
+            font-weight: bold !important;
+            flex-shrink: 0 !important;
+        }
+
+        .ai-chat-header span:first-child {
+            flex: 1 !important;
+        }
+
+        #ai-open-settings {
+            background: none !important;
+            border: none !important;
+            color: white !important;
+            font-size: 1.2em !important;
+            cursor: pointer !important;
+            padding: 5px !important;
+            margin-right: 10px !important;
+            opacity: 0.8 !important;
+            transition: all 0.2s ease !important;
+        }
+
+        #ai-open-settings:hover {
+            opacity: 1 !important;
+            transform: rotate(30deg) !important;
+        }
+
+        #ai-toggle-icon {
+            font-size: 0.8em !important;
+            margin-left: auto !important;
+        }
+
+        .ai-chat-body {
+            display: flex !important;
+            flex-direction: column !important;
+            flex: 1 !important;
+            overflow: hidden !important;
+        }
+
+        .ai-chat-messages {
+            flex: 1 !important;
+            overflow-y: auto !important;
+            padding: 15px !important;
+            background: #f8f9fa !important;
+            display: flex !important;
+            flex-direction: column !important;
+        }
+
+        .ai-message {
+            max-width: 80% !important;
+            margin-bottom: 10px !important;
+            padding: 10px 15px !important;
+            border-radius: 18px !important;
+            word-wrap: break-word !important;
+        }
+
+        .ai-message.user {
+            background: #667eea !important;
+            color: white !important;
+            border-radius: 18px 18px 4px 18px !important;
+            align-self: flex-end !important;
+            margin-left: 20% !important;
+        }
+
+        .ai-message.assistant {
+            background: white !important;
+            color: #333 !important;
+            border: 1px solid #e0e0e0 !important;
+            border-radius: 18px 18px 18px 4px !important;
+            align-self: flex-start !important;
+            margin-right: 20% !important;
+        }
+
+        .ai-chat-input-area {
+            display: flex !important;
+            padding: 10px !important;
+            border-top: 1px solid #eee !important;
+            gap: 8px !important;
+            background: white !important;
+        }
+
+        .ai-chat-input-area textarea {
+            flex: 1 !important;
+            border: 1px solid #ddd !important;
+            border-radius: 20px !important;
+            padding: 10px 15px !important;
+            resize: none !important;
+            font-family: inherit !important;
+            font-size: 0.95em !important;
+            outline: none !important;
+            height: 40px !important;
+        }
 
         .ai-chat-input-area textarea:focus {
-            border-color: #667eea;
+            border-color: #667eea !important;
         }
 
-        .ai-chat-send-btn, .ai-chat-sleep-btn {
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            border: none;
-            cursor: pointer;
-            font-size: 1.2em;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        #ai-chat-settings {
+            background: #f0f0f0 !important;
+            border-bottom: 1px solid #ccc !important;
+            padding: 10px !important;
         }
 
-        .ai-chat-send-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+        #ai-api-key-input {
+            width: 65% !important;
+            padding: 8px !important;
+            border: 1px solid #ccc !important;
+            border-radius: 4px !important;
+            margin-right: 5px !important;
         }
 
-        .ai-chat-send-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        #ai-save-api-key {
+            padding: 8px 12px !important;
+            background: #4caf50 !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 4px !important;
+            cursor: pointer !important;
+            font-size: 0.9em !important;
         }
 
-        .ai-chat-sleep-btn {
-            background: #e3f2fd;
-            font-size: 1.4em;
+        #ai-close-settings {
+            padding: 8px 12px !important;
+            background: #607d8b !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 4px !important;
+            cursor: pointer !important;
+            font-size: 0.9em !important;
+            margin-left: 5px !important;
         }
 
-        .ai-chat-sleep-btn:hover {
-            background: #bbdefb;
-            transform: scale(1.05);
+        #ai-api-status {
+            margin: 5px 0 0 0 !important;
+            font-size: 0.85em !important;
         }
 
-        .ai-chat-actions {
-            display: flex;
-            gap: 8px;
-            padding: 0 15px 12px;
-            background: white;
+        .ai-chat-meal-buttons {
+            margin-top: 10px !important;
         }
 
-        .ai-chat-action-btn {
-            flex: 1;
-            padding: 8px 12px;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            background: #f5f5f5;
-            cursor: pointer;
-            font-size: 0.85em;
-            transition: all 0.3s;
+        .ai-chat-meal-buttons p {
+            margin-bottom: 10px !important;
+            color: #667eea !important;
+            font-weight: 600 !important;
         }
 
-        .ai-chat-action-btn:hover {
-            background: #e0e0e0;
+        .ai-chat-meal-buttons button {
+            margin: 5px !important;
+            padding: 8px 15px !important;
+            border: 1px solid #667eea !important;
+            border-radius: 20px !important;
+            background: white !important;
+            color: #667eea !important;
+            cursor: pointer !important;
+            transition: all 0.3s !important;
+            font-size: 0.9em !important;
         }
 
-        .ai-chat-food-preview {
-            background: #e8f5e9;
-            border: 1px solid #4caf50;
-            border-radius: 8px;
-            padding: 10px;
-            margin-top: 10px;
-        }
-
-        .ai-chat-food-preview h4 {
-            margin: 0 0 8px 0;
-            color: #2e7d32;
-        }
-
-        .ai-chat-settings {
-            padding: 15px;
-            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
-            border-bottom: 2px solid #4caf50;
-        }
-
-        .ai-chat-settings h4 {
-            margin: 0 0 10px 0;
-            color: #2e7d32;
-        }
-
-        .ai-chat-settings p {
-            margin: 0 0 10px 0;
-            font-size: 0.9em;
-            color: #555;
-        }
-
-        .ai-chat-settings a {
-            color: #1976d2;
-            text-decoration: none;
-        }
-
-        .ai-chat-settings a:hover {
-            text-decoration: underline;
-        }
-
-        .ai-chat-settings input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #4caf50;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            font-family: inherit;
-        }
-
-        .ai-chat-settings-buttons {
-            display: flex;
-            gap: 10px;
-        }
-
-        .ai-chat-settings-buttons button {
-            flex: 1;
-            padding: 8px 15px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-
-        .ai-chat-settings-buttons button:first-child {
-            background: #4caf50;
-            color: white;
-        }
-
-        .ai-chat-settings-buttons button:first-child:hover {
-            background: #388e3c;
-        }
-
-        .ai-chat-settings-buttons button:last-child {
-            background: #e0e0e0;
-            color: #333;
-        }
-
-        .ai-chat-settings-buttons button:last-child:hover {
-            background: #bdbdbd;
-        }
-
-        .ai-api-status {
-            margin: 10px 0 0 0;
-            font-size: 0.85em;
-            font-weight: 600;
-        }
-
-        .ai-api-status.success {
-            color: #2e7d32;
-        }
-
-        .ai-api-status.error {
-            color: #d32f2f;
+        .ai-chat-meal-buttons button:hover {
+            background: #667eea !important;
+            color: white !important;
         }
 
         @media (max-width: 480px) {
             .ai-chat-widget {
-                width: calc(100vw - 20px);
-                right: 10px;
-                bottom: 10px;
+                width: calc(100vw - 20px) !important;
+                right: 10px !important;
+                bottom: 10px !important;
             }
-        }
-
-        .ai-chat-meal-buttons {
-            margin-top: 10px;
-        }
-
-        .ai-chat-meal-buttons p {
-            margin-bottom: 10px;
-            color: #667eea;
-        }
-
-        .ai-chat-meal-buttons button {
-            margin: 5px;
-            padding: 8px 15px;
-            border: 1px solid #667eea;
-            border-radius: 20px;
-            background: white;
-            color: #667eea;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .ai-chat-meal-buttons button:hover {
-            background: #667eea;
-            color: white;
         }
     </style>
 
-    <script>
-        // CHAT AI INTEGRATA - GESTIONE
+      <script>
 // ==========================================
-// BLOCCO CHAT AI - POSIZIONE FINALE
+// BLOCCO CHAT AI - VERSIONE CORRETTA
 // ==========================================
 
 (function() {
-    // 1. Riferimenti UI Univoci
+    // 1. Riferimenti UI
     const aiWidget = document.getElementById('ai-chat-widget');
     const aiMessages = document.getElementById('ai-chat-messages');
     const aiInput = document.getElementById('ai-chat-input');
     const aiSendBtn = document.getElementById('ai-chat-send');
     const aiToggle = document.getElementById('ai-chat-toggle');
-    const aiSettingsIcon = document.querySelector('.ai-chat-header .fa-cog');
+    const aiOpenSettings = document.getElementById('ai-open-settings');
+    const aiChatSettings = document.getElementById('ai-chat-settings');
+    const aiCloseSettings = document.getElementById('ai-close-settings');
+    const aiSaveApiKey = document.getElementById('ai-save-api-key');
+    const aiApiKeyInput = document.getElementById('ai-api-key-input');
+    const aiApiStatus = document.getElementById('ai-api-status');
+    const aiToggleIcon = document.getElementById('ai-toggle-icon');
+
+    // Carica API Key esistente
+    if (aiApiKeyInput) {
+        aiApiKeyInput.value = localStorage.getItem('gemini_api_key') || '';
+    }
 
     // 2. FUNZIONI DI SERVIZIO
     function addMessage(text, role) {
         if (!aiMessages) return;
         const d = document.createElement('div');
         d.className = `ai-message ${role}`;
+        d.style.cssText = role === 'user' 
+            ? 'background:#667eea; color:white; padding:10px 15px; border-radius:18px 18px 4px 18px; margin:5px 0 5px 20%; max-width:80%; align-self:flex-end;'
+            : 'background:white; color:#333; padding:10px 15px; border-radius:18px 18px 18px 4px; margin:5px 20% 5px 0; max-width:80%; border:1px solid #e0e0e0;';
         d.innerHTML = text.replace(/\n/g, '<br>');
         aiMessages.appendChild(d);
         aiMessages.scrollTop = aiMessages.scrollHeight;
@@ -3523,6 +3511,7 @@
         if (!aiMessages) return;
         const d = document.createElement('div');
         d.className = 'ai-message assistant';
+        d.style.cssText = 'margin:5px 20% 5px 0; max-width:80%;';
         d.appendChild(el);
         aiMessages.appendChild(d);
         aiMessages.scrollTop = aiMessages.scrollHeight;
@@ -3531,7 +3520,7 @@
 
     async function callGeminiAPI(prompt) {
         const key = localStorage.getItem('gemini_api_key') || '';
-        if (!key) throw new Error("Manca API Key");
+        if (!key) throw new Error("Manca API Key. Clicca sulla ⚙️ in alto per inserirla.");
         const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${key}`;
         const response = await fetch(url, {
             method: 'POST',
@@ -3543,7 +3532,7 @@
         return data.candidates[0].content.parts[0].text;
     }
 
-    // 3. LOGICA DI INSERIMENTO CON REFRESH FORZATO
+    // 3. LOGICA DI INSERIMENTO
     function procediInserimento(data, qta, pasto) {
         if (!window.pastoInCostruzione) window.pastoInCostruzione = [];
         
@@ -3559,7 +3548,6 @@
             document.getElementById('meal-type-selector').value = pasto;
         }
 
-        // AGGIORNAMENTO ISTANTANEO (con piccolo delay per sincronizzazione browser)
         setTimeout(() => {
             if (typeof window.renderMealBuilder === 'function') {
                 window.renderMealBuilder();
@@ -3571,7 +3559,7 @@
             }
         }, 50);
         
-        addMessage(`✅ <strong>${item.desc}</strong> (${qta}g) aggiunto.`, 'assistant');
+        addMessage(`✅ <strong>${item.desc}</strong> (${qta}g) aggiunto al pasto.`, 'assistant');
     }
 
     async function addFoodDirectly(nome, qta, pasto) {
@@ -3582,10 +3570,14 @@
         if (matches.length > 1) {
             const div = document.createElement('div');
             div.className = 'ai-chat-meal-buttons';
-            div.innerHTML = `<p>Quale "<strong>${nome}</strong>"?</p>`;
+            div.style.cssText = 'margin-top:10px;';
+            div.innerHTML = `<p style="margin-bottom:10px; color:#667eea;">Quale "<strong>${nome}</strong>"?</p>`;
             matches.forEach(m => {
                 const btn = document.createElement('button');
                 btn.textContent = db[m].desc;
+                btn.style.cssText = 'margin:5px; padding:8px 15px; border:1px solid #667eea; border-radius:20px; background:white; color:#667eea; cursor:pointer; transition:all 0.3s;';
+                btn.onmouseover = () => { btn.style.background='#667eea'; btn.style.color='white'; };
+                btn.onmouseout = () => { btn.style.background='white'; btn.style.color='#667eea'; };
                 btn.onclick = () => { 
                     div.parentElement.remove(); 
                     procediInserimento(db[m], qta || db[m].lastQta || 100, pasto); 
@@ -3599,15 +3591,17 @@
         const exactKey = window.sanitizeFirebaseKey(nome.toLowerCase());
         const dbEntry = db[exactKey] || (matches.length === 1 ? db[matches[0]] : null);
         
-        // MEMORIA QUANTITÀ: Chiede conferma per lastQta se grammi mancano
         if (dbEntry && (!qta || qta <= 0)) {
             const lastQta = dbEntry.lastQta || 100;
             addMessage(`Per <strong>${dbEntry.desc}</strong> uso l'ultima quantità (<strong>${lastQta}g</strong>)?`, 'assistant');
             const div = document.createElement('div');
             div.className = 'ai-chat-meal-buttons';
+            div.style.cssText = 'margin-top:10px;';
             const bSi = document.createElement('button'); bSi.textContent = "Sì";
+            bSi.style.cssText = 'margin:5px; padding:8px 15px; border:1px solid #4caf50; border-radius:20px; background:#4caf50; color:white; cursor:pointer;';
             bSi.onclick = () => { div.parentElement.remove(); procediInserimento(dbEntry, lastQta, pasto); };
-            const bNo = document.createElement('button'); bNo.textContent = "No, cambia"; bNo.style.background="#666";
+            const bNo = document.createElement('button'); bNo.textContent = "No, cambia"; 
+            bNo.style.cssText = 'margin:5px; padding:8px 15px; border:1px solid #666; border-radius:20px; background:#666; color:white; cursor:pointer;';
             bNo.onclick = () => { div.parentElement.remove(); addMessage(`Scrivi i grammi per ${dbEntry.desc}`, "assistant"); };
             div.appendChild(bSi); div.appendChild(bNo);
             addMessageElement(div);
@@ -3621,49 +3615,106 @@
                 const raw = await callGeminiAPI(`SOLO JSON 100g "${nome}": {"prot":0,"kcal":0,"carb":0,"zuccheri":0,"fatTotal":0,"sale":0}`);
                 const clean = raw.substring(raw.indexOf('{'), raw.lastIndexOf('}') + 1);
                 procediInserimento({ desc: nome, ...JSON.parse(clean) }, qta || 100, pasto);
-            } catch (e) { addMessage(`❌ Errore dati per ${nome}`, "assistant"); }
+            } catch (e) { 
+                addMessage(`❌ ${e.message}`, "assistant"); 
+            }
         }
     }
 
     // 4. GESTIONE EVENTI
-    if (aiToggle) aiToggle.onclick = () => aiWidget.classList.toggle('minimized');
     
-    if (aiSettingsIcon) {
-        aiSettingsIcon.onclick = (e) => {
+    // Toggle minimize/maximize
+    if (aiToggle) {
+        aiToggle.onclick = (e) => {
+            // Non toggle se clicco sul bottone impostazioni
+            if (e.target === aiOpenSettings || e.target.closest('#ai-open-settings')) return;
+            
+            aiWidget.classList.toggle('minimized');
+            if (aiToggleIcon) {
+                aiToggleIcon.textContent = aiWidget.classList.contains('minimized') ? '▲' : '▼';
+            }
+            // Chiudi settings quando minimizzo
+            if (aiWidget.classList.contains('minimized') && aiChatSettings) {
+                aiChatSettings.style.display = 'none';
+            }
+        };
+    }
+    
+    // Apri/chiudi impostazioni
+    if (aiOpenSettings) {
+        aiOpenSettings.onclick = (e) => {
             e.stopPropagation();
-            const modal = document.getElementById('settings-modal');
-            if (modal) modal.style.display = 'block';
+            if (aiChatSettings) {
+                const isVisible = aiChatSettings.style.display === 'block';
+                aiChatSettings.style.display = isVisible ? 'none' : 'block';
+                if (!isVisible && aiApiKeyInput) {
+                    aiApiKeyInput.focus();
+                }
+            }
+        };
+    }
+    
+    if (aiCloseSettings) {
+        aiCloseSettings.onclick = (e) => {
+            e.stopPropagation();
+            if (aiChatSettings) aiChatSettings.style.display = 'none';
+        };
+    }
+    
+    if (aiSaveApiKey) {
+        aiSaveApiKey.onclick = (e) => {
+            e.stopPropagation();
+            const key = aiApiKeyInput ? aiApiKeyInput.value.trim() : '';
+            if (key) {
+                localStorage.setItem('gemini_api_key', key);
+                if (aiApiStatus) {
+                    aiApiStatus.textContent = '✅ Chiave salvata!';
+                    aiApiStatus.style.color = '#2e7d32';
+                }
+                setTimeout(() => {
+                    if (aiChatSettings) aiChatSettings.style.display = 'none';
+                }, 1000);
+            } else {
+                if (aiApiStatus) {
+                    aiApiStatus.textContent = '❌ Inserisci una chiave valida';
+                    aiApiStatus.style.color = '#d32f2f';
+                }
+            }
         };
     }
 
-    aiSendBtn.onclick = async () => {
-        const text = aiInput.value.trim();
-        if (!text) return;
-        addMessage(text, 'user');
-        aiInput.value = '';
-        const loading = addMessage("🤔 Elaboro...", "assistant loading");
+    if (aiSendBtn) {
+        aiSendBtn.onclick = async () => {
+            const text = aiInput.value.trim();
+            if (!text) return;
+            addMessage(text, 'user');
+            aiInput.value = '';
+            const loading = addMessage("🤔 Elaboro...", "assistant loading");
 
-        try {
-            const prompt = `Utente: "${text}". Rispondi SOLO comandi: [AGGIUNGI: nome | quantità | pasto]. Se mancano grammi, metti 0. Calcola i totali (es. 56*2 = 112). Sii sintetico.`;
-            const resp = await callGeminiAPI(prompt);
-            if (loading) loading.remove();
-            addMessage(resp, 'assistant');
+            try {
+                const prompt = `Utente: "${text}". Rispondi SOLO comandi: [AGGIUNGI: nome | quantità | pasto]. Se mancano grammi, metti 0. Calcola i totali (es. 56*2 = 112). Sii sintetico.`;
+                const resp = await callGeminiAPI(prompt);
+                if (loading) loading.remove();
+                addMessage(resp, 'assistant');
 
-            const matches = [...resp.matchAll(/\[AGGIUNGI:\s*([^|]+)\s*\|\s*([^|]+)\s*\|\s*([^\]]+)\]/gi)];
-            // Processiamo ogni alimento aspettando che l'UI si aggiorni
-            for (const m of matches) {
-                await addFoodDirectly(m[1].trim(), parseInt(m[2].replace(/\D/g, '')) || 0, m[3].trim().toLowerCase());
+                const matches = [...resp.matchAll(/\[AGGIUNGI:\s*([^|]+)\s*\|\s*([^|]+)\s*\|\s*([^\]]+)\]/gi)];
+                for (const m of matches) {
+                    await addFoodDirectly(m[1].trim(), parseInt(m[2].replace(/\D/g, '')) || 0, m[3].trim().toLowerCase());
+                }
+            } catch (e) {
+                if (loading) loading.remove();
+                addMessage(`❌ ${e.message}`, "assistant");
             }
-        } catch (e) {
-            if (loading) loading.remove();
-            addMessage("❌ Errore API o Key non valida", "assistant");
-        }
-    };
+        };
+    }
 
-    aiInput.onkeypress = (e) => { if (e.key === 'Enter') aiSendBtn.click(); };
+    if (aiInput) {
+        aiInput.onkeypress = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); aiSendBtn.click(); } };
+    }
 
 })();
     </script>
 </body>
 </html>
+
 
