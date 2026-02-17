@@ -83,6 +83,20 @@
         .cloud-sync-status { width: 100%; text-align: center; font-size: 0.9em; color: #555; margin-top: 10px; }
         .cloud-sync-status.connected { color: #2e7d32; font-weight: bold; }
         .cloud-sync-status.disconnected { color: #c62828; font-weight: bold; }
+        /* PROFILO UTENTE */
+        #user-profile-section { border-left-color: #009688; }
+        #user-profile-section h2 { margin-top: 0; }
+        .profile-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px 20px; }
+        .profile-grid .field-group { display: flex; flex-direction: column; }
+        .profile-grid .field-group label { margin-bottom: 4px; }
+        .profile-days { display: flex; flex-wrap: wrap; gap: 6px; }
+        .profile-days label { font-weight: normal; font-size: 0.9em; background:#f5f5f5; padding:4px 8px; border-radius:12px; border:1px solid #ddd; cursor:pointer; }
+        .profile-days input[type="checkbox"] { margin-right: 4px; }
+        .profile-mealtimes { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 10px; }
+        .profile-summary { margin-top: 15px; padding: 10px; background:#e3f2fd; border-radius:8px; border:1px solid #90caf9; font-size:0.9em; }
+        .profile-summary p { margin: 4px 0; }
+        .profile-actions { margin-top: 12px; display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; }
+        .profile-actions button { flex:0 0 auto; }
         #auth-section { margin-bottom: 25px; padding: 20px; background-color: #fafafa; border: 1px solid #e0e0e0; border-radius: 8px; border-left-width: 5px; border-left-color: #673ab7; }
         #auth-section h2 { margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 10px; }
         #auth-section .auth-buttons { display: flex; gap: 10px; }
@@ -501,6 +515,91 @@
             <button id="btn-sign-out">Esci</button>
             <p id="auth-status"></p>
         </div>
+        <div id="user-profile-section" class="sezione" style="display:none;">
+            <h2>Profilo Utente</h2>
+            <div class="profile-grid">
+                <div class="field-group">
+                    <label for="profile-sex">Sesso</label>
+                    <select id="profile-sex">
+                        <option value="">Seleziona...</option>
+                        <option value="male">Maschio</option>
+                        <option value="female">Femmina</option>
+                        <option value="other">Altro / Preferisco non dirlo</option>
+                    </select>
+                </div>
+                <div class="field-group">
+                    <label for="profile-age">Età</label>
+                    <input type="number" id="profile-age" min="10" max="90" step="1">
+                </div>
+                <div class="field-group">
+                    <label for="profile-height">Altezza (cm)</label>
+                    <input type="number" id="profile-height" min="120" max="230" step="1">
+                </div>
+                <div class="field-group">
+                    <label for="profile-weight">Peso (kg)</label>
+                    <input type="number" id="profile-weight" min="40" max="200" step="0.1">
+                </div>
+                <div class="field-group">
+                    <label for="profile-goal">Obiettivo</label>
+                    <select id="profile-goal">
+                        <option value="">Seleziona...</option>
+                        <option value="cut">Cut / Definizione</option>
+                        <option value="massa">Massa</option>
+                        <option value="mantenimento">Mantenimento</option>
+                    </select>
+                </div>
+                <div class="field-group">
+                    <label for="profile-activity">Livello Attività</label>
+                    <select id="profile-activity">
+                        <option value="">Seleziona...</option>
+                        <option value="sedentary">Sedentario</option>
+                        <option value="light">Leggero (1-3 allenamenti/sett.)</option>
+                        <option value="moderate">Moderato (3-5 allenamenti/sett.)</option>
+                        <option value="high">Intenso (6-7 allenamenti/sett.)</option>
+                        <option value="athlete">Atleta</option>
+                    </select>
+                </div>
+            </div>
+            <h3 style="margin-top:20px;">Giorni di Allenamento</h3>
+            <div class="profile-days">
+                <label><input type="checkbox" name="profile-training-day" value="1">Lun</label>
+                <label><input type="checkbox" name="profile-training-day" value="2">Mar</label>
+                <label><input type="checkbox" name="profile-training-day" value="3">Mer</label>
+                <label><input type="checkbox" name="profile-training-day" value="4">Gio</label>
+                <label><input type="checkbox" name="profile-training-day" value="5">Ven</label>
+                <label><input type="checkbox" name="profile-training-day" value="6">Sab</label>
+                <label><input type="checkbox" name="profile-training-day" value="0">Dom</label>
+            </div>
+            <h3 style="margin-top:20px;">Orari Pasti</h3>
+            <div class="profile-mealtimes">
+                <div class="field-group">
+                    <label for="profile-mealtime-merenda1">Merenda AM</label>
+                    <input type="time" id="profile-mealtime-merenda1">
+                </div>
+                <div class="field-group">
+                    <label for="profile-mealtime-pranzo">Pranzo</label>
+                    <input type="time" id="profile-mealtime-pranzo">
+                </div>
+                <div class="field-group">
+                    <label for="profile-mealtime-merenda2">Merenda PM</label>
+                    <input type="time" id="profile-mealtime-merenda2">
+                </div>
+                <div class="field-group">
+                    <label for="profile-mealtime-cena">Cena</label>
+                    <input type="time" id="profile-mealtime-cena">
+                </div>
+            </div>
+            <div class="profile-summary">
+                <p><strong>Fabbisogno calorico stimato:</strong> <span id="profile-target-kcal">-</span> kcal</p>
+                <p><strong>Proteine target:</strong> <span id="profile-target-prot">-</span> g</p>
+                <p><strong>Carboidrati target:</strong> <span id="profile-target-carb">-</span> g</p>
+                <p><strong>Grassi target:</strong> <span id="profile-target-fat">-</span> g</p>
+            </div>
+            <div class="profile-actions">
+                <button id="btn-reset-profile" type="button" style="background-color:#607d8b;">Reimposta</button>
+                <button id="btn-save-profile" type="button" style="background-color:#009688;">Salva Profilo</button>
+            </div>
+        </div>
         <div id="main-tracker-content">
             <h2 id="titolo-giornata"></h2>
 <div class="nav-links">
@@ -688,6 +787,23 @@
                     <input type="number" id="workout-calories" min="0">
                     <button id="btn-add-workout">Aggiungi Allenamento</button>
                 </div>
+            </div>
+            <div id="weight-section" class="sezione">
+                <h2>Peso Corporeo</h2>
+                <div class="builder-grid">
+                    <div>
+                        <label for="weight-date">Data</label>
+                        <input type="date" id="weight-date">
+                    </div>
+                    <div>
+                        <label for="weight-value">Peso (kg)</label>
+                        <input type="number" id="weight-value" min="40" max="200" step="0.1">
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button id="btn-save-weight">Salva Peso</button>
+                </div>
+                <p id="weight-latest-info" style="font-size:0.9em;color:#555;margin-top:8px;"></p>
             </div>
             <div id="food-adder" class="sezione">
                 <div class="food-adder-header">
@@ -921,6 +1037,7 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
         let auth; 
         let firebaseApp; 
         let currentUserUID = null; 
+        let userProfile = null;
 
         const PIANO_SETTIMANALE = {
             0: { tipo: '💧 Riposo (Deficit)', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
@@ -970,6 +1087,12 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
         const LOCAL_STORAGE_SYNC_KEYS = ['trackerFoodDatabase', 'trackerPesate', 'trackerMealType', 'trackerPastoInCostruzione'];
         const LOCAL_LAST_UPDATE_KEY = 'lastLocalUpdateTimestamp';
         const CLOUD_LAST_UPDATE_PATH = 'lastCloudUpdateTimestamp';
+        const USER_PROFILE_LOCAL_KEY = 'trackerUserProfile';
+        const USER_PROFILE_CLOUD_PATH = 'user_profile';
+        const AUTO_ADJUST_HISTORY_LOCAL_KEY = 'trackerAutoAdjustHistory';
+        const AUTO_ADJUST_LAST_RUN_KEY = 'trackerAutoAdjustLastRun';
+        const AUTO_ADJUST_HISTORY_CLOUD_PATH = 'auto_adjustments';
+        const ADHERENCE_SCORES_LOCAL_KEY = 'trackerAdherenceScores';
 
         // AGGIORNATO: Aggiunto "sale" al prompt e rimosso "na" (ora calcolato dal sale)
         const GEMINI_PROMPT_FORMAT = `{"prot":g,"kcal":kcal,"carb":g,"zuccheri":g,"fatSat":g,"fatTrans":g,"fatMono":g,"fatPoly":g,"omega3":g,"omega6":g,"fibreTotali":g,"fibreSolubili":g,"fibreInsolubili":g,"sale":g,"mg":mg,"k":mg,"vitc":mg,"ca":mg,"vitA":µg,"vitB12":µg,"vitD":µg,"vitE":mg,"vitK":µg,"b9":µg,"b2":mg,"b6":mg,"fe":mg,"zn":mg,"cu":mg,"p":mg,"leu":mg,"iso":mg,"val":mg,"lys":mg,"met":mg,"phe":mg,"thr":mg,"trp":mg,"his":mg}`;
@@ -984,6 +1107,7 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
         const authStatusP = document.getElementById('auth-status');
         const welcomeMessage = document.getElementById('welcome-message');
         const authFormFields = document.getElementById('auth-form-fields');
+        const userProfileSection = document.getElementById('user-profile-section');
         const mainTrackerContent = document.getElementById('main-tracker-content');
         const titoloGiornataEl = document.getElementById('titolo-giornata');
         const logBody = document.getElementById('log-body');
@@ -1032,6 +1156,31 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
         const builderLys = document.getElementById('builder-lys'), builderMet = document.getElementById('builder-met'), builderPhe = document.getElementById('builder-phe');
         const builderThr = document.getElementById('builder-thr'), builderTrp = document.getElementById('builder-trp'), builderHis = document.getElementById('builder-his');
         const dailyNotesTextarea = document.getElementById('daily-notes');
+        // Profilo utente
+        const profileSexSelect = document.getElementById('profile-sex');
+        const profileAgeInput = document.getElementById('profile-age');
+        const profileHeightInput = document.getElementById('profile-height');
+        const profileWeightInput = document.getElementById('profile-weight');
+        const profileGoalSelect = document.getElementById('profile-goal');
+        const profileActivitySelect = document.getElementById('profile-activity');
+        const profileTrainingDayCheckboxes = document.querySelectorAll('input[name="profile-training-day"]');
+        const profileMealtimeInputs = {
+            merenda1: document.getElementById('profile-mealtime-merenda1'),
+            pranzo: document.getElementById('profile-mealtime-pranzo'),
+            merenda2: document.getElementById('profile-mealtime-merenda2'),
+            cena: document.getElementById('profile-mealtime-cena')
+        };
+        const btnSaveProfile = document.getElementById('btn-save-profile');
+        const btnResetProfile = document.getElementById('btn-reset-profile');
+        const profileTargetKcalSpan = document.getElementById('profile-target-kcal');
+        const profileTargetProtSpan = document.getElementById('profile-target-prot');
+        const profileTargetCarbSpan = document.getElementById('profile-target-carb');
+        const profileTargetFatSpan = document.getElementById('profile-target-fat');
+        // Peso e aderenza
+        const weightDateInput = document.getElementById('weight-date');
+        const weightValueInput = document.getElementById('weight-value');
+        const btnSaveWeight = document.getElementById('btn-save-weight');
+        const weightLatestInfo = document.getElementById('weight-latest-info');
         const btnEditIngredients = document.getElementById('btn-edit-ingredients');
         const btnEditName = document.getElementById('btn-edit-name');
         const ingredientModal = document.getElementById('ingredient-modal');
@@ -1151,6 +1300,550 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
             if (!str) return '';
             return str.replace(/[.#$/\[\]]/g, '_');
         }
+
+        function isUserProfileComplete(profile) {
+            if (!profile) return false;
+            const required = ['sex', 'age', 'height', 'weight', 'goal', 'activityLevel'];
+            return required.every(k => profile[k] !== undefined && profile[k] !== null && profile[k] !== '');
+        }
+
+        function getActivityFactor(level) {
+            switch (level) {
+                case 'sedentary': return 1.2;
+                case 'light': return 1.375;
+                case 'moderate': return 1.55;
+                case 'high': return 1.725;
+                case 'athlete': return 1.9;
+                default: return 1.4;
+            }
+        }
+
+        function calculateBMR(profile) {
+            const weight = Number(profile.weight) || 0; // kg
+            const height = Number(profile.height) || 0; // cm
+            const age = Number(profile.age) || 0;
+            const sex = profile.sex || 'other';
+            const base = 10 * weight + 6.25 * height - 5 * age;
+            const sexOffset = sex === 'male' ? 5 : (sex === 'female' ? -161 : -78);
+            const bmr = base + sexOffset;
+            return Math.max(1000, isFinite(bmr) ? bmr : 0);
+        }
+
+        function calculateDailyKcalTarget(profile) {
+            const bmr = calculateBMR(profile);
+            const tdee = bmr * getActivityFactor(profile.activityLevel);
+            let target = tdee;
+            if (profile.goal === 'cut') {
+                target = tdee - 400;
+            } else if (profile.goal === 'massa') {
+                target = tdee + 250;
+            }
+            return Math.round(Math.max(1400, target));
+        }
+
+        function calculateMacroTargets(profile) {
+            if (profile && profile.adaptiveMacros && profile.adaptiveMacros.kcal && profile.adaptiveMacros.prot && profile.adaptiveMacros.carb && profile.adaptiveMacros.fat) {
+                const override = profile.adaptiveMacros;
+                const zuccheriOverride = override.zuccheri != null ? override.zuccheri : Math.round(override.carb * 0.25);
+                return {
+                    kcal: override.kcal,
+                    prot: override.prot,
+                    carb: override.carb,
+                    zuccheri: zuccheriOverride,
+                    fat: override.fat
+                };
+            }
+            const weight = Number(profile.weight) || 0;
+            const kcal = calculateDailyKcalTarget(profile);
+            let protPerKg = 1.8;
+            let fatPerKg = 0.9;
+            if (profile.goal === 'cut') {
+                protPerKg = 2.2;
+                fatPerKg = 0.8;
+            } else if (profile.goal === 'massa') {
+                protPerKg = 2.1;
+                fatPerKg = 1.0;
+            }
+            const prot = Math.round(Math.max(80, protPerKg * weight));
+            const fat = Math.round(Math.max(40, fatPerKg * weight));
+            const kcalFromProt = prot * 4;
+            const kcalFromFat = fat * 9;
+            const remainingKcal = Math.max(0, kcal - kcalFromProt - kcalFromFat);
+            const carb = Math.round(remainingKcal / 4);
+            const zuccheri = Math.round(carb * 0.25);
+            return {
+                kcal,
+                prot,
+                carb,
+                zuccheri,
+                fat
+            };
+        }
+
+        function getPianoDelGiornoForDate(dateObj) {
+            const giornoSettimana = dateObj.getDay();
+            if (isUserProfileComplete(userProfile)) {
+                const macros = calculateMacroTargets(userProfile);
+                const trainingDays = Array.isArray(userProfile.trainingDays) ? userProfile.trainingDays : [];
+                const isTrainingDay = trainingDays.includes(giornoSettimana);
+                const goalLabels = { cut: 'Deficit', massa: 'Massa', mantenimento: 'Mantenimento' };
+                const goalEmojis = { cut: '💧', massa: '🔥', mantenimento: '⚖️' };
+                const baseLabel = goalLabels[userProfile.goal] || 'Personalizzato';
+                const emoji = goalEmojis[userProfile.goal] || '🍽️';
+                const trainingLabel = isTrainingDay ? 'Allenamento' : 'Riposo';
+                const tipo = `${emoji} ${baseLabel} (${trainingLabel})`;
+                return {
+                    tipo,
+                    cal_base: macros.kcal,
+                    prot: macros.prot,
+                    carb: macros.carb,
+                    zuccheri: macros.zuccheri
+                };
+            }
+            return PIANO_SETTIMANALE[giornoSettimana] || PIANO_SETTIMANALE[1];
+        }
+
+        function loadUserProfileFromLocal() {
+            try {
+                const raw = localStorage.getItem(USER_PROFILE_LOCAL_KEY);
+                if (!raw) return null;
+                const parsed = JSON.parse(raw);
+                return parsed && typeof parsed === 'object' ? parsed : null;
+            } catch (e) {
+                console.error('Errore lettura profilo locale', e);
+                return null;
+            }
+        }
+
+        async function loadUserProfileFromCloud() {
+            if (!db || !currentUserUID) return null;
+            try {
+                const snapshot = await get(ref(db, `users/${currentUserUID}/${USER_PROFILE_CLOUD_PATH}`));
+                if (!snapshot.exists()) return null;
+                return snapshot.val();
+            } catch (e) {
+                console.error('Errore lettura profilo cloud', e);
+                return null;
+            }
+        }
+
+        function readProfileFromForm() {
+            const trainingDays = Array.from(profileTrainingDayCheckboxes)
+                .filter(cb => cb.checked)
+                .map(cb => parseInt(cb.value, 10))
+                .filter(v => !isNaN(v));
+            const mealTimes = {};
+            Object.keys(profileMealtimeInputs).forEach(key => {
+                const el = profileMealtimeInputs[key];
+                if (el && el.value) mealTimes[key] = el.value;
+            });
+            return {
+                sex: profileSexSelect?.value || '',
+                age: profileAgeInput?.value ? Number(profileAgeInput.value) : null,
+                height: profileHeightInput?.value ? Number(profileHeightInput.value) : null,
+                weight: profileWeightInput?.value ? Number(profileWeightInput.value) : null,
+                goal: profileGoalSelect?.value || '',
+                activityLevel: profileActivitySelect?.value || '',
+                trainingDays,
+                mealTimes
+            };
+        }
+
+        function writeProfileToForm(profile) {
+            if (!profile) return;
+            if (profileSexSelect) profileSexSelect.value = profile.sex || '';
+            if (profileAgeInput && profile.age != null) profileAgeInput.value = profile.age;
+            if (profileHeightInput && profile.height != null) profileHeightInput.value = profile.height;
+            if (profileWeightInput && profile.weight != null) profileWeightInput.value = profile.weight;
+            if (profileGoalSelect) profileGoalSelect.value = profile.goal || '';
+            if (profileActivitySelect) profileActivitySelect.value = profile.activityLevel || '';
+            const trainingDays = Array.isArray(profile.trainingDays) ? profile.trainingDays : [];
+            profileTrainingDayCheckboxes.forEach(cb => {
+                const val = parseInt(cb.value, 10);
+                cb.checked = trainingDays.includes(val);
+            });
+            if (profile.mealTimes && typeof profile.mealTimes === 'object') {
+                Object.keys(profileMealtimeInputs).forEach(key => {
+                    const el = profileMealtimeInputs[key];
+                    if (!el) return;
+                    el.value = profile.mealTimes[key] || '';
+                });
+            }
+        }
+
+        function updateProfileSummary(profile) {
+            if (!profileTargetKcalSpan || !profileTargetProtSpan || !profileTargetCarbSpan || !profileTargetFatSpan) return;
+            if (!isUserProfileComplete(profile)) {
+                profileTargetKcalSpan.textContent = '-';
+                profileTargetProtSpan.textContent = '-';
+                profileTargetCarbSpan.textContent = '-';
+                profileTargetFatSpan.textContent = '-';
+                return;
+            }
+            const macros = calculateMacroTargets(profile);
+            profileTargetKcalSpan.textContent = macros.kcal.toFixed(0);
+            profileTargetProtSpan.textContent = macros.prot.toFixed(0);
+            profileTargetCarbSpan.textContent = macros.carb.toFixed(0);
+            profileTargetFatSpan.textContent = macros.fat.toFixed(0);
+        }
+
+        function loadAutoAdjustHistoryFromLocal() {
+            try {
+                const raw = localStorage.getItem(AUTO_ADJUST_HISTORY_LOCAL_KEY);
+                if (!raw) return [];
+                const parsed = JSON.parse(raw);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (e) {
+                console.error('Errore lettura storico adattamenti', e);
+                return [];
+            }
+        }
+
+        function loadAdherenceScoresFromLocal() {
+            try {
+                const raw = localStorage.getItem(ADHERENCE_SCORES_LOCAL_KEY);
+                if (!raw) return {};
+                const parsed = JSON.parse(raw);
+                return parsed && typeof parsed === 'object' ? parsed : {};
+            } catch (e) {
+                console.error('Errore lettura aderenza', e);
+                return {};
+            }
+        }
+
+        async function saveAutoAdjustHistoryEntry(entry) {
+            const history = loadAutoAdjustHistoryFromLocal();
+            history.push(entry);
+            try {
+                localStorage.setItem(AUTO_ADJUST_HISTORY_LOCAL_KEY, JSON.stringify(history));
+            } catch (e) {
+                console.error('Errore salvataggio storico adattamenti locale', e);
+            }
+            if (db && currentUserUID) {
+                try {
+                    await set(ref(db, `users/${currentUserUID}/${AUTO_ADJUST_HISTORY_CLOUD_PATH}`), history);
+                    await set(ref(db, `users/${currentUserUID}/${CLOUD_LAST_UPDATE_PATH}`), Date.now());
+                    localStorage.setItem(LOCAL_LAST_UPDATE_KEY, Date.now());
+                } catch (e) {
+                    console.error('Errore salvataggio storico adattamenti cloud', e);
+                }
+            }
+        }
+
+        function saveOrUpdatePeso(dateString, pesoValue) {
+            if (!dateString || !pesoValue) return;
+            let stored;
+            try {
+                const raw = localStorage.getItem('trackerPesate');
+                stored = raw ? JSON.parse(raw) : [];
+            } catch (e) {
+                stored = [];
+            }
+            let arr;
+            if (Array.isArray(stored)) {
+                arr = stored;
+            } else if (stored && typeof stored === 'object') {
+                arr = Object.keys(stored).map(k => ({ data: k, peso: stored[k] }));
+            } else {
+                arr = [];
+            }
+            const existing = arr.find(e => e.data === dateString || e.date === dateString);
+            if (existing) {
+                existing.peso = pesoValue;
+                existing.date = dateString;
+                existing.data = dateString;
+            } else {
+                arr.push({ data: dateString, date: dateString, peso: pesoValue });
+            }
+            try {
+                localStorage.setItem('trackerPesate', JSON.stringify(arr));
+                localStorage.setItem(LOCAL_LAST_UPDATE_KEY, Date.now());
+            } catch (e) {
+                console.error('Errore salvataggio peso', e);
+            }
+            saveSingleItemToCloud('trackerPesate', arr);
+        }
+
+        function getPesoForDate(dateString) {
+            try {
+                const raw = localStorage.getItem('trackerPesate');
+                if (!raw) return null;
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                    const found = parsed.find(p => p.data === dateString || p.date === dateString);
+                    return found ? Number(found.peso || found.weight || found.value) || null : null;
+                }
+                if (parsed && typeof parsed === 'object') {
+                    const val = parsed[dateString];
+                    return val != null ? Number(val) || null : null;
+                }
+            } catch (e) {
+                console.error('Errore lettura peso storico', e);
+            }
+            return null;
+        }
+
+        function computeDailyTotalsForDate(dateString) {
+            const raw = localStorage.getItem(`trackerStorico_${dateString}`);
+            if (!raw) return null;
+            let dayData;
+            try {
+                dayData = JSON.parse(raw);
+            } catch (e) {
+                console.error('Errore parsing dati giorno per adattamento', e);
+                return null;
+            }
+            if (!dayData || !Array.isArray(dayData.log)) {
+                return null;
+            }
+            // migrazione cal -> kcal se necessario
+            dayData.log.forEach(entry => {
+                const items = entry.type === 'meal' ? entry.items : [entry];
+                items.forEach(item => {
+                    if (item && item.cal && !item.kcal) {
+                        item.kcal = item.cal;
+                        delete item.cal;
+                    }
+                });
+            });
+            const totals = {
+                prot: 0,
+                kcal: 0,
+                fatTotal: 0,
+                carb: 0,
+                zuccheri: 0
+            };
+            let workoutCalories = 0;
+            let workoutCount = 0;
+            (dayData.log || []).forEach(entry => {
+                if (entry.type === 'workout') {
+                    workoutCalories += entry.kcal || entry.calorie || entry.calories || 0;
+                    workoutCount += 1;
+                    return;
+                }
+                const items = entry.type === 'meal' ? entry.items : [entry];
+                items.forEach(item => {
+                    if (!item) return;
+                    totals.prot += item.prot || 0;
+                    totals.kcal += (item.kcal || item.cal) || 0;
+                    totals.fatTotal += item.fatTotal || 0;
+                    totals.carb += item.carb || 0;
+                    totals.zuccheri += item.zuccheri || 0;
+                });
+            });
+            return {
+                totals,
+                workoutCalories: workoutCalories + (dayData.workoutCalorie || 0),
+                workoutCount,
+                peso: getPesoForDate(dateString)
+            };
+        }
+
+        function computeAdherenceScore(intake, targetKcal, targetProt) {
+            if (!targetKcal || !targetProt) return 0;
+            const kcalDiffPerc = Math.abs((intake.kcal || 0) - targetKcal) / Math.max(1, targetKcal);
+            const protDiffPerc = Math.abs((intake.prot || 0) - targetProt) / Math.max(1, targetProt);
+            let score = 100;
+            score -= Math.min(60, kcalDiffPerc * 100);
+            score -= Math.min(40, protDiffPerc * 100);
+            return Math.max(0, Math.round(score));
+        }
+
+        function analyzeLast7DaysForAutoAdaptation() {
+            const today = new Date(giornoVisualizzato || getTodayString('ymd'));
+            const days = [];
+            let totalDiffKcal = 0;
+            let totalDiffProt = 0;
+            let totalWorkoutCalories = 0;
+            let totalWorkoutCount = 0;
+            let weightStart = null;
+            let weightEnd = null;
+            let validDays = 0;
+            let totalAdherence = 0;
+            for (let i = 0; i < 14; i++) {
+                const d = new Date(today);
+                d.setDate(d.getDate() - i);
+                const dateString = d.toISOString().split('T')[0];
+                const dayTotals = computeDailyTotalsForDate(dateString);
+                if (!dayTotals) continue;
+                const piano = getPianoDelGiornoForDate(d);
+                const targetKcal = piano.cal_base + (dayTotals.workoutCalories || 0);
+                const targetProt = piano.prot;
+                const diffKcal = (dayTotals.totals.kcal || 0) - targetKcal;
+                const diffProt = (dayTotals.totals.prot || 0) - targetProt;
+                const adherenceScore = computeAdherenceScore(dayTotals.totals, targetKcal, targetProt);
+                totalDiffKcal += diffKcal;
+                totalDiffProt += diffProt;
+                totalWorkoutCalories += dayTotals.workoutCalories || 0;
+                totalWorkoutCount += dayTotals.workoutCount || 0;
+                totalAdherence += adherenceScore;
+                if (dayTotals.peso != null) {
+                    if (weightEnd == null) weightEnd = dayTotals.peso;
+                    weightStart = dayTotals.peso;
+                }
+                validDays += 1;
+                days.push({
+                    date: dateString,
+                    intake: dayTotals.totals,
+                    targetKcal,
+                    targetProt,
+                    diffKcal,
+                    diffProt,
+                    workoutCalories: dayTotals.workoutCalories,
+                    peso: dayTotals.peso,
+                    adherenceScore
+                });
+            }
+            if (!validDays) return null;
+            const avgDiffKcal = totalDiffKcal / validDays;
+            const avgDiffProt = totalDiffProt / validDays;
+            const avgWorkoutCalories = totalWorkoutCalories / validDays;
+            const avgWorkoutPerDay = totalWorkoutCount / validDays;
+            const weightDelta = (weightStart != null && weightEnd != null) ? (weightEnd - weightStart) : null;
+            const avgAdherenceScore = totalAdherence / validDays;
+            let state = 'stallo';
+            if (weightDelta != null) {
+                const weightPerWeek = weightDelta / (validDays / 7);
+                if (weightPerWeek <= -0.25) {
+                    state = 'deficit_reale';
+                } else if (weightPerWeek >= 0.25) {
+                    state = 'surplus_reale';
+                }
+            } else {
+                if (avgDiffKcal <= -250) state = 'deficit_reale';
+                else if (avgDiffKcal >= 250) state = 'surplus_reale';
+            }
+            return {
+                periodStart: days.length ? days[days.length - 1].date : null,
+                periodEnd: days.length ? days[0].date : null,
+                days,
+                state,
+                metrics: {
+                    validDays,
+                    avgDiffKcal,
+                    avgDiffProt,
+                    avgWorkoutCalories,
+                    avgWorkoutPerDay,
+                    weightDelta,
+                    avgAdherenceScore
+                }
+            };
+        }
+
+        async function runWeeklyAutoAdaptationIfNeeded() {
+            if (!isUserProfileComplete(userProfile)) return;
+            const nowTs = Date.now();
+            const lastRun = parseInt(localStorage.getItem(AUTO_ADJUST_LAST_RUN_KEY) || '0', 10);
+            const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+            if (lastRun && (nowTs - lastRun) < sevenDaysMs) return;
+            const analysis = analyzeLast7DaysForAutoAdaptation();
+            if (!analysis || analysis.metrics.validDays < 7) {
+                localStorage.setItem(AUTO_ADJUST_LAST_RUN_KEY, String(nowTs));
+                return;
+            }
+            const baseProfile = { ...(userProfile || {}) };
+            delete baseProfile.adaptiveMacros;
+            const currentTargets = calculateMacroTargets(baseProfile);
+            const avgDiffKcal = analysis.metrics.avgDiffKcal;
+            const avgDiffProt = analysis.metrics.avgDiffProt;
+            let kcalDelta = 0;
+            let protDelta = 0;
+            const goal = userProfile.goal || 'mantenimento';
+            if (goal === 'cut') {
+                if (avgDiffKcal > -100) {
+                    kcalDelta = -150;
+                } else if (avgDiffKcal < -700) {
+                    kcalDelta = 150;
+                }
+            } else if (goal === 'massa') {
+                if (avgDiffKcal < 100) {
+                    kcalDelta = 150;
+                } else if (avgDiffKcal > 500) {
+                    kcalDelta = -150;
+                }
+            } else {
+                if (avgDiffKcal > 200) {
+                    kcalDelta = -150;
+                } else if (avgDiffKcal < -200) {
+                    kcalDelta = 150;
+                }
+            }
+            if (avgDiffProt < -15) {
+                protDelta = 10;
+            } else if (avgDiffProt > 25) {
+                protDelta = -10;
+            }
+            if (kcalDelta === 0 && protDelta === 0) {
+                localStorage.setItem(AUTO_ADJUST_LAST_RUN_KEY, String(nowTs));
+                return;
+            }
+            const weight = Number(userProfile.weight) || 0;
+            const minProt = Math.max(80, Math.round(weight * 1.6));
+            const maxProt = Math.round(weight * 2.6);
+            const newKcal = Math.max(1400, currentTargets.kcal + kcalDelta);
+            let newProt = currentTargets.prot + protDelta;
+            newProt = Math.max(minProt, Math.min(maxProt, newProt));
+            const fat = currentTargets.fat;
+            const kcalFromProt = newProt * 4;
+            const kcalFromFat = fat * 9;
+            const remainingKcal = Math.max(0, newKcal - kcalFromProt - kcalFromFat);
+            const carb = Math.round(remainingKcal / 4);
+            const zuccheri = Math.round(carb * 0.25);
+            const newTargets = {
+                kcal: Math.round(newKcal),
+                prot: Math.round(newProt),
+                carb,
+                zuccheri,
+                fat
+            };
+            userProfile.adaptiveMacros = newTargets;
+            await saveUserProfile(userProfile);
+            const historyEntry = {
+                id: nowTs,
+                timestamp: nowTs,
+                goal,
+                periodStart: analysis.periodStart,
+                periodEnd: analysis.periodEnd,
+                state: analysis.state,
+                metrics: analysis.metrics,
+                targetsBefore: currentTargets,
+                targetsAfter: newTargets
+            };
+            await saveAutoAdjustHistoryEntry(historyEntry);
+            const adherenceMap = loadAdherenceScoresFromLocal();
+            analysis.days.forEach(d => {
+                if (d.adherenceScore != null) adherenceMap[d.date] = d.adherenceScore;
+            });
+            try {
+                localStorage.setItem(ADHERENCE_SCORES_LOCAL_KEY, JSON.stringify(adherenceMap));
+            } catch (e) {
+                console.error('Errore salvataggio aderenza', e);
+            }
+            localStorage.setItem(AUTO_ADJUST_LAST_RUN_KEY, String(nowTs));
+        }
+
+        async function saveUserProfile(profile) {
+            userProfile = profile;
+            try {
+                localStorage.setItem(USER_PROFILE_LOCAL_KEY, JSON.stringify(profile));
+            } catch (e) {
+                console.error('Errore salvataggio profilo locale', e);
+            }
+            if (db && currentUserUID) {
+                try {
+                    await set(ref(db, `users/${currentUserUID}/${USER_PROFILE_CLOUD_PATH}`), profile);
+                    await set(ref(db, `users/${currentUserUID}/${CLOUD_LAST_UPDATE_PATH}`), Date.now());
+                    localStorage.setItem(LOCAL_LAST_UPDATE_KEY, Date.now());
+                } catch (e) {
+                    console.error('Errore salvataggio profilo cloud', e);
+                }
+            }
+            updateProfileSummary(profile);
+            if (isUserProfileComplete(profile)) {
+                aggiornaUI();
+                renderMealBuilder();
+            }
+        }
         
         async function saveSingleItemToCloud(path, data) {
             const dataRef = (db && currentUserUID) ? ref(db, `users/${currentUserUID}/tracker_data/${path}`) : null;
@@ -1237,8 +1930,7 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
 
         function calcolaObiettiviPasto(mealType, giornoCorrenteString) {
             const dataVisualizzata = new Date(giornoCorrenteString);
-            const giornoSettimana = dataVisualizzata.getDay();
-            const pianoDelGiorno = PIANO_SETTIMANALE[giornoSettimana] || PIANO_SETTIMANALE[1];
+            const pianoDelGiorno = getPianoDelGiornoForDate(dataVisualizzata);
 
             const obiettivoCalTotaleGiornaliero = pianoDelGiorno.cal_base + (datiGiornalieri.workoutCalorie || 0) + (datiGiornalieri.calorieAdjustment || 0);
             const obiettivoProtTotaleGiornaliero = pianoDelGiorno.prot;
@@ -1285,8 +1977,17 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
                     delete item.cal;
                 }
             });
+            userProfile = loadUserProfileFromLocal();
+            if (userProfileSection) {
+                userProfileSection.style.display = isUserProfileComplete(userProfile) ? 'block' : 'none';
+            }
+            if (userProfile) {
+                writeProfileToForm(userProfile);
+                updateProfileSummary(userProfile);
+            }
             renderMealBuilder();
             caricaGiorno(getTodayString());
+            runWeeklyAutoAdaptationIfNeeded();
             
             if (mealTypeSelector) { 
                 const lastMealTypeSelected = localStorage.getItem('lastMealTypeSelected_' + getTodayString());
@@ -1297,7 +1998,7 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
 
         function aggiornaUI() {
             const dataVisualizzata = new Date(giornoVisualizzato);
-            const pianoDelGiorno = PIANO_SETTIMANALE[dataVisualizzata.getDay()] || PIANO_SETTIMANALE[1];
+            const pianoDelGiorno = getPianoDelGiornoForDate(dataVisualizzata);
             
             const obiettivoCalorieTotale = pianoDelGiorno.cal_base + (datiGiornalieri.workoutCalorie || 0) + (datiGiornalieri.calorieAdjustment || 0);
             const OBIETTIVI = { 
@@ -1480,8 +2181,7 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
         }
 function calcolaObiettiviPastoConArray(mealType, giornoCorrenteString, pastoArray) {
     const dataVisualizzata = new Date(giornoCorrenteString);
-    const giornoSettimana = dataVisualizzata.getDay();
-    const pianoDelGiorno = PIANO_SETTIMANALE[giornoSettimana] || PIANO_SETTIMANALE[1];
+    const pianoDelGiorno = getPianoDelGiornoForDate(dataVisualizzata);
 
     const obiettivoCalTotaleGiornaliero = pianoDelGiorno.cal_base + (datiGiornalieri.workoutCalorie || 0) + (datiGiornalieri.calorieAdjustment || 0);
     const obiettivoProtTotaleGiornaliero = pianoDelGiorno.prot;
@@ -2788,11 +3488,29 @@ if (button.dataset.type === 'builder') {
                     authStatusP.textContent = isLoggedIn ? '' : "Non autenticato";
                     authSection.classList.toggle('logged-in', isLoggedIn);
                     mainTrackerContent.classList.toggle('authenticated', isLoggedIn);
+                    if (userProfileSection) {
+                        userProfileSection.style.display = isLoggedIn && isUserProfileComplete(userProfile) ? 'block' : (isLoggedIn ? 'block' : 'none');
+                    }
                     cloudSyncStatusSpan.textContent = `Connessione Cloud: ${isLoggedIn ? user.email : 'Disconnesso'}`;
                     cloudSyncStatusSpan.className = `cloud-sync-status ${isLoggedIn ? 'connected' : 'disconnected'}`;
                     cloudSyncSection.querySelectorAll('button').forEach(button => button.disabled = !isLoggedIn);
                     
                     if (isLoggedIn) {
+                        try {
+                            const cloudProfile = await loadUserProfileFromCloud();
+                            if (cloudProfile) {
+                                userProfile = cloudProfile;
+                                writeProfileToForm(userProfile);
+                                updateProfileSummary(userProfile);
+                                if (userProfileSection) userProfileSection.style.display = 'block';
+                                aggiornaUI();
+                                renderMealBuilder();
+                            } else if (userProfileSection) {
+                                userProfileSection.style.display = 'block';
+                            }
+                        } catch (e) {
+                            console.error('Errore caricamento profilo da cloud', e);
+                        }
                         const lastLocalUpdate = parseInt(localStorage.getItem(LOCAL_LAST_UPDATE_KEY) || 0);
                         const cloudTimestampSnapshot = await get(ref(db, `users/${currentUserUID}/${CLOUD_LAST_UPDATE_PATH}`));
                         const lastCloudUpdate = cloudTimestampSnapshot.exists() ? cloudTimestampSnapshot.val() : 0;
@@ -2849,6 +3567,47 @@ if (button.dataset.type === 'builder') {
             }
             
             btnDownloadManual.addEventListener('click', () => loadAllTrackerDataFromCloud(false));
+
+            if (btnSaveProfile) {
+                btnSaveProfile.addEventListener('click', async () => {
+                    const profile = readProfileFromForm();
+                    await saveUserProfile(profile);
+                    if (!isUserProfileComplete(profile)) {
+                        alert('Profilo salvato ma incompleto. Completa tutti i campi chiave per attivare il piano dinamico.');
+                    } else {
+                        alert('Profilo utente salvato e piano giornaliero aggiornato.');
+                    }
+                    if (userProfileSection) {
+                        userProfileSection.style.display = 'block';
+                    }
+                });
+            }
+
+            if (btnResetProfile) {
+                btnResetProfile.addEventListener('click', () => {
+                    userProfile = null;
+                    try {
+                        localStorage.removeItem(USER_PROFILE_LOCAL_KEY);
+                    } catch (e) {
+                        console.error('Errore reset profilo locale', e);
+                    }
+                    if (userProfileSection) userProfileSection.style.display = 'none';
+                    writeProfileToForm({
+                        sex: '',
+                        age: null,
+                        height: null,
+                        weight: null,
+                        goal: '',
+                        activityLevel: '',
+                        trainingDays: [],
+                        mealTimes: {}
+                    });
+                    updateProfileSummary(null);
+                    aggiornaUI();
+                    renderMealBuilder();
+                    alert('Profilo utente reimpostato. Torna al piano predefinito.');
+                });
+            }
 
             function eseguiMigrazioneStorico() {
                 const vecchioStoricoRaw = localStorage.getItem('trackerStorico');
@@ -3171,7 +3930,7 @@ if (button.dataset.type === 'builder') {
             if (btnExportAi) {
                 btnExportAi.addEventListener('click', async () => {
                     const dataRef = new Date(giornoVisualizzato);
-                    const piano = PIANO_SETTIMANALE[dataRef.getDay()] || PIANO_SETTIMANALE[1];
+                    const piano = getPianoDelGiornoForDate(dataRef);
                     const targetKcal = piano.cal_base + (datiGiornalieri.workoutCalorie || 0) + (datiGiornalieri.calorieAdjustment || 0);
                     
                     const allNutrientKeys = [
@@ -3272,6 +4031,14 @@ if (button.dataset.type === 'builder') {
         window.foodDatabase = foodDatabase;
         window.salvaFoodDatabase = salvaFoodDatabase;
         window.sanitizeFirebaseKey = sanitizeFirebaseKey;
+        window.calculateMacroTargets = calculateMacroTargets;
+        window.getPianoDelGiornoForDate = getPianoDelGiornoForDate;
+        window.loadUserProfileFromLocal = loadUserProfileFromLocal;
+        window.runWeeklyAutoAdaptationIfNeeded = runWeeklyAutoAdaptationIfNeeded;
+        window.loadAutoAdjustHistoryFromLocal = loadAutoAdjustHistoryFromLocal;
+        window.analyzeLast7DaysForAutoAdaptation = analyzeLast7DaysForAutoAdaptation;
+        window.loadAdherenceScoresFromLocal = loadAdherenceScoresFromLocal;
+        window.computeAdherenceScore = computeAdherenceScore;
 
 });
     </script>
@@ -4110,3 +4877,22 @@ if (aiSendBtn) {
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
