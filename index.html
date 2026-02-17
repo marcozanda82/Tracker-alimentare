@@ -4220,18 +4220,31 @@ Solo JSON, senza testo.`;
     // 5. GESTIONE EVENTI
 
     if (aiToggle) {
-        aiToggle.onclick = (e) => {
-            if (e.target === aiOpenSettings || e.target.closest('#ai-open-settings')) return;
-            if (e.target === aiOpenMonitor || e.target.closest('#ai-open-monitor')) return;
-            aiWidget.classList.toggle('minimized');
-            if (aiToggleIcon) aiToggleIcon.textContent = aiWidget.classList.contains('minimized') ? '▲' : '▼';
-            if (aiWidget.classList.contains('minimized') && aiChatSettings) {
-                aiChatSettings.style.display = 'none';
+        aiToggle.addEventListener('click', (e) => {
+            // Non toggle se si clicca sui bottoni delle icone
+            if (e.target.id === 'ai-open-settings' || e.target.id === 'ai-open-monitor') {
+                e.stopPropagation();
+                return;
             }
-            if (aiWidget.classList.contains('minimized') && aiChatMonitor) {
-                aiChatMonitor.style.display = 'none';
+            if (e.target.closest('#ai-open-settings') || e.target.closest('#ai-open-monitor')) {
+                e.stopPropagation();
+                return;
             }
-        };
+
+            const isMinimized = aiWidget.classList.contains('minimized');
+
+            if (isMinimized) {
+                // Espandi
+                aiWidget.classList.remove('minimized');
+                if (aiToggleIcon) aiToggleIcon.textContent = '▼';
+            } else {
+                // Minimizza
+                aiWidget.classList.add('minimized');
+                if (aiToggleIcon) aiToggleIcon.textContent = '▲';
+                if (aiChatSettings) aiChatSettings.style.display = 'none';
+                if (aiChatMonitor) aiChatMonitor.style.display = 'none';
+            }
+        });
     }
 
     if (aiOpenSettings) {
