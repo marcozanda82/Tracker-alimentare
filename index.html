@@ -3389,8 +3389,7 @@ if (button.dataset.type === 'builder') {
     </div>
 
     <style>
-        /* CHAT AI STYLES */
-/* --- COPIA DA QUI --- */
+        
 .ai-chat-widget {
     position: fixed !important;
     bottom: 20px !important;
@@ -3647,7 +3646,41 @@ if (button.dataset.type === 'builder') {
                 bottom: 10px !important;
             }
         }
-    </style>
+    
+        #ai-open-monitor {
+            background: none !important;
+            border: none !important;
+            color: white !important;
+            font-size: 1.2em !important;
+            cursor: pointer !important;
+            padding: 5px !important;
+            margin-right: 5px !important;
+            opacity: 0.8 !important;
+            transition: all 0.2s ease !important;
+        }
+
+        #ai-open-monitor:hover {
+            opacity: 1 !important;
+            transform: scale(1.1) !important;
+        }
+
+        #ai-chat-monitor {
+            background: #1a1a2e !important;
+            border-bottom: 1px solid #333 !important;
+            padding: 15px !important;
+            max-height: 350px !important;
+            overflow-y: auto !important;
+        }
+
+        #ai-close-monitor {
+            background: none !important;
+            border: none !important;
+            color: #fff !important;
+            font-size: 1.2em !important;
+            cursor: pointer !important;
+            padding: 0 !important;
+        }
+</style>
 
 <script>
 // ==========================================
@@ -3858,7 +3891,7 @@ if (button.dataset.type === 'builder') {
         const q = query.toLowerCase();
         const results = [];
 
-        const exactKey = window.sanitizeFirebaseKey ? window.sanitizeFirebaseKey(q) : q.replace(/[.#$[\]\/]/g, '_');
+        const exactKey = window.sanitizeFirebaseKey ? window.sanitizeFirebaseKey(q) : q.replace(/[.#$[\]/]/g, '_');
         if (db[exactKey]) {
             return [{ key: exactKey, data: db[exactKey], exact: true }];
         }
@@ -4027,7 +4060,7 @@ Solo JSON, senza testo.`;
                 btnConfirm.textContent = '✅ Conferma e aggiungi';
                 btnConfirm.style.cssText = 'display:inline-block; margin:5px; padding:10px 20px; border:none; background:#4caf50; color:white; border-radius:6px; cursor:pointer; font-weight:600;';
                 btnConfirm.onclick = () => {
-                    const key = window.sanitizeFirebaseKey ? window.sanitizeFirebaseKey(nome.toLowerCase()) : nome.toLowerCase().replace(/[.#$[\]\/]/g, '_');
+                    const key = window.sanitizeFirebaseKey ? window.sanitizeFirebaseKey(nome.toLowerCase()) : nome.toLowerCase().replace(/[.#$[\]/]/g, '_');
                     if (!window.foodDatabase) window.foodDatabase = {};
                     window.foodDatabase[key] = newData;
                     if (window.salvaFoodDatabase) window.salvaFoodDatabase();
@@ -4095,7 +4128,7 @@ Solo JSON, senza testo.`;
         if (!data || !data.desc) return;
 
         // Salva lastQta nel database
-        const key = window.sanitizeFirebaseKey ? window.sanitizeFirebaseKey(data.desc.toLowerCase()) : data.desc.toLowerCase().replace(/[.#$[\]\/]/g, '_');
+        const key = window.sanitizeFirebaseKey ? window.sanitizeFirebaseKey(data.desc.toLowerCase()) : data.desc.toLowerCase().replace(/[.#$[\]/]/g, '_');
         if (window.foodDatabase) {
             if (!window.foodDatabase[key]) window.foodDatabase[key] = { ...data };
             window.foodDatabase[key].lastQta = qta;
