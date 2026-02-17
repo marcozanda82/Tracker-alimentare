@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f7f9; color: #333; margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 800px; background-color: #ffffff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .container { width: 100%; max-width: 800px; background-color: #ffffff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); position: relative; }
         h1, h2, h3 { color: #0d47a1; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px; margin-top: 0; }
         h2 { font-size: 1.4em; margin-top: 30px; }
         h3 { font-size: 1.1em; color: #333; border-bottom: 1px solid #eee; margin-top: 20px; }
@@ -79,7 +79,6 @@
         #calorie-adjuster label { margin-bottom: 0; font-weight: normal; color: #333; }
         .cloud-sync-section { display: flex; gap: 10px; margin-top: 20px; padding: 15px; background-color: #e0f2f7; border: 1px solid #b2ebf2; border-radius: 8px; flex-wrap: wrap; }
         .cloud-sync-section button { flex: 1 1 auto; min-width: 150px; margin-bottom: 5px; }
-        .cloud-sync-section #btn-download-manual { background-color: #e64a19; }
         .cloud-sync-status { width: 100%; text-align: center; font-size: 0.9em; color: #555; margin-top: 10px; }
         .cloud-sync-status.connected { color: #2e7d32; font-weight: bold; }
         .cloud-sync-status.disconnected { color: #c62828; font-weight: bold; }
@@ -481,10 +480,204 @@
             background-color: #fff;
             box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
         }
+
+        /* NUOVO: STILI PER ICONA MONITORAGGIO */
+        .monitor-icon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+            z-index: 100;
+            border: 2px solid white;
+        }
+        .monitor-icon:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        .monitor-icon i {
+            color: white;
+            font-size: 1.2em;
+        }
+        .monitor-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ff5252;
+            color: white;
+            font-size: 0.65em;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 10px;
+            min-width: 18px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        /* MODAL MONITORAGGIO */
+        #monitor-modal .modal-content {
+            max-width: 500px;
+        }
+        .monitor-section {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border: 1px solid #e0e0e0;
+        }
+        .monitor-section:last-child {
+            margin-bottom: 0;
+        }
+        .monitor-section h3 {
+            margin: 0 0 15px 0;
+            color: #0d47a1;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: none;
+        }
+        .monitor-section h3 i {
+            color: #667eea;
+        }
+        .storage-bar-container {
+            margin: 15px 0;
+        }
+        .storage-bar {
+            width: 100%;
+            height: 30px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+        .storage-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4caf50 0%, #8bc34a 100%);
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 10px;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9em;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        .storage-bar-fill.warning {
+            background: linear-gradient(90deg, #ff9800 0%, #ffc107 100%);
+        }
+        .storage-bar-fill.danger {
+            background: linear-gradient(90deg, #f44336 0%, #ff5722 100%);
+        }
+        .storage-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #666;
+        }
+        .storage-stats span {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .token-stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .token-stat-box {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border: 2px solid #e3f2fd;
+            transition: all 0.3s ease;
+        }
+        .token-stat-box:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+        .token-stat-box .label {
+            font-size: 0.8em;
+            color: #666;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .token-stat-box .value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #0d47a1;
+        }
+        .token-stat-box .sub-value {
+            font-size: 0.85em;
+            color: #4caf50;
+            margin-top: 3px;
+        }
+        .token-stat-box.full-width {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .token-stat-box.full-width .label,
+        .token-stat-box.full-width .value,
+        .token-stat-box.full-width .sub-value {
+            color: white;
+        }
+        .token-stat-box.full-width .sub-value {
+            opacity: 0.9;
+        }
+        
+        .reset-info {
+            margin-top: 15px;
+            padding: 12px;
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            border-radius: 6px;
+            font-size: 0.85em;
+            color: #e65100;
+        }
+        .reset-info i {
+            margin-right: 8px;
+        }
+        
+        .api-key-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            background: #e8f5e9;
+            border-radius: 12px;
+            font-size: 0.75em;
+            color: #2e7d32;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        .api-key-indicator.paid {
+            background: #fff3e0;
+            color: #e65100;
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- NUOVO: ICONA MONITORAGGIO -->
+        <div class="monitor-icon" id="monitor-toggle" title="Monitoraggio App & API">
+            <i class="fas fa-chart-pie"></i>
+            <span class="monitor-badge" id="monitor-badge" style="display: none;">!</span>
+        </div>
+
         <h1>Tracker Nutrizionale Definitivo v6</h1>
         
         <div id="auth-section" class="sezione">
@@ -879,6 +1072,70 @@
         </div>
     </div>
     
+    <!-- NUOVO: MODAL MONITORAGGIO -->
+    <div id="monitor-modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" data-modal="monitor-modal">&times;</span>
+            <h2 style="margin-top: 0; color: #0d47a1;">
+                <i class="fas fa-chart-pie" style="margin-right: 10px;"></i>
+                Monitoraggio App
+            </h2>
+            
+            <!-- Sezione Spazio Storage -->
+            <div class="monitor-section">
+                <h3>
+                    <i class="fas fa-hdd"></i>
+                    Spazio di Archiviazione
+                </h3>
+                <div class="storage-bar-container">
+                    <div class="storage-bar">
+                        <div class="storage-bar-fill" id="storage-bar-fill" style="width: 0%">
+                            <span id="storage-percentage">0%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="storage-stats">
+                    <span>Usato: <span id="storage-used">0 MB</span></span>
+                    <span>Disponibile: <span id="storage-available">0 MB</span></span>
+                    <span>Totale: <span id="storage-total">0 MB</span></span>
+                </div>
+            </div>
+            
+            <!-- Sezione Token API -->
+            <div class="monitor-section">
+                <h3>
+                    <i class="fas fa-coins"></i>
+                    Utilizzo Token API Gemini
+                    <span class="api-key-indicator paid">
+                        <i class="fas fa-credit-card"></i> API Key 2 (Pagamento)
+                    </span>
+                </h3>
+                <div class="token-stats-grid">
+                    <div class="token-stat-box">
+                        <div class="label">Token Input</div>
+                        <div class="value" id="token-input">0</div>
+                        <div class="sub-value">~$<span id="cost-input">0.00</span></div>
+                    </div>
+                    <div class="token-stat-box">
+                        <div class="label">Token Output</div>
+                        <div class="value" id="token-output">0</div>
+                        <div class="sub-value">~$<span id="cost-output">0.00</span></div>
+                    </div>
+                    <div class="token-stat-box full-width">
+                        <div class="label">Costo Totale Stimato</div>
+                        <div class="value" id="token-total">$0.00</div>
+                        <div class="sub-value">Reset: <span id="reset-date">1° del mese</span></div>
+                    </div>
+                </div>
+                <div class="reset-info">
+                    <i class="fas fa-info-circle"></i>
+                    Il contatore si resetta automaticamente il giorno 1 di ogni mese. 
+                    I costi sono stimati su Gemini 2.0 Flash ($0.075/1M input, $0.30/1M output).
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="weekly-vitamin-modal" class="modal"><div class="modal-content"><span class="modal-close" data-modal="weekly-vitamin-modal">&times;</span><h2>Riepilogo Settimanale Vitamine Accumulabili</h2><p style="font-size: 0.9em; color: #555;">Dati calcolati sugli ultimi 7 giorni, incluso oggi.</p><div class="vitamin-weekly-summary"><h4>Vitamina A</h4><p>Totale: <span id="weekly-vit-a-total">0</span> / <span id="weekly-vit-a-goal">6300</span> µg</p><progress id="weekly-progress-vit-a" value="0" max="6300"></progress><p><i>Media giornaliera: <span id="weekly-vit-a-avg">0.0</span> µg (Obiettivo: 900 µg | <span id="weekly-vit-a-diff" class="diff-value"></span>)</i></p></div><div class="vitamin-weekly-summary"><h4>Vitamina D</h4><p>Totale: <span id="weekly-vit-d-total">0</span> / <span id="weekly-vit-d-goal">105</span> µg</p><progress id="weekly-progress-vit-d" value="0" max="105"></progress><p><i>Media giornaliera: <span id="weekly-vit-d-avg">0.0</span> µg (Obiettivo: 15 µg | <span id="weekly-vit-d-diff" class="diff-value"></span>)</i></p></div><div class="vitamin-weekly-summary"><h4>Vitamina E</h4><p>Totale: <span id="weekly-vit-e-total">0</span> / <span id="weekly-vit-e-goal">105</span> mg</p><progress id="weekly-progress-vit-e" value="0" max="105"></progress><p><i>Media giornaliera: <span id="weekly-vit-e-avg">0.0</span> mg (Obiettivo: 15 mg | <span id="weekly-vit-e-diff" class="diff-value"></span>)</i></p></div><div class="vitamin-weekly-summary"><h4>Vitamina K</h4><p>Totale: <span id="weekly-vit-k-total">0</span> / <span id="weekly-vit-k-goal">840</span> µg</p><progress id="weekly-progress-vit-k" value="0" max="840"></progress><p><i>Media giornaliera: <span id="weekly-vit-k-avg">0.0</span> µg (Obiettivo: 120 µg | <span id="weekly-vit-k-diff" class="diff-value"></span>)</i></p></div><div class="vitamin-weekly-summary"><h4>Vitamina B12</h4><p>Totale: <span id="weekly-vit-b12-total">0</span> / <span id="weekly-vit-b12-goal">16.8</span> µg</p><progress id="weekly-progress-vit-b12" value="0" max="16.8"></progress><p><i>Media giornaliera: <span id="weekly-vit-b12-avg">0.0</span> µg (Obiettivo: 2.4 µg | <span id="weekly-vit-b12-diff" class="diff-value"></span>)</i></p></div></div></div>
     <div id="weekly-fats-modal" class="modal"><div class="modal-content"><span class="modal-close" data-modal="weekly-fats-modal">&times;</span><h2>Riepilogo Settimanale Grassi</h2><p style="font-size: 0.9em; color: #555;">Dati calcolati sugli ultimi 7 giorni, incluso oggi.</p><div class="vitamin-weekly-summary"><h4>Grassi Totali</h4><p>Totale: <span id="weekly-fat-total-total">0</span> / <span id="weekly-fat-total-goal"></span> g</p><progress id="weekly-progress-fat-total" value="0"></progress><p><i>Media giornaliera: <span id="weekly-fat-total-avg">0.0</span> g (Obiettivo: <span id="daily-fat-total-goal"></span> g | <span id="weekly-fat-total-diff" class="diff-value"></span>)</i></p></div><div class="vitamin-weekly-summary"><h4>Grassi Saturi</h4><p>Totale: <span id="weekly-fat-sat-total">0</span> / <span id="weekly-fat-sat-goal"></span> g</p><progress id="weekly-progress-fat-sat" value="0"></progress><p><i>Media giornaliera: <span id="weekly-fat-sat-avg">0.0</span> g (Obiettivo: <span id="daily-fat-sat-goal"></span> g | <span id="weekly-fat-sat-diff" class="diff-value"></span>)</i></p></div><div class="vitamin-weekly-summary"><h4>Grassi Trans</h4><p>Totale: <span id="weekly-fat-trans-total">0</span> / <span id="weekly-fat-trans-goal"></span> g</p><progress id="weekly-progress-fat-trans" value="0"></progress><p><i>Media giornaliera: <span id="weekly-fat-trans-avg">0.0</span> g (Obiettivo: <span id="daily-fat-trans-goal"></span> g | <span id="weekly-fat-trans-diff" class="diff-value"></span>)</i></p></div><div class="vitamin-weekly-summary"><h4>Grassi Monoinsaturi</h4><p>Totale: <span id="weekly-fat-mono-total">0</span> / <span id="weekly-fat-mono-goal"></span> g</p><progress id="weekly-progress-fat-mono" value="0"></progress><p><i>Media giornaliera: <span id="weekly-fat-mono-avg">0.0</span> g (Obiettivo: <span id="daily-fat-mono-goal"></span> g | <span id="weekly-fat-mono-diff" class="diff-value"></span>)</i></p></div><div class="vitamin-weekly-summary"><h4>Grassi Polinsaturi</h4><p>Totale: <span id="weekly-fat-poly-total">0</span> / <span id="weekly-fat-poly-goal"></span> g</p><progress id="weekly-progress-fat-poly" value="0"></progress><p><i>Media giornaliera: <span id="weekly-fat-poly-avg">0.0</span> g (Obiettivo: <span id="daily-fat-poly-goal"></span> g | <span id="weekly-fat-poly-diff" class="diff-value"></span>)</i></p></div><div class="vitamin-weekly-summary"><h4>Omega 3</h4><p>Totale: <span id="weekly-fat-omega3-total">0</span> / <span id="weekly-fat-omega3-goal"></span> g</p><progress id="weekly-progress-fat-omega3" value="0"></progress><p><i>Media giornaliera: <span id="weekly-fat-omega3-avg">0.0</span> g (Obiettivo: <span id="daily-fat-omega3-goal"></span> g | <span id="weekly-fat-omega3-diff" class="diff-value"></span>)</i></p></div><div class="vitamin-weekly-summary"><h4>Omega 6</h4><p>Totale: <span id="weekly-fat-omega6-total">0</span> / <span id="weekly-fat-omega6-goal"></span> g</p><progress id="weekly-progress-fat-omega6" value="0"></progress><p><i>Media giornaliera: <span id="weekly-fat-omega6-avg">0.0</span> g (Obiettivo: <span id="daily-fat-omega6-goal"></span> g | <span id="weekly-fat-omega6-diff" class="diff-value"></span>)</i></p></div><p style="text-align: center; font-weight: bold; margin-top: 15px; font-size: 1.2em; border-top: 1px solid #eee; padding-top: 15px;">Rapporto O6:O3 Settimanale: <span id="weekly-omega-ratio-value">N/D</span></p></div></div>
     <div id="nutrient-detail-modal" class="modal"><div class="modal-content"><span class="modal-close" data-modal="nutrient-detail-modal">&times;</span><h2 id="nutrient-detail-modal-title"></h2><ul id="nutrient-detail-modal-list"></ul></div></div>
@@ -3273,6 +3530,12 @@ if (button.dataset.type === 'builder') {
         window.salvaFoodDatabase = salvaFoodDatabase;
         window.sanitizeFirebaseKey = sanitizeFirebaseKey;
 
+        // ==========================================
+        // NUOVO: SISTEMA DI MONITORAGGIO APP E API
+        // ==========================================
+        
+        // Inizializza il monitoraggio
+        initMonitoringSystem();
 });
     </script>
 
@@ -3840,6 +4103,7 @@ Solo JSON, senza testo.`;
             } catch (e) {
                 div.remove();
                 addMessage(`❌ Errore: ${e.message}`, 'assistant');
+              
             }
         };
         div.appendChild(btnAI);
@@ -4110,6 +4374,7 @@ if (aiSendBtn) {
 </script>
 </body>
 </html>
+
 
 
 
