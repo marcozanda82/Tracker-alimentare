@@ -482,7 +482,6 @@
             box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
         }
     </style>
-<base target="_blank">
 </head>
 <body>
     <div class="container">
@@ -3282,7 +3281,6 @@ if (button.dataset.type === 'builder') {
     <div class="ai-chat-header" id="ai-chat-toggle">
         <span>🤖 Assistente AI</span>
         <button id="ai-open-settings" title="Configura API" style="background:none; border:none; cursor:pointer; font-size:1.2em; color:white; padding:0; margin-left:10px;">⚙️</button>
-        <button id="ai-open-monitor" title="Monitor Token & Storage" style="background:none; border:none; cursor:pointer; font-size:1.2em; color:white; padding:0; margin-left:10px;">📊</button>
         <span id="ai-toggle-icon" style="margin-left:auto;">▲</span>
     </div>
     <div class="ai-chat-body" style="display: flex; flex-direction: column; height: 450px;">
@@ -3301,70 +3299,6 @@ if (button.dataset.type === 'builder') {
             </div>
             <p id="ai-api-status" style="margin:8px 0 0 0; font-size:0.8em; min-height:1.2em;"></p>
         </div>
-
-        <!-- MONITOR TOKEN E STORAGE -->
-        <div id="ai-chat-monitor" style="display:none; padding:15px; background:#1a1a2e; border-bottom:1px solid #333; color:#eee;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h3 style="margin:0; color:#00d4ff; font-size:1.1em;">📊 Monitor Risorse</h3>
-                <button id="ai-close-monitor" style="background:none; border:none; color:#fff; font-size:1.2em; cursor:pointer;">✕</button>
-            </div>
-
-            <!-- Storage Browser -->
-            <div style="background:#16213e; padding:12px; border-radius:8px; margin-bottom:15px;">
-                <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-                    <span style="font-size:1.2em;">💾</span>
-                    <span style="font-weight:600; color:#fff;">Spazio Browser</span>
-                </div>
-                <div style="background:#0f3460; height:20px; border-radius:10px; overflow:hidden; margin-bottom:8px;">
-                    <div id="storage-bar" style="background:linear-gradient(90deg, #00d4ff, #0099cc); height:100%; width:0%; transition:width 0.5s;"></div>
-                </div>
-                <div style="display:flex; justify-content:space-between; font-size:0.85em; color:#aaa;">
-                    <span id="storage-used">0 MB usati</span>
-                    <span id="storage-total">5 MB totali</span>
-                </div>
-                <div id="storage-warning" style="display:none; margin-top:8px; padding:8px; background:#ff4444; color:#fff; border-radius:6px; font-size:0.8em; text-align:center;">
-                    ⚠️ Spazio quasi esaurito!
-                </div>
-            </div>
-
-            <!-- Token API 2 -->
-            <div style="background:#16213e; padding:12px; border-radius:8px;">
-                <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-                    <span style="font-size:1.2em;">🔐</span>
-                    <span style="font-weight:600; color:#fff;">Token API 2 (Pagamento)</span>
-                </div>
-                <div style="display:flex; align-items:baseline; gap:8px; margin-bottom:10px;">
-                    <span id="token-count" style="font-size:2em; font-weight:bold; color:#00ff88;">0</span>
-                    <span style="color:#888;">token questo mese</span>
-                </div>
-                <div style="background:#0f3460; height:20px; border-radius:10px; overflow:hidden; margin-bottom:10px;">
-                    <div id="token-bar" style="background:linear-gradient(90deg, #00ff88, #00cc6a); height:100%; width:0%; transition:width 0.5s;"></div>
-                </div>
-                <div style="display:flex; justify-content:space-between; font-size:0.85em; color:#aaa; margin-bottom:10px;">
-                    <span id="token-reset">Reset: 1° del mese</span>
-                    <span id="token-limit">Limite: 1M token</span>
-                </div>
-                <div style="background:#0f3460; padding:10px; border-radius:6px; margin-bottom:10px;">
-                    <div style="display:flex; justify-content:space-between; font-size:0.9em;">
-                        <span style="color:#aaa;">Costo stimato:</span>
-                        <span id="token-cost" style="color:#ffaa00; font-weight:bold;">$0.00</span>
-                    </div>
-                    <div style="font-size:0.75em; color:#666; margin-top:4px; text-align:right;">
-                        @ $0.0015 / 1K token
-                    </div>
-                </div>
-                <div id="token-warning" style="display:none; padding:8px; background:#ff8800; color:#000; border-radius:6px; font-size:0.8em; text-align:center; font-weight:600;">
-                    ⚠️ Prossimo al limite mensile!
-                </div>
-            </div>
-
-            <div style="margin-top:15px; text-align:center;">
-                <button id="ai-reset-token-confirm" style="background:#ff4444; color:#fff; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-size:0.85em; display:none;">
-                    🗑️ Reset Manuale Token
-                </button>
-            </div>
-        </div>
-
         <div class="ai-chat-messages" id="ai-chat-messages" style="flex:1; overflow-y:auto; padding:15px; background:#f8f9fa; display:flex; flex-direction:column;">
             <div class="ai-message assistant" style="background:white; color:#333; border:1px solid #e0e0e0; border-radius:18px 18px 18px 4px; padding:10px 15px; max-width:80%; align-self:flex-start;">Pronto! Consulta il tuo database e aggiungi alimenti al costruttore pasti.</div>
         </div>
@@ -3389,7 +3323,8 @@ if (button.dataset.type === 'builder') {
     </div>
 
     <style>
-        
+        /* CHAT AI STYLES */
+/* --- COPIA DA QUI --- */
 .ai-chat-widget {
     position: fixed !important;
     bottom: 20px !important;
@@ -3468,23 +3403,6 @@ if (button.dataset.type === 'builder') {
             transform: rotate(30deg) !important;
         }
 
-        #ai-open-monitor {
-            background: none !important;
-            border: none !important;
-            color: white !important;
-            font-size: 1.2em !important;
-            cursor: pointer !important;
-            padding: 5px !important;
-            margin-right: 5px !important;
-            opacity: 0.8 !important;
-            transition: all 0.2s ease !important;
-        }
-
-        #ai-open-monitor:hover {
-            opacity: 1 !important;
-            transform: scale(1.1) !important;
-        }
-
         #ai-toggle-icon {
             font-size: 0.8em !important;
             margin-left: auto !important;
@@ -3561,14 +3479,6 @@ if (button.dataset.type === 'builder') {
             padding: 10px !important;
         }
 
-        #ai-chat-monitor {
-            background: #1a1a2e !important;
-            border-bottom: 1px solid #333 !important;
-            padding: 15px !important;
-            max-height: 350px !important;
-            overflow-y: auto !important;
-        }
-
         #ai-api-key-input {
             width: 65% !important;
             padding: 8px !important;
@@ -3596,15 +3506,6 @@ if (button.dataset.type === 'builder') {
             cursor: pointer !important;
             font-size: 0.9em !important;
             margin-left: 5px !important;
-        }
-
-        #ai-close-monitor {
-            background: none !important;
-            border: none !important;
-            color: #fff !important;
-            font-size: 1.2em !important;
-            cursor: pointer !important;
-            padding: 0 !important;
         }
 
         #ai-api-status {
@@ -3646,41 +3547,7 @@ if (button.dataset.type === 'builder') {
                 bottom: 10px !important;
             }
         }
-    
-        #ai-open-monitor {
-            background: none !important;
-            border: none !important;
-            color: white !important;
-            font-size: 1.2em !important;
-            cursor: pointer !important;
-            padding: 5px !important;
-            margin-right: 5px !important;
-            opacity: 0.8 !important;
-            transition: all 0.2s ease !important;
-        }
-
-        #ai-open-monitor:hover {
-            opacity: 1 !important;
-            transform: scale(1.1) !important;
-        }
-
-        #ai-chat-monitor {
-            background: #1a1a2e !important;
-            border-bottom: 1px solid #333 !important;
-            padding: 15px !important;
-            max-height: 350px !important;
-            overflow-y: auto !important;
-        }
-
-        #ai-close-monitor {
-            background: none !important;
-            border: none !important;
-            color: #fff !important;
-            font-size: 1.2em !important;
-            cursor: pointer !important;
-            padding: 0 !important;
-        }
-</style>
+    </style>
 
 <script>
 // ==========================================
@@ -3703,126 +3570,27 @@ if (button.dataset.type === 'builder') {
     const aiApiStatus = document.getElementById('ai-api-status');
     const aiToggleIcon = document.getElementById('ai-toggle-icon');
 
-    // NUOVI: Monitor Token e Storage
-    const aiOpenMonitor = document.getElementById('ai-open-monitor');
-    const aiChatMonitor = document.getElementById('ai-chat-monitor');
-    const aiCloseMonitor = document.getElementById('ai-close-monitor');
-    const aiResetTokenConfirm = document.getElementById('ai-reset-token-confirm');
-
     // Carica API Key esistenti
     if (aiApiKey1) aiApiKey1.value = localStorage.getItem('gemini_api_key_1') || '';
     if (aiApiKey2) aiApiKey2.value = localStorage.getItem('gemini_api_key_2') || '';
 
-    // ==========================================
-    // GESTIONE TOKEN E STORAGE
-    // ==========================================
-
-    const TOKEN_COST_PER_1K = 0.0015; // Costo Gemini Pro
-    const TOKEN_MONTHLY_LIMIT = 1000000; // 1M token limite mensile
-    const STORAGE_LIMIT_MB = 5; // Limite localStorage tipico ~5-10MB
-
-    function getCurrentMonthKey() {
-        const now = new Date();
-        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    }
-
-    function getTokenData() {
-        const currentMonth = getCurrentMonthKey();
-        const stored = localStorage.getItem('ai_token_usage');
-        if (stored) {
-            const data = JSON.parse(stored);
-            if (data.month === currentMonth) {
-                return data;
-            }
-        }
-        // Reset per nuovo mese
-        return { month: currentMonth, tokens: 0, calls: 0 };
-    }
-
-    function saveTokenData(tokensUsed) {
-        const data = getTokenData();
-        data.tokens += tokensUsed;
-        data.calls += 1;
-        localStorage.setItem('ai_token_usage', JSON.stringify(data));
-        updateMonitorDisplay();
-    }
-
-    function calculateStorage() {
-        let total = 0;
-        for (let key in localStorage) {
-            if (localStorage.hasOwnProperty(key)) {
-                total += localStorage[key].length * 2; // UTF-16 = 2 bytes per char
-            }
-        }
-        return {
-            used: total,
-            usedMB: (total / 1024 / 1024).toFixed(2),
-            percent: Math.min(100, (total / (STORAGE_LIMIT_MB * 1024 * 1024)) * 100)
-        };
-    }
-
-    function updateMonitorDisplay() {
-        const tokenData = getTokenData();
-        const storageData = calculateStorage();
-
-        // Aggiorna Storage
-        const storageBar = document.getElementById('storage-bar');
-        const storageUsed = document.getElementById('storage-used');
-        const storageWarning = document.getElementById('storage-warning');
-
-        if (storageBar) storageBar.style.width = storageData.percent + '%';
-        if (storageUsed) storageUsed.textContent = storageData.usedMB + ' MB usati';
-        if (storageWarning) storageWarning.style.display = storageData.percent > 80 ? 'block' : 'none';
-
-        // Aggiorna Token
-        const tokenCount = document.getElementById('token-count');
-        const tokenBar = document.getElementById('token-bar');
-        const tokenCost = document.getElementById('token-cost');
-        const tokenWarning = document.getElementById('token-warning');
-        const tokenReset = document.getElementById('token-reset');
-
-        if (tokenCount) tokenCount.textContent = tokenData.tokens.toLocaleString();
-        if (tokenBar) tokenBar.style.width = Math.min(100, (tokenData.tokens / TOKEN_MONTHLY_LIMIT) * 100) + '%';
-        if (tokenCost) tokenCost.textContent = '$' + ((tokenData.tokens / 1000) * TOKEN_COST_PER_1K).toFixed(2);
-        if (tokenWarning) tokenWarning.style.display = tokenData.tokens > (TOKEN_MONTHLY_LIMIT * 0.8) ? 'block' : 'none';
-        if (tokenReset) tokenReset.textContent = 'Reset: 1° ' + getMonthName(tokenData.month);
-    }
-
-    function getMonthName(monthKey) {
-        const months = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 
-                       'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
-        const monthNum = parseInt(monthKey.split('-')[1]) - 1;
-        return months[monthNum];
-    }
-
-    function estimateTokens(text) {
-        // Stima approssimativa: ~4 caratteri = 1 token per lingua latina
-        return Math.ceil(text.length / 4);
-    }
-
-    // 2. FUNZIONE CHIAMATA API CON FALLBACK E CONTEGGIO TOKEN
+    // 2. FUNZIONE CHIAMATA API CON FALLBACK
     async function callGeminiAPI(prompt) {
         const keys = [
             localStorage.getItem('gemini_api_key_1'),
             localStorage.getItem('gemini_api_key_2')
         ].filter(k => k && k.trim() !== '');
-
+        
         if (keys.length === 0) {
             throw new Error("⚠️ Nessuna API Key configurata. Clicca sulla ⚙️ per inserire almeno una chiave.");
         }
-
-        // Stima token per questa chiamata
-        const estimatedTokens = estimateTokens(prompt);
-
-        // Conteggio token per API 2 (quella a pagamento)
-        let usedApi2 = false;
-
+        
         let lastError = null;
-
+        
         for (let i = 0; i < keys.length; i++) {
             const key = keys[i];
             const keyType = i === 0 ? "Primaria" : "Secondaria";
-
+            
             try {
                 const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${key}`;
                 const response = await fetch(url, {
@@ -3833,37 +3601,26 @@ if (button.dataset.type === 'builder') {
                         generationConfig: { temperature: 0.1 }
                     })
                 });
-
+                
                 if (response.status === 429 || response.status === 401 || response.status === 403) {
                     console.log(`API Key ${keyType} non disponibile (${response.status}), provo backup...`);
                     lastError = new Error(`API ${keyType}: ${response.status === 429 ? 'Token esauriti' : 'Key non valida'}`);
                     continue;
                 }
-
+                
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
                     throw new Error(`${errorData.error?.message || 'Errore API'} (${keyType})`);
                 }
-
+                
                 const data = await response.json();
                 if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
                     console.log(`✅ Successo con API Key ${keyType}`);
-
-                    // Se ho usato la seconda API (indice 1), conteggia i token
-                    if (i === 1) {
-                        usedApi2 = true;
-                        // Stima anche la risposta
-                        const responseText = data.candidates[0].content.parts[0].text;
-                        const responseTokens = estimateTokens(responseText);
-                        const totalTokens = estimatedTokens + responseTokens;
-                        saveTokenData(totalTokens);
-                    }
-
                     return data.candidates[0].content.parts[0].text;
                 } else {
                     throw new Error(`Risposta vuota da API ${keyType}`);
                 }
-
+                
             } catch (e) {
                 if (e.message.includes('fetch') || e.message.includes('network') || e.message.includes('Failed to fetch')) {
                     console.log(`Network error con ${keyType}, provo backup...`);
@@ -3877,7 +3634,7 @@ if (button.dataset.type === 'builder') {
                 if (i < keys.length - 1) continue;
             }
         }
-
+        
         if (lastError && (lastError.message.includes('Token esauriti') || lastError.message.includes('esauriti'))) {
             throw new Error("⚠️ Entrambe le API Key sono esaurite o non valide. Inserisci nuove chiavi nelle impostazioni.");
         }
@@ -3890,12 +3647,12 @@ if (button.dataset.type === 'builder') {
         const db = window.foodDatabase || {};
         const q = query.toLowerCase();
         const results = [];
-
-        const exactKey = window.sanitizeFirebaseKey ? window.sanitizeFirebaseKey(q) : q.replace(/[.#$[\]/]/g, '_');
+        
+        const exactKey = window.sanitizeFirebaseKey ? window.sanitizeFirebaseKey(q) : q.replace(/[.#$[\]\/]/g, '_');
         if (db[exactKey]) {
             return [{ key: exactKey, data: db[exactKey], exact: true }];
         }
-
+        
         for (const key in db) {
             const item = db[key];
             if (!item || !item.desc) continue;
@@ -3904,7 +3661,7 @@ if (button.dataset.type === 'builder') {
                 results.push({ key, data: item, exact: false });
             }
         }
-
+        
         return results.sort((a, b) => {
             if (a.exact) return -1;
             if (b.exact) return 1;
@@ -3919,17 +3676,17 @@ function gestisciQuantitaEInserimento(data, qtaUtente, pasto) {
             procediInserimentoFinale(data, qtaUtente, pasto);
             return;
         }
-
+        
         // CASO 2: L'utente NON ha messo i grammi, ma c'è uno storico (lastQta)
         if (data.lastQta && data.lastQta > 0) {
             // Creiamo un elemento visivo in chat per chiedere conferma
             const div = document.createElement('div');
             div.style.cssText = 'background:#e8f5e9; border:1px solid #4caf50; padding:10px; border-radius:8px; margin:5px 0; animation: fadeIn 0.3s;';
-
+            
             div.innerHTML = `<p style="margin:0 0 10px 0; color:#2e7d32; font-weight:600;">
                 Trovato storico per <u>${data.desc}</u>.<br>
                 Usare l'ultimo valore (<strong>${data.lastQta}g</strong>)?</p>`;
-
+            
             // Bottone SÌ (Usa storico)
             const btnSi = document.createElement('button');
             btnSi.textContent = "✅ Sì, usa";
@@ -3939,7 +3696,7 @@ function gestisciQuantitaEInserimento(data, qtaUtente, pasto) {
                 addMessage(`Ok, uso ${data.lastQta}g`, 'assistant');
                 procediInserimentoFinale(data, data.lastQta, pasto);
             };
-
+            
             // Bottone NO (Inserisci manualmente)
             const btnNo = document.createElement('button');
             btnNo.textContent = "✏️ No, cambia";
@@ -3948,10 +3705,10 @@ function gestisciQuantitaEInserimento(data, qtaUtente, pasto) {
                 div.remove(); // Toglie la domanda
                 chiediQuantitaManuale(data, pasto); // Passa alla funzione di input manuale
             };
-
+            
             div.appendChild(btnSi);
             div.appendChild(btnNo);
-
+            
             addMessageElement(div); // Aggiunge il blocco alla chat
             return;
         }
@@ -3995,7 +3752,7 @@ function gestisciQuantitaEInserimento(data, qtaUtente, pasto) {
         const div = document.createElement('div');
         div.style.cssText = 'background:#e3f2fd; border:1px solid #90caf9; padding:15px; border-radius:8px; margin:10px 0; max-width:90%;';
         div.innerHTML = `<p style="margin:0 0 10px 0; font-weight:600; color:#1565c0;">Scegli quale "${nomeOriginale}":</p>`;
-
+        
         results.forEach(r => {
             const btn = document.createElement('button');
             const qtaInfo = r.data.lastQta ? ` (ultimo: ${r.data.lastQta}g)` : '';
@@ -4009,7 +3766,7 @@ function gestisciQuantitaEInserimento(data, qtaUtente, pasto) {
             };
             div.appendChild(btn);
         });
-
+        
         addMessageElement(div);
     }
 
@@ -4017,7 +3774,7 @@ function gestisciQuantitaEInserimento(data, qtaUtente, pasto) {
         const div = document.createElement('div');
         div.style.cssText = 'background:#fff3e0; border:2px solid #ff9800; padding:15px; border-radius:8px; margin:10px 0; max-width:90%;';
         div.innerHTML = `<p style="margin:0 0 15px 0; font-weight:600; color:#e65100;">"${nome}" non trovato</p>`;
-
+        
         const btnManual = document.createElement('button');
         btnManual.textContent = '✏️ Compila manualmente nel form';
         btnManual.style.cssText = 'display:block; width:100%; margin:8px 0; padding:12px; border:1px solid #4caf50; background:#e8f5e9; color:#2e7d32; border-radius:6px; cursor:pointer; font-weight:600;';
@@ -4030,7 +3787,7 @@ function gestisciQuantitaEInserimento(data, qtaUtente, pasto) {
             addMessage(`Compila i dati per <strong>${nome}</strong> nel form sopra`, 'assistant');
         };
         div.appendChild(btnManual);
-
+        
         const btnAI = document.createElement('button');
         btnAI.textContent = '🤖 Genera con AI e salva';
         btnAI.style.cssText = 'display:block; width:100%; margin:8px 0; padding:12px; border:1px solid #667eea; background:#e8eaf6; color:#3f51b5; border-radius:6px; cursor:pointer; font-weight:600;';
@@ -4038,37 +3795,37 @@ function gestisciQuantitaEInserimento(data, qtaUtente, pasto) {
             btnAI.disabled = true;
             btnManual.disabled = true;
             btnAI.textContent = '⏳ Generazione...';
-
+            
             try {
                 const prompt = `Fornisci dati nutrizionali completi per 100g di "${nome}". 
 Formato JSON: {"prot":0.0,"kcal":0,"carb":0.0,"zuccheri":0.0,"fatTotal":0.0,"fatSat":0.0,"fatMono":0.0,"fatPoly":0.0,"omega3":0.0,"omega6":0.0,"fibreTotali":0.0,"fibreSolubili":0.0,"fibreInsolubili":0.0,"sale":0.0,"na":0,"mg":0,"k":0,"vitc":0,"ca":0,"fe":0,"zn":0,"cu":0,"p":0,"vitA":0,"vitB12":0,"vitD":0,"vitE":0,"vitK":0,"b9":0,"b2":0,"b6":0,"leu":0,"iso":0,"val":0,"lys":0,"met":0,"phe":0,"thr":0,"trp":0,"his":0}
 Solo JSON, senza testo.`;
-
+                
                 const raw = await callGeminiAPI(prompt);
                 const clean = raw.substring(raw.indexOf('{'), raw.lastIndexOf('}') + 1);
                 const newData = JSON.parse(clean);
                 newData.desc = nome.charAt(0).toUpperCase() + nome.slice(1);
-
+                
                 div.innerHTML = `
                     <p style="margin:0 0 10px 0; font-weight:600; color:#2e7d32;">✅ Dati generati per ${nome}</p>
                     <div style="background:#f5f5f5; padding:10px; border-radius:4px; font-size:0.85em; margin-bottom:15px;">
                         Prot: ${newData.prot || 0}g | Kcal: ${newData.kcal || 0} | Carb: ${newData.carb || 0}g
                     </div>
                 `;
-
+                
                 const btnConfirm = document.createElement('button');
                 btnConfirm.textContent = '✅ Conferma e aggiungi';
                 btnConfirm.style.cssText = 'display:inline-block; margin:5px; padding:10px 20px; border:none; background:#4caf50; color:white; border-radius:6px; cursor:pointer; font-weight:600;';
                 btnConfirm.onclick = () => {
-                    const key = window.sanitizeFirebaseKey ? window.sanitizeFirebaseKey(nome.toLowerCase()) : nome.toLowerCase().replace(/[.#$[\]/]/g, '_');
+                    const key = window.sanitizeFirebaseKey ? window.sanitizeFirebaseKey(nome.toLowerCase()) : nome.toLowerCase().replace(/[.#$[\]\/]/g, '_');
                     if (!window.foodDatabase) window.foodDatabase = {};
                     window.foodDatabase[key] = newData;
                     if (window.salvaFoodDatabase) window.salvaFoodDatabase();
-
+                    
                     div.remove();
                     gestisciQuantitaEInserimento(newData, qtaUtente, pasto);
                 };
-
+                
                 const btnCancel = document.createElement('button');
                 btnCancel.textContent = '❌ Annulla';
                 btnCancel.style.cssText = 'display:inline-block; margin:5px; padding:10px 20px; border:none; background:#f44336; color:white; border-radius:6px; cursor:pointer;';
@@ -4076,17 +3833,17 @@ Solo JSON, senza testo.`;
                     div.remove();
                     addMessage('Annullato', 'assistant');
                 };
-
+                
                 div.appendChild(btnConfirm);
                 div.appendChild(btnCancel);
-
+                
             } catch (e) {
                 div.remove();
                 addMessage(`❌ Errore: ${e.message}`, 'assistant');
             }
         };
         div.appendChild(btnAI);
-
+        
         addMessageElement(div);
     }
 
@@ -4098,14 +3855,14 @@ Solo JSON, senza testo.`;
             <input type="number" id="temp-qta-input" placeholder="es. 150" style="width:100px; padding:8px; border:1px solid #ddd; border-radius:4px; margin-right:10px;">
             <button id="temp-qta-btn" style="padding:8px 16px; background:#1976d2; color:white; border:none; border-radius:4px; cursor:pointer;">Conferma</button>
         `;
-
+        
         addMessageElement(div);
-
+        
         setTimeout(() => {
             const input = document.getElementById('temp-qta-input');
             const btn = document.getElementById('temp-qta-btn');
             if (input) input.focus();
-
+            
             const conferma = () => {
                 const qta = parseFloat(input.value);
                 if (qta > 0) {
@@ -4115,7 +3872,7 @@ Solo JSON, senza testo.`;
                     input.style.borderColor = 'red';
                 }
             };
-
+            
             if (btn) btn.onclick = conferma;
             if (input) {
                 input.onkeypress = (e) => { if (e.key === 'Enter') conferma(); };
@@ -4126,15 +3883,15 @@ Solo JSON, senza testo.`;
 
     function procediInserimentoFinale(data, qta, pasto) {
         if (!data || !data.desc) return;
-
+        
         // Salva lastQta nel database
-        const key = window.sanitizeFirebaseKey ? window.sanitizeFirebaseKey(data.desc.toLowerCase()) : data.desc.toLowerCase().replace(/[.#$[\]/]/g, '_');
+        const key = window.sanitizeFirebaseKey ? window.sanitizeFirebaseKey(data.desc.toLowerCase()) : data.desc.toLowerCase().replace(/[.#$[\]\/]/g, '_');
         if (window.foodDatabase) {
             if (!window.foodDatabase[key]) window.foodDatabase[key] = { ...data };
             window.foodDatabase[key].lastQta = qta;
             if (window.salvaFoodDatabase) window.salvaFoodDatabase();
         }
-
+        
         // Sincronizza array
         let currentData = JSON.parse(localStorage.getItem('trackerPastoInCostruzione')) || [];
         if (!window.pastoInCostruzione) {
@@ -4142,7 +3899,7 @@ Solo JSON, senza testo.`;
         } else if (window.pastoInCostruzione.length < currentData.length) {
             window.pastoInCostruzione = currentData;
         }
-
+        
         let item = { desc: data.desc, qta: qta, selezionato: true };
         for (const k in data) { 
             if (!['desc', 'lastQta', 'ingredienti'].includes(k)) {
@@ -4150,10 +3907,10 @@ Solo JSON, senza testo.`;
                 item[k] = (val100g / 100) * qta; 
             }
         }
-
+        
         window.pastoInCostruzione.push(item);
         localStorage.setItem('trackerPastoInCostruzione', JSON.stringify(window.pastoInCostruzione));
-
+        
         if (pasto && document.getElementById('meal-type-selector')) {
             const pastoMap = {
                 'colazione': 'merenda1', 'merenda1': 'merenda1', 'merenda am': 'merenda1',
@@ -4176,15 +3933,15 @@ Solo JSON, senza testo.`;
                 setTimeout(() => builder.scrollIntoView({ behavior: 'smooth' }), 100);
             }
         }
-
+        
         addMessage(`✅ <strong>${item.desc}</strong> (${qta}g) aggiunto!`, 'assistant');
     }
 
     async function addFoodDirectly(nome, qta, pasto) {
         if (!nome) return;
-
+        
         const results = cercaInDatabase(nome);
-
+        
         if (results.length === 0) {
             mostraDialogoNuovoAlimento(nome, qta, pasto);
         } else if (results.length === 1) {
@@ -4200,8 +3957,7 @@ Solo JSON, senza testo.`;
         d.style.cssText = role === 'user' 
             ? 'background:#667eea; color:white; padding:10px 15px; border-radius:18px 18px 4px 18px; margin:5px 0 5px auto; max-width:80%; word-wrap:break-word;'
             : 'background:white; color:#333; padding:10px 15px; border-radius:18px 18px 18px 4px; margin:5px auto 5px 0; max-width:80%; border:1px solid #e0e0e0; word-wrap:break-word;';
-        d.innerHTML = text.replace(/
-/g, '<br>');
+        d.innerHTML = text.replace(/\n/g, '<br>');
         aiMessages.appendChild(d);
         aiMessages.scrollTop = aiMessages.scrollHeight;
         return d;
@@ -4218,100 +3974,42 @@ Solo JSON, senza testo.`;
     }
 
     // 5. GESTIONE EVENTI
-
+    
     if (aiToggle) {
-        aiToggle.addEventListener('click', (e) => {
-            // Non toggle se si clicca sui bottoni delle icone
-            if (e.target.id === 'ai-open-settings' || e.target.id === 'ai-open-monitor') {
-                e.stopPropagation();
-                return;
+        aiToggle.onclick = (e) => {
+            if (e.target === aiOpenSettings || e.target.closest('#ai-open-settings')) return;
+            aiWidget.classList.toggle('minimized');
+            if (aiToggleIcon) aiToggleIcon.textContent = aiWidget.classList.contains('minimized') ? '▲' : '▼';
+            if (aiWidget.classList.contains('minimized') && aiChatSettings) {
+                aiChatSettings.style.display = 'none';
             }
-            if (e.target.closest('#ai-open-settings') || e.target.closest('#ai-open-monitor')) {
-                e.stopPropagation();
-                return;
-            }
-
-            const isMinimized = aiWidget.classList.contains('minimized');
-
-            if (isMinimized) {
-                // Espandi
-                aiWidget.classList.remove('minimized');
-                if (aiToggleIcon) aiToggleIcon.textContent = '▼';
-            } else {
-                // Minimizza
-                aiWidget.classList.add('minimized');
-                if (aiToggleIcon) aiToggleIcon.textContent = '▲';
-                if (aiChatSettings) aiChatSettings.style.display = 'none';
-                if (aiChatMonitor) aiChatMonitor.style.display = 'none';
-            }
-        });
+        };
     }
-
+    
     if (aiOpenSettings) {
         aiOpenSettings.onclick = (e) => {
             e.stopPropagation();
             if (aiChatSettings) {
                 const isVisible = aiChatSettings.style.display === 'block';
                 aiChatSettings.style.display = isVisible ? 'none' : 'block';
-                if (aiChatMonitor) aiChatMonitor.style.display = 'none';
                 if (!isVisible && aiApiKey1) aiApiKey1.focus();
             }
         };
     }
-
-    // NUOVO: Gestione apertura monitor
-    if (aiOpenMonitor) {
-        aiOpenMonitor.onclick = (e) => {
-            e.stopPropagation();
-            if (aiChatMonitor) {
-                const isVisible = aiChatMonitor.style.display === 'block';
-                aiChatMonitor.style.display = isVisible ? 'none' : 'block';
-                if (aiChatSettings) aiChatSettings.style.display = 'none';
-                if (!isVisible) {
-                    updateMonitorDisplay();
-                    // Mostra bottone reset solo se ci sono token
-                    const tokenData = getTokenData();
-                    if (aiResetTokenConfirm) {
-                        aiResetTokenConfirm.style.display = tokenData.tokens > 0 ? 'inline-block' : 'none';
-                    }
-                }
-            }
-        };
-    }
-
-    // NUOVO: Chiusura monitor
-    if (aiCloseMonitor) {
-        aiCloseMonitor.onclick = (e) => {
-            e.stopPropagation();
-            if (aiChatMonitor) aiChatMonitor.style.display = 'none';
-        };
-    }
-
-    // NUOVO: Reset manuale token
-    if (aiResetTokenConfirm) {
-        aiResetTokenConfirm.onclick = (e) => {
-            e.stopPropagation();
-            if (confirm('Sei sicuro di voler resettare il conteggio token?')) {
-                localStorage.removeItem('ai_token_usage');
-                updateMonitorDisplay();
-                aiResetTokenConfirm.style.display = 'none';
-            }
-        };
-    }
-
+    
     if (aiCloseSettings) {
         aiCloseSettings.onclick = (e) => {
             e.stopPropagation();
             if (aiChatSettings) aiChatSettings.style.display = 'none';
         };
     }
-
+    
     if (aiSaveApiKey) {
         aiSaveApiKey.onclick = (e) => {
             e.stopPropagation();
             const key1 = aiApiKey1 ? aiApiKey1.value.trim() : '';
             const key2 = aiApiKey2 ? aiApiKey2.value.trim() : '';
-
+            
             if (!key1 && !key2) {
                 if (aiApiStatus) {
                     aiApiStatus.textContent = '❌ Inserisci almeno una chiave';
@@ -4319,10 +4017,10 @@ Solo JSON, senza testo.`;
                 }
                 return;
             }
-
+            
             if (key1) localStorage.setItem('gemini_api_key_1', key1);
             if (key2) localStorage.setItem('gemini_api_key_2', key2);
-
+            
             if (aiApiStatus) {
                 const msg = key1 && key2 ? '✅ Entrambe le chiavi salvate!' : 
                            key1 ? '✅ Chiave primaria salvata!' : '✅ Chiave secondaria salvata!';
@@ -4341,7 +4039,7 @@ if (aiSendBtn) {
             if (!text) return;
             addMessage(text, 'user');
             aiInput.value = '';
-
+            
             const loading = addMessage("🧠 Elaboro...", "assistant");
             loading.style.fontStyle = 'italic';
             loading.style.color = '#666';
@@ -4349,7 +4047,7 @@ if (aiSendBtn) {
             try {
                 // PROMPT AVANZATO: Gestisce CIBO e ALLENAMENTO
                 const prompt = `Analizza: "${text}".
-
+                
                 CASO 1: CIBO (es. "ho mangiato mela", "pasta 100g")
                 - Rispondi: [AGGIUNGI: nome | grammi | pasto]
                 - Se mancano i grammi, scrivi 0.
@@ -4361,7 +4059,7 @@ if (aiSendBtn) {
                 - Se mancano le kcal, STIMALE tu (es. 1h pesi=300, 30min corsa=250, lavoro ufficio=0).
 
                 Rispondi SOLO con i comandi tra parentesi quadre.`;
-
+                
                 const resp = await callGeminiAPI(prompt);
                 if (loading) loading.remove();
 
@@ -4408,29 +4106,7 @@ if (aiSendBtn) {
         };
     }
 
-    // Inizializza il monitor all'avvio
-    updateMonitorDisplay();
-
 })();
 </script>
 </body>
 </html>
-</html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
