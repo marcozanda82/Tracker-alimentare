@@ -691,6 +691,25 @@
         🧠 Dati Completi AI
     </button>
 </div>
+
+                <div id="strategia-giornata-sezione" class="sezione strategia-giornata" style="border-left-color: #7b1fa2; margin-top: 12px;">
+                    <h3 style="margin: 0 0 12px 0; font-size: 1.1em;">📋 Strategia del giorno</h3>
+                    <p style="font-size: 0.85em; color: #666; margin: 0 0 12px 0;">Obiettivi concordati per questa data. La dashboard confronta la giornata reale con la strategia (verde / arancio / rosso).</p>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div><label for="strategia-kcal">Kcal target</label><input type="number" id="strategia-kcal" min="800" max="6000" step="50" placeholder="es. 2200"></div>
+                        <div><label for="strategia-prot">Proteine target (g)</label><input type="number" id="strategia-prot" min="50" max="400" step="5" placeholder="es. 140"></div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px;">
+                        <div><label for="strategia-tipo">Tipo giornata</label><select id="strategia-tipo"><option value="">—</option><option value="rest">Rest</option><option value="workout">Workout</option></select></div>
+                        <div><label for="strategia-focus">Focus</label><select id="strategia-focus"><option value="">—</option><option value="ricomposizione">Ricomposizione</option><option value="deficit">Deficit</option><option value="massa">Massa</option></select></div>
+                    </div>
+                    <div style="margin-top: 8px;"><label for="strategia-note">Note libere</label><textarea id="strategia-note" rows="2" placeholder="Note sulla strategia..."></textarea></div>
+                    <div style="margin-top: 8px;"><label for="strategia-timing">Timing indicativo pasti</label><textarea id="strategia-timing" rows="2" placeholder="es. Colazione 8:00, Pranzo 13:00, Cena 20:00"></textarea></div>
+                    <div style="margin-top: 12px; display: flex; gap: 10px; align-items: center;">
+                        <button type="button" id="btn-salva-strategia" style="background-color: #7b1fa2;">Salva strategia</button>
+                        <span id="strategia-badge" style="display: none; font-size: 0.85em; color: #7b1fa2; font-weight: 600;">Strategia attiva</span>
+                    </div>
+                </div>
                 
                 <span id="calorie-balance-text"></span>
 
@@ -1465,6 +1484,21 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
         const workoutCaloriesInput = document.getElementById('workout-calories');
         const btnAddWorkout = document.getElementById('btn-add-workout');
         
+        const STRATEGIA_STORAGE_PREFIX = 'trackerStrategia_';
+        function getDailyStrategy(dateString) {
+            if (!dateString) return null;
+            try {
+                const raw = localStorage.getItem(STRATEGIA_STORAGE_PREFIX + dateString);
+                if (!raw) return null;
+                const o = JSON.parse(raw);
+                return o && typeof o === 'object' ? o : null;
+            } catch (e) { return null; }
+        }
+        function setDailyStrategy(dateString, strategy) {
+            if (!dateString || !strategy) return;
+            localStorage.setItem(STRATEGIA_STORAGE_PREFIX + dateString, JSON.stringify(strategy));
+        }
+
         function getTodayString(format = 'ymd') { return new Date().toISOString().split('T')[0]; }
         function getCurrentTimeString() {
             const d = new Date();
@@ -1804,11 +1838,18 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
             return { status: 'ok', countOut: out, countAttention: att };
         }
 
+        function computeStrategyState(actual, target) {
+            if (target == null || target <= 0) return 'optimal';
+            const ratio = Math.abs(actual - target) / target;
+            if (ratio <= 0.10) return 'optimal';
+            if (ratio <= 0.20) return 'attention';
+            return 'out';
+        }
+
         function updateControlModeUI(totali, OBIETTIVI, pianoDelGiorno) {
             const mode = getControlMode();
             if (controlModeSelect && controlModeSelect.value !== mode) controlModeSelect.value = mode;
-            const obiettivoCalorieTotale = pianoDelGiorno.cal_base + (datiGiornalieri.workoutCalorie || 0) + (datiGiornalieri.calorieAdjustment || 0);
-            const OBIETTIVI_MERGED = { ...OBIETTIVI, prot: pianoDelGiorno.prot, kcal: obiettivoCalorieTotale, fibreTotali: OBIETTIVI_FIBRE.fibreTotali };
+            const OBIETTIVI_MERGED = { ...OBIETTIVI, fibreTotali: OBIETTIVI_FIBRE.fibreTotali };
             const ranges = getNutrientRanges(OBIETTIVI_MERGED);
             const omegaRatio = (totali.omega3 > 0 && totali.omega6 > 0) ? totali.omega6 / totali.omega3 : null;
             let states = {
@@ -1820,6 +1861,11 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
                 na: computeParamState('na', totali.na, ranges, mode),
                 k: computeParamState('k', totali.k, ranges, mode)
             };
+            const dailyStrategy = getDailyStrategy(giornoVisualizzato);
+            if (dailyStrategy && (dailyStrategy.kcalTarget != null || dailyStrategy.protTarget != null)) {
+                if (dailyStrategy.protTarget != null) states.prot = computeStrategyState(totali.prot, Number(dailyStrategy.protTarget));
+                if (dailyStrategy.kcalTarget != null) states.kcal = computeStrategyState(totali.kcal, Number(dailyStrategy.kcalTarget));
+            }
             let global = computeGlobalBodyState(states);
             const isToday = giornoVisualizzato === getTodayString();
             const currentTimeStr = getCurrentTimeString();
@@ -1865,6 +1911,10 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
                         states = { ...states, prot: 'optimal', kcal: 'optimal' };
                     }
                 }
+            }
+            if (dailyStrategy && (dailyStrategy.kcalTarget != null || dailyStrategy.protTarget != null)) {
+                if (dailyStrategy.protTarget != null) states.prot = computeStrategyState(totali.prot, Number(dailyStrategy.protTarget));
+                if (dailyStrategy.kcalTarget != null) states.kcal = computeStrategyState(totali.kcal, Number(dailyStrategy.kcalTarget));
             }
             const outKeys = Object.keys(states).filter(k => states[k] === 'out');
             if (outKeys.length > 1) outKeys.slice(1).forEach(k => { states[k] = 'attention'; });
@@ -2870,15 +2920,30 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
             }
             
             aggiornaUI();
+            fillStrategiaForm();
             console.log(`Caricato il giorno: ${giornoVisualizzato} da localStorage`); 
+        }
+
+        function fillStrategiaForm() {
+            const s = getDailyStrategy(giornoVisualizzato);
+            const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = (v != null && v !== '') ? String(v) : ''; };
+            setVal('strategia-kcal', s && s.kcalTarget != null ? s.kcalTarget : '');
+            setVal('strategia-prot', s && s.protTarget != null ? s.protTarget : '');
+            setVal('strategia-tipo', s && s.tipoGiornata ? s.tipoGiornata : '');
+            setVal('strategia-focus', s && s.focus ? s.focus : '');
+            setVal('strategia-note', s && s.note ? s.note : '');
+            setVal('strategia-timing', s && s.timingPasti ? s.timingPasti : '');
+            const badge = document.getElementById('strategia-badge');
+            if (badge) badge.style.display = (s && (s.kcalTarget != null || s.protTarget != null)) ? 'inline' : 'none';
         }
 
         function calcolaObiettiviPasto(mealType, giornoCorrenteString) {
             const dataVisualizzata = new Date(giornoCorrenteString);
             const pianoDelGiorno = getPianoDelGiornoForDate(dataVisualizzata);
-
-            const obiettivoCalTotaleGiornaliero = pianoDelGiorno.cal_base + (datiGiornalieri.workoutCalorie || 0) + (datiGiornalieri.calorieAdjustment || 0);
-            const obiettivoProtTotaleGiornaliero = pianoDelGiorno.prot;
+            const strategy = getDailyStrategy(giornoCorrenteString);
+            let obiettivoCalTotaleGiornaliero = pianoDelGiorno.cal_base + (datiGiornalieri.workoutCalorie || 0) + (datiGiornalieri.calorieAdjustment || 0);
+            if (strategy && strategy.kcalTarget != null) obiettivoCalTotaleGiornaliero = Number(strategy.kcalTarget);
+            const obiettivoProtTotaleGiornaliero = (strategy && strategy.protTarget != null) ? Number(strategy.protTarget) : pianoDelGiorno.prot;
 
             let obiettivoPastoProt = 0, obiettivoPastoCal = 0;
             const calRatio = OBIETTIVI_MACRO_PASTO_BASE_FORZA[mealType]?.cal_perc ?? 0;
@@ -2944,14 +3009,17 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
         function aggiornaUI() {
             const dataVisualizzata = new Date(giornoVisualizzato);
             const pianoDelGiorno = getPianoDelGiornoForDate(dataVisualizzata);
-            
-            const obiettivoCalorieTotale = pianoDelGiorno.cal_base + (datiGiornalieri.workoutCalorie || 0) + (datiGiornalieri.calorieAdjustment || 0);
+            const dailyStrategy = getDailyStrategy(giornoVisualizzato);
+            let obiettivoCalorieTotale = pianoDelGiorno.cal_base + (datiGiornalieri.workoutCalorie || 0) + (datiGiornalieri.calorieAdjustment || 0);
+            if (dailyStrategy && dailyStrategy.kcalTarget != null) obiettivoCalorieTotale = Number(dailyStrategy.kcalTarget);
+            const obiettivoProt = (dailyStrategy && dailyStrategy.protTarget != null) ? Number(dailyStrategy.protTarget) : pianoDelGiorno.prot;
             const OBIETTIVI = { 
-                prot: pianoDelGiorno.prot, kcal: obiettivoCalorieTotale, carb: pianoDelGiorno.carb, zuccheri: pianoDelGiorno.zuccheri, 
+                prot: obiettivoProt, kcal: obiettivoCalorieTotale, carb: pianoDelGiorno.carb, zuccheri: pianoDelGiorno.zuccheri, 
                 ...OBIETTIVI_MICRO, ...OBIETTIVI_FAT, ...OBIETTIVI_VIT, ...OBIETTIVI_AMINO, ...OBIETTIVI_FIBRE
             };
             
-            titoloGiornataEl.textContent = `${pianoDelGiorno.tipo} - ${dataVisualizzata.toLocaleDateString('it-IT', {day: 'numeric', month: 'long', year: 'numeric'})}`;
+            const titoloBase = `${pianoDelGiorno.tipo} - ${dataVisualizzata.toLocaleDateString('it-IT', {day: 'numeric', month: 'long', year: 'numeric'})}`;
+            titoloGiornataEl.textContent = (dailyStrategy && (dailyStrategy.kcalTarget != null || dailyStrategy.protTarget != null)) ? titoloBase + ' · Strategia attiva' : titoloBase;
             
             let totali = { 
                 prot: 0, kcal: 0, carb: 0, zuccheri: 0, fatTotal: 0, fatSat: 0, fatTrans: 0, fatMono: 0, fatPoly: 0, omega3: 0, omega6: 0, 
@@ -4005,6 +4073,24 @@ Regole:
                     console.log(`Data selezionata, carico il giorno: ${dataSelezionata}`);
                     caricaGiorno(dataSelezionata);
                 }
+            });
+
+            document.getElementById('btn-salva-strategia').addEventListener('click', () => {
+                const kcalEl = document.getElementById('strategia-kcal');
+                const protEl = document.getElementById('strategia-prot');
+                const kcalTarget = kcalEl.value.trim() ? parseInt(kcalEl.value, 10) : null;
+                const protTarget = protEl.value.trim() ? parseInt(protEl.value, 10) : null;
+                const dailyStrategy = {
+                    kcalTarget: isFinite(kcalTarget) ? kcalTarget : null,
+                    protTarget: isFinite(protTarget) ? protTarget : null,
+                    tipoGiornata: (document.getElementById('strategia-tipo').value || '').trim() || undefined,
+                    focus: (document.getElementById('strategia-focus').value || '').trim() || undefined,
+                    note: (document.getElementById('strategia-note').value || '').trim() || undefined,
+                    timingPasti: (document.getElementById('strategia-timing').value || '').trim() || undefined
+                };
+                setDailyStrategy(giornoVisualizzato, dailyStrategy);
+                fillStrategiaForm();
+                aggiornaUI();
             });
 
             ['progress-proteine', 'progress-calorie', 'progress-carboidrati', 'progress-zuccheri', 
