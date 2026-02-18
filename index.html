@@ -162,6 +162,9 @@
         .app-mode-toggle .mode-btn { flex: 1; padding: 10px 16px; border: none; background: transparent; font-weight: 600; font-size: 0.95em; cursor: pointer; color: #666; transition: background 0.2s, color 0.2s; }
         .app-mode-toggle .mode-btn.active { background: #1976d2; color: white; }
         .app-mode-toggle .mode-btn:not(.active):hover { background: #e0e0e0; }
+        #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #323232; color: #fff; padding: 12px 24px; border-radius: 8px; font-size: 0.9em; z-index: 10000; box-shadow: 0 4px 12px rgba(0,0,0,0.3); display: none; }
+        #toast.show { display: block; animation: toastIn 0.2s ease; }
+        @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
         #auth-section.logged-in { padding: 10px 20px; background-color: #e3f2fd; border: 1px solid #90caf9; box-shadow: none; text-align: center; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 10px; }
         #auth-section.logged-in #auth-header, #auth-section.logged-in #auth-form-fields, #auth-section.logged-in #auth-status { display: none !important; }
         #auth-section.logged-in #welcome-message { margin: 0; font-size: 1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -715,7 +718,8 @@
                     <div style="margin-top: 8px;"><label for="strategia-timing">Timing indicativo pasti (testo)</label><textarea id="strategia-timing" rows="2" placeholder="es. Colazione 8:00, Pranzo 13:00, Cena 20:00"></textarea></div>
                     <div style="margin-top: 10px;"><label for="strategia-json-paste">Incolla JSON strategia (include <code>meals_timing</code>)</label><textarea id="strategia-json-paste" rows="6" placeholder='{"kcalTarget":2200,"protTarget":140,"meals_timing":{"breakfast":{"time":"09:30","type":"light"},"lunch":{"time":"13:30","type":"high_protein"},"snack":{"time":"17:00","type":"pre_workout"},"dinner":{"time":"20:30","type":"protein_focus"}}}' style="font-size: 0.85em; font-family: monospace;"></textarea><button type="button" id="btn-applica-json-strategia" style="background-color: #5e35b1; margin-top: 6px;">Applica JSON</button></div>
                     <div id="strategia-timing-adherence" style="display: none; margin-top: 12px; padding: 10px; background: #f3e5f5; border-radius: 8px; border-left: 4px solid #7b1fa2; font-size: 0.9em;"></div>
-                    <div style="margin-top: 12px; display: flex; gap: 10px; align-items: center;">
+                    <div style="margin-top: 12px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+                        <button type="button" id="btn-genera-prompt-chatgpt" style="background-color: #10a37f;">🧠 Genera prompt per ChatGPT</button>
                         <button type="button" id="btn-salva-strategia" style="background-color: #7b1fa2;">Salva strategia</button>
                         <span id="strategia-badge" style="display: none; font-size: 0.85em; color: #7b1fa2; font-weight: 600;">Strategia attiva</span>
                     </div>
@@ -723,23 +727,23 @@
                 
                 <span id="calorie-balance-text"></span>
 
-                <div id="guida-giornata" class="guida-giornata">
+                <div id="guida-giornata" class="guida-giornata" data-coach-only>
                     <h3 class="guida-giornata-title">Guida della giornata</h3>
                     <p id="guida-main-message" class="guida-main-message">—</p>
                     <p id="guida-explanation" class="guida-explanation"></p>
                     <ul id="guida-suggestions" class="guida-suggestions"></ul>
                 </div>
 
-                <div class="control-mode-section control-mode-section-secondary">
+                <div id="control-mode-section-wrapper" class="control-mode-section control-mode-section-secondary" data-coach-only>
                     <label for="control-mode-select">Modalità controllo:</label>
                     <select id="control-mode-select">
-                        <option value="easy">Easy</option>
-                        <option value="medium" selected>Medium</option>
-                        <option value="hard">Hard</option>
+                        <option value="easy">Base</option>
+                        <option value="medium" selected>Avanzato</option>
+                        <option value="hard">Atleta</option>
                     </select>
                     <span id="global-body-state" class="global-body-state global-body-state-compact state-ok">Stato corpo: —</span>
                 </div>
-                <div id="temporal-analysis-dashboard" class="temporal-analysis-dashboard" style="display:none;">
+                <div id="temporal-analysis-dashboard" class="temporal-analysis-dashboard" style="display:none;" data-coach-only>
                     <h4 style="margin-top:0;">Analisi temporale (fino a quest'ora)</h4>
                     <div class="temporal-grid">
                         <div class="temporal-row">
@@ -756,7 +760,7 @@
                     <p id="temporal-analysis-msg" class="temporal-msg" style="display:none; margin:8px 0 0 0; font-weight:600;"></p>
                     <p id="temporal-analysis-hint" class="temporal-hint" style="display:none; margin:8px 0 0 0; font-size:0.85em; color:#555;"></p>
                 </div>
-                <div id="indicators-dashboard" class="indicators-dashboard" style="display:none;">
+                <div id="indicators-dashboard" class="indicators-dashboard" style="display:none;" data-coach-only>
                     <h4 style="margin-top:0;">Indicatori e range</h4>
                     <table>
                         <thead><tr><th>Parametro</th><th>Valore</th><th>Range (min – ottimale – max)</th><th>Stato</th></tr></thead>
@@ -1504,6 +1508,87 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
                 btn.classList.toggle('active', btn.getAttribute('data-mode') === mode);
             });
             if (typeof aggiornaUI === 'function') aggiornaUI();
+            updateModeVisibility();
+        }
+        function updateModeVisibility() {
+            const isCoach = getAppMode() === 'coach';
+            const show = (el) => { if (el) el.style.display = ''; };
+            const hide = (el) => { if (el) el.style.display = 'none'; };
+            const strategiaEl = document.getElementById('strategia-giornata-sezione');
+            const guidaEl = document.getElementById('guida-giornata');
+            const controlModeWrap = document.getElementById('control-mode-section-wrapper');
+            const temporalEl = document.getElementById('temporal-analysis-dashboard');
+            const indicatorsEl = document.getElementById('indicators-dashboard');
+            if (isCoach) {
+                show(strategiaEl);
+                show(guidaEl);
+                show(controlModeWrap);
+                if (temporalEl && temporalEl.style.display !== 'none') show(temporalEl);
+                if (indicatorsEl && indicatorsEl.style.display !== 'none') show(indicatorsEl);
+            } else {
+                hide(strategiaEl);
+                hide(guidaEl);
+                hide(controlModeWrap);
+                hide(temporalEl);
+                hide(indicatorsEl);
+            }
+        }
+        function showToast(message) {
+            const el = document.getElementById('toast');
+            if (!el) return;
+            el.textContent = message;
+            el.classList.add('show');
+            clearTimeout(showToast._tid);
+            showToast._tid = setTimeout(() => { el.classList.remove('show'); }, 2800);
+        }
+        function generateChatGPTPrompt() {
+            const dataVisualizzata = new Date(giornoVisualizzato);
+            const pianoDelGiorno = getPianoDelGiornoForDate(dataVisualizzata);
+            const strategy = getDailyStrategy(giornoVisualizzato);
+            const kcalTarget = (strategy && strategy.kcalTarget != null) ? strategy.kcalTarget : (pianoDelGiorno.cal_base + (datiGiornalieri.workoutCalorie || 0) + (datiGiornalieri.calorieAdjustment || 0));
+            const protTarget = (strategy && strategy.protTarget != null) ? strategy.protTarget : pianoDelGiorno.prot;
+            const tipoGiornata = (strategy && strategy.tipoGiornata) ? strategy.tipoGiornata : '';
+            const focus = (strategy && strategy.focus) ? strategy.focus : '';
+            const times = getMealTimesOrdered(userProfile || {});
+            const breakfastTime = (times.find(t => t.mealId === 'merenda1') || {}).time || '10:00';
+            const lunchTime = (times.find(t => t.mealId === 'pranzo') || {}).time || '13:00';
+            const snackTime = (times.find(t => t.mealId === 'merenda2') || {}).time || '17:00';
+            const dinnerTime = (times.find(t => t.mealId === 'cena') || {}).time || '20:00';
+            const prompt = `Agisci come nutrizionista sportivo.
+
+Questi sono i miei dati di oggi:
+- Target kcal: ${kcalTarget}
+- Target proteine: ${protTarget} g
+- Tipo giornata: ${tipoGiornata || '—'}
+- Focus: ${focus || '—'}
+
+Orari pasti abituali:
+- Colazione: ${breakfastTime}
+- Pranzo: ${lunchTime}
+- Spuntino: ${snackTime}
+- Cena: ${dinnerTime}
+
+Obiettivo:
+Genera un JSON strategia giornaliera per il mio tracker nutrizionale.
+
+Formato richiesto:
+
+{
+  "kcalTarget": numero,
+  "protTarget": numero,
+  "tipoGiornata": "...",
+  "focus": "...",
+  "meals_timing": {
+    "breakfast": {"time":"HH:mm","type":"..."},
+    "lunch": {"time":"HH:mm","type":"..."},
+    "snack": {"time":"HH:mm","type":"..."},
+    "dinner": {"time":"HH:mm","type":"..."}
+  },
+  "note": "eventuali indicazioni"
+}
+
+Restituisci SOLO il JSON.`;
+            return prompt;
         }
 
         function getDailyStrategy(dateString) {
@@ -3079,6 +3164,7 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
             }
             renderMealBuilder();
             caricaGiorno(getTodayString());
+            updateModeVisibility();
             runWeeklyAutoAdaptationIfNeeded();
             
             if (mealTypeSelector) { 
@@ -3292,6 +3378,7 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
             });
             updateTemporalAnalysisDashboard(OBIETTIVI, datiGiornalieri.log, pianoDelGiorno);
             renderStrategiaTimingAdherence();
+            updateModeVisibility();
         }
 function calcolaObiettiviPastoConArray(mealType, giornoCorrenteString, pastoArray) {
     const dataVisualizzata = new Date(giornoCorrenteString);
@@ -4167,6 +4254,24 @@ Regole:
                 }
             });
 
+            document.getElementById('btn-genera-prompt-chatgpt').addEventListener('click', () => {
+                const prompt = generateChatGPTPrompt();
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(prompt).then(() => showToast('Prompt copiato. Incollalo in ChatGPT.')).catch(() => { copyPromptFallback(prompt); showToast('Prompt copiato. Incollalo in ChatGPT.'); });
+                } else {
+                    copyPromptFallback(prompt);
+                    showToast('Prompt copiato. Incollalo in ChatGPT.');
+                }
+            });
+            function copyPromptFallback(text) {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed'; ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                try { document.execCommand('copy'); } catch (e) {}
+                document.body.removeChild(ta);
+            }
             document.getElementById('btn-salva-strategia').addEventListener('click', () => {
                 const current = getDailyStrategy(giornoVisualizzato) || {};
                 const kcalEl = document.getElementById('strategia-kcal');
@@ -6111,6 +6216,7 @@ if (aiSendBtn) {
 
 })();
 </script>
+<div id="toast" aria-live="polite"></div>
 </body>
 </html>
 
