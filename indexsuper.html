@@ -1822,9 +1822,10 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
             const currentTimeStr = getCurrentTimeString();
             const beforeMainMeal = isToday && userProfile && isBeforeFirstMainMeal(currentTimeStr, userProfile);
             if (isToday) {
+                const userCoerenteToday = isUserCoerente();
                 if (beforeMainMeal || !userProfile) {
                     states = { ...states, prot: 'optimal', kcal: 'optimal' };
-                    global = { status: 'in_traiettoria' };
+                    global = { status: 'in_traiettoria', userCoerente: userCoerenteToday };
                 } else {
                     const personalProfile = getOrUpdatePersonalTemporalProfile();
                     const dailyKcal = OBIETTIVI_MERGED.kcal || 0;
@@ -1836,37 +1837,39 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
                     const pranzoCenaShare = pranzoCenaShareKcal(userProfile);
                     const heavyPranzoCena = pranzoCenaShare > 0.60;
                     const beforeCena = userProfile && currentTimeStr < getCenaTime(userProfile);
-                    const userCoerente = isUserCoerente();
+                    const userCoerente = userCoerenteToday;
                     if (before19 && !allowRealEval) {
                         states = { ...states, prot: 'optimal', kcal: 'optimal' };
-                        global = { status: 'presto_valutazione' };
+                        global = { status: 'presto_valutazione', userCoerente: userCoerente };
                     } else if (heavyPranzoCena && beforeCena && !allowRealEval) {
                         states = { ...states, prot: 'optimal', kcal: 'optimal' };
-                        global = { status: 'in_traiettoria' };
+                        global = { status: 'in_traiettoria', userCoerente: userCoerente };
                     } else if (personalProfile && allowRealEval) {
                         const mealTimesOrdered = getMealTimesOrdered(userProfile);
                         const dailyProt = OBIETTIVI_MERGED.prot || 0;
                         const ideal = getIdealCumulativeUpToTime(mealTimesOrdered, dailyProt, dailyKcal, currentTimeStr, personalProfile);
                         const actual = getActualCumulativeUpToTime(datiGiornalieri.log || [], currentTimeStr);
                         let traj = computeTrajectoryGlobalState(actual.actualProt, actual.actualKcal, ideal.idealProt, ideal.idealKcal);
-                        if (userCoerente && traj.status === 'fuori_traiettoria') traj = { status: 'recuperabile', protState: traj.protState === 'out' ? 'attention' : traj.protState, kcalState: traj.kcalState === 'out' ? 'attention' : traj.kcalState };
                         if (before19 && traj.status === 'fuori_traiettoria') { traj = { status: 'recuperabile', protState: traj.protState === 'out' ? 'attention' : traj.protState, kcalState: traj.kcalState === 'out' ? 'attention' : traj.kcalState }; }
-                        global = { status: traj.status };
+                        if (userCoerente && traj.status === 'fuori_traiettoria') traj = { status: 'recuperabile', protState: traj.protState === 'out' ? 'attention' : traj.protState, kcalState: traj.kcalState === 'out' ? 'attention' : traj.kcalState };
+                        const giornataRecuperabile = traj.status === 'recuperabile' || traj.status === 'in_traiettoria';
+                        if (giornataRecuperabile) { traj.protState = traj.protState === 'out' ? 'attention' : traj.protState; traj.kcalState = traj.kcalState === 'out' ? 'attention' : traj.kcalState; }
+                        if (userCoerente) { traj.protState = traj.protState === 'out' ? 'attention' : traj.protState; traj.kcalState = traj.kcalState === 'out' ? 'attention' : traj.kcalState; }
+                        global = { status: traj.status, userCoerente: userCoerente };
                         states = { ...states, prot: traj.protState, kcal: traj.kcalState };
                     } else {
-                        global = { status: 'in_traiettoria' };
+                        global = { status: 'in_traiettoria', userCoerente: userCoerenteToday };
                         states = { ...states, prot: 'optimal', kcal: 'optimal' };
                     }
                 }
             }
             const outKeys = Object.keys(states).filter(k => states[k] === 'out');
-            if (outKeys.length > 1) {
-                outKeys.slice(1).forEach(k => { states[k] = 'attention'; });
-            }
+            if (outKeys.length > 1) outKeys.slice(1).forEach(k => { states[k] = 'attention'; });
             const statusToClass = { in_traiettoria: 'ok', recuperabile: 'attention', fuori_traiettoria: 'critical', presto_valutazione: 'ok', ok: 'ok', attention: 'attention', critical: 'critical' };
-            const statusToLabel = { in_traiettoria: 'In traiettoria', recuperabile: 'Recuperabile', fuori_traiettoria: 'Fuori traiettoria', presto_valutazione: 'Presto per valutazione reale', ok: 'OK', attention: 'Attenzione', critical: 'Critico' };
+            const statusToLabel = { in_traiettoria: 'In traiettoria', recuperabile: 'Recuperabile', fuori_traiettoria: 'Fuori traiettoria', presto_valutazione: 'Giornata in corso — troppo presto per valutare', ok: 'OK', attention: 'Attenzione', critical: 'Critico' };
             const globalClass = statusToClass[global.status] || 'ok';
-            const globalLabel = statusToLabel[global.status] || 'In traiettoria';
+            let globalLabel = statusToLabel[global.status] || 'In traiettoria';
+            if (global && global.userCoerente && (global.status === 'in_traiettoria' || global.status === 'ok')) globalLabel = 'Routine stabile';
             if (globalBodyStateEl) {
                 globalBodyStateEl.className = 'global-body-state state-' + globalClass;
                 globalBodyStateEl.textContent = 'Stato corpo: ' + globalLabel;
@@ -1934,15 +1937,24 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
 
         function getGuideContent(globalStatus) {
             const status = globalStatus && globalStatus.status ? globalStatus.status : 'ok';
+            const userCoerente = globalStatus && globalStatus.userCoerente;
             if (status === 'presto_valutazione') {
                 return {
-                    mainMessage: 'Presto per valutazione reale',
+                    mainMessage: 'Giornata in corso — troppo presto per valutare',
                     messageClass: 'guida-ok',
-                    explanation: 'È ancora presto per una valutazione completa. La maggior parte delle calorie e proteine arriva spesso a pranzo e cena: continua a registrare i pasti.',
+                    explanation: 'La maggior parte delle calorie e proteine arriva spesso a pranzo e cena. Continua a registrare i pasti per una valutazione utile.',
                     suggestions: ['Registra pranzo e cena per avere un quadro fedele della giornata.']
                 };
             }
             if (status === 'in_traiettoria' || status === 'ok') {
+                if (userCoerente) {
+                    return {
+                        mainMessage: 'Routine stabile',
+                        messageClass: 'guida-ok',
+                        explanation: 'Stai seguendo il tuo pattern abituale. Gli ultimi giorni sono stati coerenti con i tuoi obiettivi.',
+                        suggestions: ['Continua così: mantieni ritmo e porzioni nei prossimi pasti.']
+                    };
+                }
                 return {
                     mainMessage: 'In traiettoria',
                     messageClass: 'guida-ok',
