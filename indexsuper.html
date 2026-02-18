@@ -66,6 +66,14 @@
         .global-body-state.state-ok { background: #e8f5e9; color: #1b5e20; border: 1px solid #81c784; }
         .global-body-state.state-attention { background: #fff8e1; color: #e65100; border: 1px solid #ffb74d; }
         .global-body-state.state-critical { background: #ffebee; color: #b71c1c; border: 1px solid #e57373; }
+        .temporal-analysis-dashboard { margin-top: 12px; padding: 12px; background: #e3f2fd; border: 1px solid #90caf9; border-radius: 8px; font-size: 0.9em; }
+        .temporal-grid { display: flex; flex-direction: column; gap: 6px; }
+        .temporal-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .temporal-indicator { font-weight: 700; padding: 2px 8px; border-radius: 4px; }
+        .temporal-indicator.temporal-in-linea { background: #e8f5e9; color: #1b5e20; }
+        .temporal-indicator.temporal-in-ritardo { background: #ffebee; color: #b71c1c; }
+        .temporal-indicator.temporal-in-anticipo { background: #e8eaf6; color: #283593; }
+        .temporal-msg { color: #b71c1c; }
         .indicators-dashboard { margin-top: 12px; padding: 12px; background: #fafafa; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.9em; }
         .indicators-dashboard table { width: 100%; margin: 0; }
         .indicators-dashboard td, .indicators-dashboard th { padding: 6px 8px; border: none; text-align: left; }
@@ -672,6 +680,22 @@
                         <option value="hard">Hard</option>
                     </select>
                     <span id="global-body-state" class="global-body-state state-ok">Stato corpo: —</span>
+                </div>
+                <div id="temporal-analysis-dashboard" class="temporal-analysis-dashboard" style="display:none;">
+                    <h4 style="margin-top:0;">Analisi temporale (fino a quest'ora)</h4>
+                    <div class="temporal-grid">
+                        <div class="temporal-row">
+                            <span>Proteine:</span>
+                            <span id="temporal-prot-value">0</span> / <span id="temporal-prot-ideal">0 g</span>
+                            <span id="temporal-prot-label" class="temporal-indicator temporal-in-linea">—</span>
+                        </div>
+                        <div class="temporal-row">
+                            <span>Calorie:</span>
+                            <span id="temporal-kcal-value">0</span> / <span id="temporal-kcal-ideal">0 kcal</span>
+                            <span id="temporal-kcal-label" class="temporal-indicator temporal-in-linea">—</span>
+                        </div>
+                    </div>
+                    <p id="temporal-analysis-msg" class="temporal-msg" style="display:none; margin:8px 0 0 0; font-weight:600;"></p>
                 </div>
                 <div id="indicators-dashboard" class="indicators-dashboard" style="display:none;">
                     <h4 style="margin-top:0;">Indicatori e range</h4>
@@ -1415,6 +1439,91 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
             if (!entry) return '12:00';
             if (entry.type === 'workout') return entry.time || '23:59';
             return entry.time || '12:00';
+        }
+        const DEFAULT_MEAL_TIMES = { merenda1: '10:00', pranzo: '13:00', merenda2: '17:00', cena: '20:00' };
+        function getMealTimesOrdered(profile) {
+            const times = {};
+            MEAL_TYPE_SEQUENCE.forEach(mealId => {
+                times[mealId] = (profile && profile.mealTimes && profile.mealTimes[mealId]) || DEFAULT_MEAL_TIMES[mealId];
+            });
+            return MEAL_TYPE_SEQUENCE.map(mealId => ({ mealId, time: times[mealId] })).sort((a, b) => a.time.localeCompare(b.time));
+        }
+        function getIdealCumulativeUpToTime(mealTimesOrdered, dailyProt, dailyKcal, currentTimeStr) {
+            let idealProt = 0, idealKcal = 0;
+            mealTimesOrdered.forEach(({ mealId, time }) => {
+                if (time <= currentTimeStr) {
+                    const cfg = OBIETTIVI_MACRO_PASTO_BASE_FORZA[mealId];
+                    if (cfg) {
+                        idealProt += (cfg.prot_perc || 0) * dailyProt;
+                        idealKcal += (cfg.cal_perc || 0) * dailyKcal;
+                    }
+                }
+            });
+            return { idealProt, idealKcal };
+        }
+        function getActualCumulativeUpToTime(log, currentTimeStr) {
+            let actualProt = 0, actualKcal = 0;
+            (log || []).forEach(entry => {
+                if (entry.type === 'workout') return;
+                const t = getEntryTime(entry);
+                if (t <= currentTimeStr) {
+                    const items = entry.type === 'meal' ? entry.items : [entry];
+                    items.forEach(item => {
+                        actualProt += item.prot || 0;
+                        actualKcal += (item.kcal || item.cal) || 0;
+                    });
+                }
+            });
+            return { actualProt, actualKcal };
+        }
+        function getTemporalIndicator(actual, ideal, tolLow, tolHigh) {
+            if (ideal <= 0) return 'in linea';
+            const ratio = actual / ideal;
+            if (ratio < (tolLow || 0.85)) return 'in ritardo';
+            if (ratio > (tolHigh || 1.15)) return 'in anticipo';
+            return 'in linea';
+        }
+        function updateTemporalAnalysisDashboard(OBIETTIVI, log, pianoDelGiorno) {
+            const block = document.getElementById('temporal-analysis-dashboard');
+            if (!block) return;
+            const now = new Date();
+            const todayStr = getTodayString();
+            const isViewingToday = giornoVisualizzato === todayStr;
+            const isDuringDay = now.getHours() < 22;
+            const showTemporal = isViewingToday && isDuringDay && userProfile;
+            if (!showTemporal) {
+                block.style.display = 'none';
+                return;
+            }
+            block.style.display = 'block';
+            const currentTimeStr = getCurrentTimeString();
+            const mealTimesOrdered = getMealTimesOrdered(userProfile);
+            const dailyProt = OBIETTIVI.prot || 0;
+            const dailyKcal = OBIETTIVI.kcal || 0;
+            const ideal = getIdealCumulativeUpToTime(mealTimesOrdered, dailyProt, dailyKcal, currentTimeStr);
+            const actual = getActualCumulativeUpToTime(log, currentTimeStr);
+            const indProt = getTemporalIndicator(actual.actualProt, ideal.idealProt);
+            const indKcal = getTemporalIndicator(actual.actualKcal, ideal.idealKcal);
+            const protLabel = document.getElementById('temporal-prot-label');
+            const kcalLabel = document.getElementById('temporal-kcal-label');
+            const temporalMsg = document.getElementById('temporal-analysis-msg');
+            if (protLabel) { protLabel.textContent = indProt === 'in ritardo' ? 'In ritardo' : indProt === 'in anticipo' ? 'In anticipo' : 'In linea'; protLabel.className = 'temporal-indicator temporal-' + indProt.replace(/\s/g, '-'); }
+            if (kcalLabel) { kcalLabel.textContent = indKcal === 'in ritardo' ? 'In ritardo' : indKcal === 'in anticipo' ? 'In anticipo' : 'In linea'; kcalLabel.className = 'temporal-indicator temporal-' + indKcal.replace(/\s/g, '-'); }
+            const msgParts = [];
+            if (indProt === 'in ritardo') msgParts.push('Proteine basse per questo punto della giornata.');
+            if (indKcal === 'in ritardo') msgParts.push('Calorie basse per questo punto della giornata.');
+            if (temporalMsg) {
+                temporalMsg.textContent = msgParts.length ? msgParts.join(' ') : '';
+                temporalMsg.style.display = msgParts.length ? 'block' : 'none';
+            }
+            const protValEl = document.getElementById('temporal-prot-value');
+            const protIdealEl = document.getElementById('temporal-prot-ideal');
+            const kcalValEl = document.getElementById('temporal-kcal-value');
+            const kcalIdealEl = document.getElementById('temporal-kcal-ideal');
+            if (protValEl) protValEl.textContent = actual.actualProt.toFixed(0);
+            if (protIdealEl) protIdealEl.textContent = ideal.idealProt.toFixed(0) + ' g';
+            if (kcalValEl) kcalValEl.textContent = actual.actualKcal.toFixed(0);
+            if (kcalIdealEl) kcalIdealEl.textContent = ideal.idealKcal.toFixed(0) + ' kcal';
         }
         function normalizeLogTimes(log) {
             if (!log || !log.length) return;
@@ -2579,6 +2688,7 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
                         <td class="action-buttons"><button class="edit-btn" data-index="${index}">✏️</button><button class="delete-btn" data-index="${index}">&times;</button></td>`;
                 }
             });
+            updateTemporalAnalysisDashboard(OBIETTIVI, datiGiornalieri.log, pianoDelGiorno);
         }
 function calcolaObiettiviPastoConArray(mealType, giornoCorrenteString, pastoArray) {
     const dataVisualizzata = new Date(giornoCorrenteString);
@@ -5092,175 +5202,4 @@ Solo JSON, senza testo.`;
         const div = document.createElement('div');
         div.style.cssText = 'background:#f5f5f5; padding:15px; border-radius:8px; margin:10px 0; border:1px solid #ddd;';
         div.innerHTML = `
-            <p style="margin:0 0 10px 0;">Quanti grammi di <strong>${data.desc}</strong>?</p>
-            <input type="number" id="temp-qta-input" placeholder="es. 150" style="width:100px; padding:8px; border:1px solid #ddd; border-radius:4px; margin-right:10px;">
-            <button id="temp-qta-btn" style="padding:8px 16px; background:#1976d2; color:white; border:none; border-radius:4px; cursor:pointer;">Conferma</button>
-        `;
-        
-        addMessageElement(div);
-        
-        setTimeout(() => {
-            const input = document.getElementById('temp-qta-input');
-            const btn = document.getElementById('temp-qta-btn');
-            if (input) input.focus();
-            
-            const conferma = () => {
-                const qta = parseFloat(input.value);
-                if (qta > 0) {
-                    div.remove();
-                    procediInserimentoFinale(data, qta, pasto);
-                } else {
-                    input.style.borderColor = 'red';
-                }
-            };
-            
-            if (btn) btn.onclick = conferma;
-            if (input) {
-                input.onkeypress = (e) => { if (e.key === 'Enter') conferma(); };
-                input.oninput = () => { input.style.borderColor = '#ddd'; };
-            }
-        }, 100);
-    }
-
-    function procediInserimentoFinale(data, qta, pasto) {
-        if (!data || !data.desc) return;
-        
-        // Salva lastQta nel database
-        const key = window.sanitizeFirebaseKey ? window.sanitizeFirebaseKey(data.desc.toLowerCase()) : data.desc.toLowerCase().replace(/[.#$[\]\/]/g, '_');
-        if (window.foodDatabase) {
-            if (!window.foodDatabase[key]) window.foodDatabase[key] = { ...data };
-            window.foodDatabase[key].lastQta = qta;
-            if (window.salvaFoodDatabase) window.salvaFoodDatabase();
-        }
-        
-        // Sincronizza array
-        let currentData = JSON.parse(localStorage.getItem('trackerPastoInCostruzione')) || [];
-        if (!window.pastoInCostruzione) {
-            window.pastoInCostruzione = currentData;
-        } else if (window.pastoInCostruzione.length < currentData.length) {
-            window.pastoInCostruzione = currentData;
-        }
-        
-        let item = { desc: data.desc, qta: qta, selezionato: true };
-        for (const k in data) { 
-            if (!['desc', 'lastQta', 'ingredienti'].includes(k)) {
-                const val100g = parseFloat(data[k]) || 0;
-                item[k] = (val100g / 100) * qta; 
-            }
-        }
-        
-        window.pastoInCostruzione.push(item);
-        localStorage.setItem('trackerPastoInCostruzione', JSON.stringify(window.pastoInCostruzione));
-        
-        if (pasto && document.getElementById('meal-type-selector')) {
-            const pastoMap = {
-                'colazione': 'merenda1', 'merenda1': 'merenda1', 'merenda am': 'merenda1',
-                'pranzo': 'pranzo', 
-                'merenda': 'merenda2', 'merenda2': 'merenda2', 'merenda pm': 'merenda2',
-                'cena': 'cena'
-            };
-            const mappedPasto = pastoMap[pasto.toLowerCase()] || 'merenda1';
-            document.getElementById('meal-type-selector').value = mappedPasto;
-            const today = window.getTodayString ? window.getTodayString() : new Date().toISOString().split('T')[0];
-            localStorage.setItem('lastMealTypeSelected_' + today, mappedPasto);
-        }
-
-        if (typeof window.renderMealBuilder === 'function') {
-            window.renderMealBuilder();
-            const builder = document.getElementById('meal-builder-sezione');
-            if (builder) {
-                builder.dataset.visible = "true";
-                builder.style.display = "block";
-                setTimeout(() => builder.scrollIntoView({ behavior: 'smooth' }), 100);
-            }
-        }
-        
-        addMessage(`✅ <strong>${item.desc}</strong> (${qta}g) aggiunto!`, 'assistant');
-    }
-
-    async function addFoodDirectly(nome, qta, pasto) {
-        if (!nome) return;
-        
-        const results = cercaInDatabase(nome);
-        
-        if (results.length === 0) {
-            mostraDialogoNuovoAlimento(nome, qta, pasto);
-        } else if (results.length === 1) {
-            gestisciQuantitaEInserimento(results[0].data, qta, pasto);
-        } else {
-            mostraSelezioneMultipla(nome, results, qta, pasto);
-        }
-    }
-    // 4. UTILITY UI
-    function addMessage(text, role) {
-        if (!aiMessages) return;
-        const d = document.createElement('div');
-        d.style.cssText = role === 'user' 
-            ? 'background:#667eea; color:white; padding:10px 15px; border-radius:18px 18px 4px 18px; margin:5px 0 5px auto; max-width:80%; word-wrap:break-word;'
-            : 'background:white; color:#333; padding:10px 15px; border-radius:18px 18px 18px 4px; margin:5px auto 5px 0; max-width:80%; border:1px solid #e0e0e0; word-wrap:break-word;';
-        d.innerHTML = text.replace(/\n/g, '<br>');
-        aiMessages.appendChild(d);
-        aiMessages.scrollTop = aiMessages.scrollHeight;
-        return d;
-    }
-
-    function addMessageElement(el) {
-        if (!aiMessages) return;
-        const d = document.createElement('div');
-        d.style.cssText = 'margin:5px auto 5px 0; max-width:80%;';
-        d.appendChild(el);
-        aiMessages.appendChild(d);
-        aiMessages.scrollTop = aiMessages.scrollHeight;
-        return d;
-    }
-
-    // 5. GESTIONE EVENTI
-    
-    if (aiToggle) {
-        aiToggle.onclick = (e) => {
-            if (e.target === aiOpenSettings || e.target.closest('#ai-open-settings')) return;
-            aiWidget.classList.toggle('minimized');
-            if (aiToggleIcon) aiToggleIcon.textContent = aiWidget.classList.contains('minimized') ? '▲' : '▼';
-            if (aiWidget.classList.contains('minimized') && aiChatSettings) {
-                aiChatSettings.style.display = 'none';
-            }
-        };
-    }
-    
-    if (aiOpenSettings) {
-        aiOpenSettings.onclick = (e) => {
-            e.stopPropagation();
-            if (aiChatSettings) {
-                const isVisible = aiChatSettings.style.display === 'block';
-                aiChatSettings.style.display = isVisible ? 'none' : 'block';
-                if (!isVisible && aiApiKey1) aiApiKey1.focus();
-            }
-        };
-    }
-    
-    if (aiCloseSettings) {
-        aiCloseSettings.onclick = (e) => {
-            e.stopPropagation();
-            if (aiChatSettings) aiChatSettings.style.display = 'none';
-        };
-    }
-    
-    if (aiSaveApiKey) {
-        aiSaveApiKey.onclick = (e) => {
-            e.stopPropagation();
-            const key1 = aiApiKey1 ? aiApiKey1.value.trim() : '';
-            const key2 = aiApiKey2 ? aiApiKey2.value.trim() : '';
-            
-            if (!key1 && !key2) {
-                if (aiApiStatus) {
-                    aiApiStatus.textContent = '❌ Inserisci almeno una chiave';
-                    aiApiStatus.style.color = '#d32f2f';
-                }
-                return;
-            }
-            
-            if (key1) localStorage.setItem('gemini_api_key_1', key1);
-            if (key2) localStorage.setItem('gemini_api_key_2', key2);
-            
-            if (aiApiStatus) {
-           
+            <p style="margin:0 0 10px 0;">Quanti grammi di <strong>${data.desc
