@@ -929,6 +929,7 @@
                         <div id="custom-suggestions"></div>
                     </div>
                     <div><label>Quantità (g)</label><input type="text" id="builder-qta"></div>
+                    <div><label>Orario</label><input type="time" id="builder-time" title="Orario pasto/alimento"></div>
                     <div><label>Proteine/100g</label><input type="number" id="builder-prot" step="0.1"></div>
                     <div><label>Kcal/100g</label><input type="number" id="builder-kcal" min="0"></div>
                     <div><label>Carboidrati/100g</label><input type="number" id="builder-carb" step="0.1"></div>
@@ -1032,6 +1033,7 @@
                 <table id="log-pasti">
                     <thead>
                         <tr>
+                            <th>Orario</th>
                             <th>Descrizione</th>
                             <th>(g)</th>
                             <th>Prot</th>
@@ -1405,6 +1407,23 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
         const btnAddWorkout = document.getElementById('btn-add-workout');
         
         function getTodayString(format = 'ymd') { return new Date().toISOString().split('T')[0]; }
+        function getCurrentTimeString() {
+            const d = new Date();
+            return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+        }
+        function getEntryTime(entry) {
+            if (!entry) return '12:00';
+            if (entry.type === 'workout') return entry.time || '23:59';
+            return entry.time || '12:00';
+        }
+        function normalizeLogTimes(log) {
+            if (!log || !log.length) return;
+            log.forEach(entry => {
+                if (entry.type === 'workout') { if (entry.time === undefined) entry.time = '23:59'; return; }
+                if (entry.time === undefined || entry.time === null) entry.time = '12:00';
+                if (entry.type === 'meal' && entry.items) entry.items.forEach(item => { if (item.time === undefined) item.time = entry.time; });
+            });
+        }
 
         function sanitizeFirebaseKey(str) {
             if (!str) return '';
@@ -2281,6 +2300,7 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
             datiGiornalieri = datiTrovati || { log: [], workoutCalorie: 0, note: '' };
             dailyNotesTextarea.value = datiGiornalieri.note || '';
             if (!datiGiornalieri.log) datiGiornalieri.log = [];
+            normalizeLogTimes(datiGiornalieri.log);
             if (typeof datiGiornalieri.workoutCalorie === 'undefined') datiGiornalieri.workoutCalorie = 0;
 
             const dataCorrente = new Date(data);
@@ -2358,6 +2378,8 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
                 const lastMealTypeSelected = localStorage.getItem('lastMealTypeSelected_' + getTodayString());
                 mealTypeSelector.value = (lastMealTypeSelected && MEAL_TYPE_SEQUENCE.includes(lastMealTypeSelected)) ? lastMealTypeSelected : MEAL_TYPE_SEQUENCE[0];
             }
+            const builderTimeEl = document.getElementById('builder-time');
+            if (builderTimeEl && !builderTimeEl.value) builderTimeEl.value = getCurrentTimeString();
             console.log("Interfaccia app avviata con successo con dati locali.");
         }
 
@@ -2498,7 +2520,13 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
                 return html;
             };
 
-            (datiGiornalieri.log || []).forEach((entry, index) => {
+            const logArray = datiGiornalieri.log || [];
+            const sortedLog = logArray.map((entry, originalIndex) => ({ entry, originalIndex }))
+                .sort((a, b) => getEntryTime(a.entry).localeCompare(getEntryTime(b.entry)));
+
+            sortedLog.forEach(({ entry, originalIndex: index }) => {
+                const timeVal = getEntryTime(entry);
+                const timeCellHtml = `<td><input type="time" class="log-time-input" data-index="${index}" value="${timeVal}" title="Orario"></td>`;
                 if (entry.type === 'meal') {
                     const rigaPasto = logBody.insertRow();
                     rigaPasto.classList.add('meal-group-row');
@@ -2511,7 +2539,7 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
                     const scoreClass = qualitaPasto.score < 70 ? 'low' : qualitaPasto.score < 90 ? 'medium' : 'high';
                     const qualitaCellHtml = `<div class="protein-score ${scoreClass}" title="Limitante: ${qualitaPasto.limiting}">${qualitaPasto.score}%</div>`;
                     
-                    rigaPasto.innerHTML = `
+                    rigaPasto.innerHTML = timeCellHtml + `
                         <td><span class="expand-arrow" data-index="${index}">${entry.isExpanded ? '▼' : '▶'}</span> ${entry.desc}</td>
                         <td>${entry.items.reduce((sum, item) => sum + item.qta, 0).toFixed(0)}</td>
                         <td>${(totaliPasto.prot || 0).toFixed(1)}</td>
@@ -2527,6 +2555,7 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
                              const subScoreClass = qualitaSubItem.score < 70 ? 'low' : qualitaSubItem.score < 90 ? 'medium' : 'high';
                              const subQualitaCellHtml = `<div class="protein-score ${subScoreClass}" title="Limitante: ${qualitaSubItem.limiting}">${qualitaSubItem.score}%</div>`;
                             rigaSubItem.innerHTML = `
+                                <td></td>
                                 <td>${createDescriptionCellHTML(subItem)}</td><td>${(subItem.qta || 0).toFixed(0)}</td>
                                 <td>${(subItem.prot || 0).toFixed(1)}</td>
                                 <td>${subQualitaCellHtml}</td>
@@ -2536,13 +2565,13 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
                     }
                 } else if (entry.type === 'workout') {
                     const riga = logBody.insertRow();
-                    riga.innerHTML = `<td>${entry.desc}</td><td></td><td></td><td></td><td>${(entry.kcal || 0).toFixed(0)}</td><td colspan="${nutrientKeys.length -1}"></td><td class="action-buttons"><button class="delete-btn" data-index="${index}">&times;</button></td>`;
+                    riga.innerHTML = timeCellHtml + `<td>${entry.desc}</td><td></td><td></td><td></td><td>${(entry.kcal || 0).toFixed(0)}</td><td colspan="${nutrientKeys.length - 1}"></td><td class="action-buttons"><button class="delete-btn" data-index="${index}">&times;</button></td>`;
                 } else { 
                     const riga = logBody.insertRow();
                     const qualitaSingola = calcolaQualitaProteine(entry);
                     const scoreClass = qualitaSingola.score < 70 ? 'low' : qualitaSingola.score < 90 ? 'medium' : 'high';
                     const qualitaCellHtml = `<div class="protein-score ${scoreClass}" title="Limitante: ${qualitaSingola.limiting}">${qualitaSingola.score}%</div>`;
-                    riga.innerHTML = `
+                    riga.innerHTML = timeCellHtml + `
                         <td>${createDescriptionCellHTML(entry)}</td><td>${(entry.qta || 0).toFixed(0)}</td>
                         <td>${(entry.prot || 0).toFixed(1)}</td>
                         <td>${qualitaCellHtml}</td>
@@ -2818,6 +2847,8 @@ window.renderMealBuilder = renderMealBuilder;
             foodDatabase[sanitizedKey] = foodData;
             salvaFoodDatabase();
             
+            const timeInput = document.getElementById('builder-time');
+            foodItem.time = (timeInput && timeInput.value) ? timeInput.value : getCurrentTimeString();
             if (isSingle) {
                 foodItem.type = 'single';
             } else {
@@ -3604,7 +3635,7 @@ Regole:
                 const desc = workoutDescInput.value.trim(), calories = parseFloat(workoutCaloriesInput.value);
                 if (!desc || isNaN(calories) || calories <= 0) { alert('Dati allenamento non validi.'); return; }
                 if (!datiGiornalieri.log) datiGiornalieri.log = [];
-                datiGiornalieri.log.push({ type: 'workout', desc: desc, kcal: calories });
+                datiGiornalieri.log.push({ type: 'workout', desc: desc, kcal: calories, time: getCurrentTimeString() });
                 datiGiornalieri.workoutCalorie = (datiGiornalieri.workoutCalorie || 0) + calories;
                 aggiornaUI();
                 salvaGiorno(giornoVisualizzato, datiGiornalieri); 
@@ -3635,9 +3666,11 @@ mealBuilderSezione.addEventListener('change', (e) => {
 btnSalvaPasto.addEventListener('click', () => {
     const alimentiSelezionati = pastoInCostruzione.filter(item => item.selezionato !== false);
     if (alimentiSelezionati.length === 0) { alert("Nessun alimento selezionato."); return; }
-    
+    const timeInput = document.getElementById('builder-time');
+    const mealTime = (timeInput && timeInput.value) ? timeInput.value : getCurrentTimeString();
     const mealName = mealTypeSelector.options[mealTypeSelector.selectedIndex].text, mealId = mealTypeSelector.value;
-    const newMeal = { type: 'meal', desc: mealName, mealId: mealId, isExpanded: false, items: alimentiSelezionati };
+    alimentiSelezionati.forEach(item => { item.time = item.time || mealTime; });
+    const newMeal = { type: 'meal', desc: mealName, mealId: mealId, isExpanded: false, items: alimentiSelezionati, time: mealTime };
     if (!datiGiornalieri.log) datiGiornalieri.log = [];
     datiGiornalieri.log.push(newMeal);
     
@@ -3653,6 +3686,21 @@ btnSalvaPasto.addEventListener('click', () => {
                 mealTypeSelector.value = nextMeal;
                 localStorage.setItem('lastMealTypeSelected_' + getTodayString(), nextMeal);
                 saveSingleItemToCloud('lastMealTypeSelected_' + getTodayString(), nextMeal);
+            });
+
+            document.body.addEventListener('change', (e) => {
+                const timeInput = e.target.closest('input.log-time-input');
+                if (timeInput && timeInput.dataset.index !== undefined) {
+                    const index = parseInt(timeInput.dataset.index, 10);
+                    const entry = datiGiornalieri.log && datiGiornalieri.log[index];
+                    if (entry && timeInput.value) {
+                        entry.time = timeInput.value;
+                        if (entry.type === 'meal' && entry.items) entry.items.forEach(item => { item.time = timeInput.value; });
+                        salvaGiorno(giornoVisualizzato, datiGiornalieri);
+                        aggiornaUI();
+                    }
+                    return;
+                }
             });
 
             document.body.addEventListener('click', (e) => {
@@ -3672,13 +3720,16 @@ btnSalvaPasto.addEventListener('click', () => {
                 if (button && button.classList.contains('edit-btn')) {
                     const itemToEdit = datiGiornalieri.log[index];
                     if (!itemToEdit || !confirm("Vuoi modificare questa voce? Verrà spostata nel 'Costruttore Pasto'.")) return;
-                    pastoInCostruzione = (itemToEdit.type === 'meal' ? itemToEdit.items : [itemToEdit]).map(item => ({...item, selezionato: true}));
+                    const timeToUse = getEntryTime(itemToEdit);
+                    const builderTimeEl = document.getElementById('builder-time');
+                    if (builderTimeEl) builderTimeEl.value = timeToUse;
+                    pastoInCostruzione = (itemToEdit.type === 'meal' ? itemToEdit.items : [itemToEdit]).map(item => ({...item, selezionato: true, time: item.time || timeToUse}));
                     datiGiornalieri.log.splice(index, 1); 
                     salvaPastoInCostruzione(); 
                     aggiornaUI(); 
                     salvaGiorno(giornoVisualizzato, datiGiornalieri); 
-                    renderMealBuilder();
-                    mealBuilderSezione.scrollIntoView({ behavior: 'smooth' });
+                    renderMealBuilder(); 
+                    mealBuilderSezione.scrollIntoView({ behavior: 'smooth' }); 
                     if (itemToEdit.mealId) {
                         mealTypeSelector.value = itemToEdit.mealId;
                         localStorage.setItem('lastMealTypeSelected_' + getTodayString(), mealTypeSelector.value);
@@ -4449,6 +4500,7 @@ if (button.dataset.type === 'builder') {
         window.calculateMacroTargets = calculateMacroTargets;
         window.getPianoDelGiornoForDate = getPianoDelGiornoForDate;
         window.loadUserProfileFromLocal = loadUserProfileFromLocal;
+        window.getCurrentTimeString = getCurrentTimeString;
         window.runWeeklyAutoAdaptationIfNeeded = runWeeklyAutoAdaptationIfNeeded;
         window.loadAutoAdjustHistoryFromLocal = loadAutoAdjustHistoryFromLocal;
         window.analyzeLast7DaysForAutoAdaptation = analyzeLast7DaysForAutoAdaptation;
@@ -4919,7 +4971,8 @@ function gestisciQuantitaEInserimento(data, qtaUtente, pasto) {
         const newWorkout = { 
             type: 'workout', 
             desc: desc.charAt(0).toUpperCase() + desc.slice(1), 
-            kcal: kcal 
+            kcal: kcal,
+            time: window.getCurrentTimeString ? window.getCurrentTimeString() : '23:59'
         };
 
         // Aggiunge al log
@@ -5210,110 +5263,4 @@ Solo JSON, senza testo.`;
             if (key2) localStorage.setItem('gemini_api_key_2', key2);
             
             if (aiApiStatus) {
-                const msg = key1 && key2 ? '✅ Entrambe le chiavi salvate!' : 
-                           key1 ? '✅ Chiave primaria salvata!' : '✅ Chiave secondaria salvata!';
-                aiApiStatus.textContent = msg;
-                aiApiStatus.style.color = '#2e7d32';
-            }
-            setTimeout(() => {
-                if (aiChatSettings) aiChatSettings.style.display = 'none';
-            }, 1200);
-        };
-    }
-
-if (aiSendBtn) {
-        aiSendBtn.onclick = async () => {
-            const text = aiInput.value.trim();
-            if (!text) return;
-            addMessage(text, 'user');
-            aiInput.value = '';
-            
-            const loading = addMessage("🧠 Elaboro...", "assistant");
-            loading.style.fontStyle = 'italic';
-            loading.style.color = '#666';
-
-            try {
-                // PROMPT AVANZATO: Gestisce CIBO e ALLENAMENTO
-                const prompt = `Analizza: "${text}".
-                
-                CASO 1: CIBO (es. "ho mangiato mela", "pasta 100g")
-                - Rispondi: [AGGIUNGI: nome | grammi | pasto]
-                - Se mancano i grammi, scrivi 0.
-                - Pasto default: quello attuale.
-
-                CASO 2: ALLENAMENTO (es. "palestra 200kcal", "corsa", "lavoro pesante")
-                - Rispondi: [ALLENAMENTO: descrizione | kcal]
-                - Se l'utente scrive le kcal, usa quelle.
-                - Se mancano le kcal, STIMALE tu (es. 1h pesi=300, 30min corsa=250, lavoro ufficio=0).
-
-                Rispondi SOLO con i comandi tra parentesi quadre.`;
-                
-                const resp = await callGeminiAPI(prompt);
-                if (loading) loading.remove();
-
-                let foundAny = false;
-
-                // 1. Cerca comandi CIBO
-                const regexFood = /\[AGGIUNGI:\s*([^|\]]+?)\s*\|\s*([0-9.,]+)\s*\|\s*([^\]]+?)\]/gi;
-                let matchFood;
-                while ((matchFood = regexFood.exec(resp)) !== null) {
-                    foundAny = true;
-                    const nome = matchFood[1].trim();
-                    const qta = parseFloat(matchFood[2].replace(',', '.')) || 0;
-                    const pasto = matchFood[3].trim().toLowerCase();
-                    await gestisciQuantitaEInserimento({ desc: nome }, qta, pasto); // Usa la tua funzione smart
-                }
-
-                // 2. Cerca comandi ALLENAMENTO
-                const regexWorkout = /\[ALLENAMENTO:\s*([^|\]]+?)\s*\|\s*([0-9.,]+)\]/gi;
-                let matchWorkout;
-                while ((matchWorkout = regexWorkout.exec(resp)) !== null) {
-                    foundAny = true;
-                    const desc = matchWorkout[1].trim();
-                    const kcal = parseFloat(matchWorkout[2].replace(',', '.')) || 0;
-                    addWorkoutDirectly(desc, kcal); // Chiama la nuova funzione diretta
-                }
-
-                if (!foundAny) {
-                    addMessage(resp, 'assistant'); // Se non trova comandi, mostra la risposta testuale
-                }
-
-            } catch (e) {
-                if (loading) loading.remove();
-                addMessage(`❌ Errore: ${e.message}`, "assistant");
-            }
-        };
-    }
-
-    if (aiInput) {
-        aiInput.onkeypress = (e) => { 
-            if (e.key === 'Enter' && !e.shiftKey) { 
-                e.preventDefault(); 
-                aiSendBtn.click(); 
-            } 
-        };
-    }
-
-})();
-</script>
-</body>
-</html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+           
