@@ -696,6 +696,7 @@
                         </div>
                     </div>
                     <p id="temporal-analysis-msg" class="temporal-msg" style="display:none; margin:8px 0 0 0; font-weight:600;"></p>
+                    <p id="temporal-analysis-hint" class="temporal-hint" style="display:none; margin:8px 0 0 0; font-size:0.85em; color:#555;"></p>
                 </div>
                 <div id="indicators-dashboard" class="indicators-dashboard" style="display:none;">
                     <h4 style="margin-top:0;">Indicatori e range</h4>
@@ -1227,6 +1228,9 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
         const CONTROL_MODE_LOCAL_KEY = 'trackerControlMode';
         const CONTROL_MODE_DEFAULT = 'medium';
         const TRACKER_TEMPORAL_PROFILE_KEY = 'trackerTemporalProfile';
+        const TEMPORAL_MIN_KCAL_PER_DAY = 400;
+        const TEMPORAL_MIN_PROT_PER_DAY = 15;
+        const TEMPORAL_MIN_VALID_DAYS = 1;
 
         // AGGIORNATO: Aggiunto "sale" al prompt e rimosso "na" (ora calcolato dal sale)
         const GEMINI_PROMPT_FORMAT = `{"prot":g,"kcal":kcal,"carb":g,"zuccheri":g,"fatSat":g,"fatTrans":g,"fatMono":g,"fatPoly":g,"omega3":g,"omega6":g,"fibreTotali":g,"fibreSolubili":g,"fibreInsolubili":g,"sale":g,"mg":mg,"k":mg,"vitc":mg,"ca":mg,"vitA":µg,"vitB12":µg,"vitD":µg,"vitE":mg,"vitK":µg,"b9":µg,"b2":mg,"b6":mg,"fe":mg,"zn":mg,"cu":mg,"p":mg,"leu":mg,"iso":mg,"val":mg,"lys":mg,"met":mg,"phe":mg,"thr":mg,"trp":mg,"his":mg}`;
@@ -1474,16 +1478,19 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
             const dist = {};
             MEAL_TYPE_SEQUENCE.forEach(m => {
                 dist[m] = {
-                    prot_perc: totalProt > 0 ? sums[m].prot / totalProt : 0.25,
-                    cal_perc: totalKcal > 0 ? sums[m].kcal / totalKcal : 0.25
+                    prot_perc: totalProt > 0 ? sums[m].prot / totalProt : 0,
+                    cal_perc: totalKcal > 0 ? sums[m].kcal / totalKcal : 0
                 };
             });
-            return dist;
+            return { dist, totalProt, totalKcal };
+        }
+        function isDayValidForTemporal(totalProt, totalKcal, logLength) {
+            const foodEntries = (logLength || 0);
+            return totalKcal >= TEMPORAL_MIN_KCAL_PER_DAY && totalProt >= TEMPORAL_MIN_PROT_PER_DAY && foodEntries >= 1;
         }
         function computePersonalTemporalProfile() {
             if (!userProfile) return null;
             const mealTimesOrdered = getMealTimesOrdered(userProfile);
-            const todayStr = getTodayString();
             const distributions = [];
             for (let i = 0; i < 7; i++) {
                 const d = new Date();
@@ -1493,12 +1500,13 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
                 if (!raw) continue;
                 try {
                     const data = JSON.parse(raw);
-                    if (data && data.log && data.log.length) {
-                        distributions.push(computeDayDistribution(data.log, mealTimesOrdered));
-                    }
+                    if (!data || !data.log || !data.log.length) continue;
+                    const result = computeDayDistribution(data.log, mealTimesOrdered);
+                    if (!isDayValidForTemporal(result.totalProt, result.totalKcal, data.log.length)) continue;
+                    distributions.push(result.dist);
                 } catch (e) {}
             }
-            if (distributions.length === 0) return null;
+            if (distributions.length < TEMPORAL_MIN_VALID_DAYS) return null;
             const avg = { merenda1: { prot_perc: 0, cal_perc: 0 }, pranzo: { prot_perc: 0, cal_perc: 0 }, merenda2: { prot_perc: 0, cal_perc: 0 }, cena: { prot_perc: 0, cal_perc: 0 } };
             MEAL_TYPE_SEQUENCE.forEach(m => {
                 distributions.forEach(d => {
@@ -1511,29 +1519,21 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
             return avg;
         }
         function getOrUpdatePersonalTemporalProfile() {
-            const todayStr = getTodayString();
             const computed = computePersonalTemporalProfile();
             if (computed) {
                 try {
-                    localStorage.setItem(TRACKER_TEMPORAL_PROFILE_KEY, JSON.stringify({ profile: computed, updated: todayStr }));
+                    localStorage.setItem(TRACKER_TEMPORAL_PROFILE_KEY, JSON.stringify({ profile: computed, updated: getTodayString() }));
                 } catch (e) {}
                 return computed;
             }
-            try {
-                const stored = localStorage.getItem(TRACKER_TEMPORAL_PROFILE_KEY);
-                if (stored) {
-                    const parsed = JSON.parse(stored);
-                    if (parsed && parsed.profile) return parsed.profile;
-                }
-            } catch (e) {}
             return null;
         }
         function getIdealCumulativeUpToTime(mealTimesOrdered, dailyProt, dailyKcal, currentTimeStr, distribution) {
-            const cfg = distribution || OBIETTIVI_MACRO_PASTO_BASE_FORZA;
+            if (!distribution) return { idealProt: 0, idealKcal: 0 };
             let idealProt = 0, idealKcal = 0;
             mealTimesOrdered.forEach(({ mealId, time }) => {
                 if (time <= currentTimeStr) {
-                    const c = cfg[mealId];
+                    const c = distribution[mealId];
                     if (c) {
                         idealProt += (c.prot_perc || 0) * dailyProt;
                         idealKcal += (c.cal_perc || 0) * dailyKcal;
@@ -1580,18 +1580,33 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
             const currentTimeStr = getCurrentTimeString();
             const mealTimesOrdered = getMealTimesOrdered(userProfile);
             const personalProfile = getOrUpdatePersonalTemporalProfile();
-            const dailyProt = OBIETTIVI.prot || 0;
-            const dailyKcal = OBIETTIVI.kcal || 0;
-            const ideal = getIdealCumulativeUpToTime(mealTimesOrdered, dailyProt, dailyKcal, currentTimeStr, personalProfile);
             const actual = getActualCumulativeUpToTime(log, currentTimeStr);
-            const usePersonal = !!personalProfile;
-            const tolLow = usePersonal ? 0.80 : 0.85;
-            const tolHigh = usePersonal ? 1.20 : 1.15;
-            const indProt = getTemporalIndicator(actual.actualProt, ideal.idealProt, tolLow, tolHigh);
-            const indKcal = getTemporalIndicator(actual.actualKcal, ideal.idealKcal, tolLow, tolHigh);
+            const protValEl = document.getElementById('temporal-prot-value');
+            const protIdealEl = document.getElementById('temporal-prot-ideal');
+            const kcalValEl = document.getElementById('temporal-kcal-value');
+            const kcalIdealEl = document.getElementById('temporal-kcal-ideal');
             const protLabel = document.getElementById('temporal-prot-label');
             const kcalLabel = document.getElementById('temporal-kcal-label');
             const temporalMsg = document.getElementById('temporal-analysis-msg');
+            const temporalHint = document.getElementById('temporal-analysis-hint');
+            if (protValEl) protValEl.textContent = actual.actualProt.toFixed(0);
+            if (kcalValEl) kcalValEl.textContent = actual.actualKcal.toFixed(0);
+            if (!personalProfile) {
+                if (protIdealEl) protIdealEl.textContent = '—';
+                if (kcalIdealEl) kcalIdealEl.textContent = '—';
+                if (protLabel) { protLabel.textContent = '—'; protLabel.className = 'temporal-indicator'; }
+                if (kcalLabel) { kcalLabel.textContent = '—'; kcalLabel.className = 'temporal-indicator'; }
+                if (temporalMsg) { temporalMsg.textContent = ''; temporalMsg.style.display = 'none'; }
+                if (temporalHint) { temporalHint.textContent = 'Analisi personale: registra pasti completi per almeno 2–3 giorni per attivare il pattern (media mobile ultimi 7 giorni).'; temporalHint.style.display = 'block'; }
+                return;
+            }
+            const dailyProt = OBIETTIVI.prot || 0;
+            const dailyKcal = OBIETTIVI.kcal || 0;
+            const ideal = getIdealCumulativeUpToTime(mealTimesOrdered, dailyProt, dailyKcal, currentTimeStr, personalProfile);
+            const tolLow = 0.80;
+            const tolHigh = 1.20;
+            const indProt = getTemporalIndicator(actual.actualProt, ideal.idealProt, tolLow, tolHigh);
+            const indKcal = getTemporalIndicator(actual.actualKcal, ideal.idealKcal, tolLow, tolHigh);
             if (protLabel) { protLabel.textContent = indProt === 'in ritardo' ? 'In ritardo' : indProt === 'in anticipo' ? 'In anticipo' : 'In linea'; protLabel.className = 'temporal-indicator temporal-' + indProt.replace(/\s/g, '-'); }
             if (kcalLabel) { kcalLabel.textContent = indKcal === 'in ritardo' ? 'In ritardo' : indKcal === 'in anticipo' ? 'In anticipo' : 'In linea'; kcalLabel.className = 'temporal-indicator temporal-' + indKcal.replace(/\s/g, '-'); }
             const msgParts = [];
@@ -1601,13 +1616,8 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
                 temporalMsg.textContent = msgParts.length ? msgParts.join(' ') : '';
                 temporalMsg.style.display = msgParts.length ? 'block' : 'none';
             }
-            const protValEl = document.getElementById('temporal-prot-value');
-            const protIdealEl = document.getElementById('temporal-prot-ideal');
-            const kcalValEl = document.getElementById('temporal-kcal-value');
-            const kcalIdealEl = document.getElementById('temporal-kcal-ideal');
-            if (protValEl) protValEl.textContent = actual.actualProt.toFixed(0);
+            if (temporalHint) temporalHint.style.display = 'none';
             if (protIdealEl) protIdealEl.textContent = ideal.idealProt.toFixed(0) + ' g';
-            if (kcalValEl) kcalValEl.textContent = actual.actualKcal.toFixed(0);
             if (kcalIdealEl) kcalIdealEl.textContent = ideal.idealKcal.toFixed(0) + ' kcal';
         }
         function normalizeLogTimes(log) {
@@ -5194,24 +5204,4 @@ function gestisciQuantitaEInserimento(data, qtaUtente, pasto) {
             const qtaInfo = r.data.lastQta ? ` (ultimo: ${r.data.lastQta}g)` : '';
             btn.textContent = `${r.data.desc}${qtaInfo}`;
             btn.style.cssText = 'display:block; width:100%; margin:5px 0; padding:10px; border:1px solid #1976d2; background:white; color:#1976d2; border-radius:6px; cursor:pointer; text-align:left; transition:all 0.2s;';
-            btn.onmouseover = () => { btn.style.background='#1976d2'; btn.style.color='white'; };
-            btn.onmouseout = () => { btn.style.background='white'; btn.style.color='#1976d2'; };
-            btn.onclick = () => {
-                div.remove();
-                gestisciQuantitaEInserimento(r.data, qtaUtente, pasto);
-            };
-            div.appendChild(btn);
-        });
-        
-        addMessageElement(div);
-    }
-
-    function mostraDialogoNuovoAlimento(nome, qtaUtente, pasto) {
-        const div = document.createElement('div');
-        div.style.cssText = 'background:#fff3e0; border:2px solid #ff9800; padding:15px; border-radius:8px; margin:10px 0; max-width:90%;';
-        div.innerHTML = `<p style="margin:0 0 15px 0; font-weight:600; color:#e65100;">"${nome}" non trovato</p>`;
-        
-        const btnManual = document.createElement('button');
-        btnManual.textContent = '✏️ Compila manualmente nel form';
-        btnManual.style.cssText = 'display:block; width:100%; margin:8px 0; padding:12px; border:1px solid #4caf50; background:#e8f5e9; color:#2e7d32; border-radius:6px; cursor:pointer; font-weight:600;';
-        btnManua
+            btn.onmouseov
