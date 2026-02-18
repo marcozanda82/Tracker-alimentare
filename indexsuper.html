@@ -56,6 +56,39 @@
         .sub-item-row td { padding-left: 25px !important; background-color: #fff; font-style: italic; color: #555; border-bottom: 1px dotted #ccc; }
         .sub-item-row td:last-child { visibility: hidden; }
         .nutrients-warning { color: #d32f2f !important; }
+        .param-state-optimal { color: #2e7d32 !important; }
+        .param-state-attention { color: #f9a825 !important; }
+        .param-state-out { color: #c62828 !important; }
+        .control-mode-section { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; padding: 10px; background: #f5f5f5; border-radius: 8px; flex-wrap: wrap; }
+        .control-mode-section label { margin: 0; font-weight: 600; }
+        .control-mode-section select { width: auto; margin: 0; padding: 6px 10px; }
+        .global-body-state { padding: 10px 14px; border-radius: 8px; font-weight: 700; text-align: center; margin-bottom: 12px; }
+        .global-body-state.state-ok { background: #e8f5e9; color: #1b5e20; border: 1px solid #81c784; }
+        .global-body-state.state-attention { background: #fff8e1; color: #e65100; border: 1px solid #ffb74d; }
+        .global-body-state.state-critical { background: #ffebee; color: #b71c1c; border: 1px solid #e57373; }
+        .indicators-dashboard { margin-top: 12px; padding: 12px; background: #fafafa; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.9em; }
+        .indicators-dashboard table { width: 100%; margin: 0; }
+        .indicators-dashboard td, .indicators-dashboard th { padding: 6px 8px; border: none; text-align: left; }
+        .indicators-dashboard th { background: transparent; font-weight: 600; }
+        .indicator-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+        .indicator-dot.optimal { background: #4caf50; }
+        .indicator-dot.attention { background: #ff9800; }
+        .indicator-dot.out { background: #f44336; }
+        progress.progress-state-optimal::-webkit-progress-value { background: #4caf50; }
+        progress.progress-state-optimal::-moz-progress-bar { background: #4caf50; }
+        progress.progress-state-attention::-webkit-progress-value { background: #ff9800; }
+        progress.progress-state-attention::-moz-progress-bar { background: #ff9800; }
+        progress.progress-state-out::-webkit-progress-value { background: #f44336; }
+        progress.progress-state-out::-moz-progress-bar { background: #f44336; }
+        .macro-row-alert { padding: 8px 12px; margin: 6px 0; border-radius: 8px; border-left: 4px solid transparent; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .macro-row-alert.alert-ok { border-left-color: #4caf50; background: rgba(76, 175, 80, 0.08); }
+        .macro-row-alert.alert-attention { border-left-color: #ff9800; background: rgba(255, 152, 0, 0.08); }
+        .macro-row-alert.alert-out { border-left-color: #f44336; background: rgba(244, 67, 54, 0.08); }
+        .macro-row-alert .alert-icon { font-size: 1.2em; width: 24px; text-align: center; }
+        .macro-row-alert.alert-ok .alert-icon { color: #4caf50; }
+        .macro-row-alert.alert-attention .alert-icon { color: #ff9800; }
+        .macro-row-alert.alert-out .alert-icon { color: #f44336; }
+        .macro-row-alert .alert-content { flex: 1; min-width: 0; }
         #meal-builder-summary { margin-bottom: 20px; padding: 15px; background-color: #e3f2fd; border: 1px solid #90caf9; border-radius: 8px; }
         #meal-builder-summary p { margin: 5px 0; font-weight: 600; color: #1e88e5; }
         #meal-builder-summary .progress-container { display: flex; gap: 20px; margin-top: 10px; }
@@ -589,8 +622,27 @@
                     <input type="time" id="profile-mealtime-cena">
                 </div>
             </div>
+            <h3 style="margin-top:20px;">Obiettivi nutrizionali</h3>
+            <div class="profile-grid" style="margin-bottom:12px;">
+                <div class="field-group" style="grid-column:1/-1;">
+                    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                        <input type="radio" name="profile-targets-mode" value="auto" id="profile-targets-auto" checked>
+                        Usa calcolo automatico
+                    </label>
+                    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-top:6px;">
+                        <input type="radio" name="profile-targets-mode" value="manual" id="profile-targets-manual">
+                        Usa target manuali
+                    </label>
+                </div>
+                <div id="profile-manual-targets-wrap" class="profile-grid" style="display:none;">
+                    <div class="field-group"><label for="profile-manual-kcal">Calorie (kcal)</label><input type="number" id="profile-manual-kcal" min="1000" max="5000" step="50"></div>
+                    <div class="field-group"><label for="profile-manual-prot">Proteine (g)</label><input type="number" id="profile-manual-prot" min="50" max="300" step="5"></div>
+                    <div class="field-group"><label for="profile-manual-carb">Carboidrati (g)</label><input type="number" id="profile-manual-carb" min="50" max="600" step="5"></div>
+                    <div class="field-group"><label for="profile-manual-fat">Grassi (g)</label><input type="number" id="profile-manual-fat" min="20" max="200" step="5"></div>
+                </div>
+            </div>
             <div class="profile-summary">
-                <p><strong>Fabbisogno calorico stimato:</strong> <span id="profile-target-kcal">-</span> kcal</p>
+                <p><strong>Fabbisogno calorico stimato:</strong> <span id="profile-target-kcal">-</span> kcal <span id="profile-target-source" style="font-weight:normal;color:#666;"></span></p>
                 <p><strong>Proteine target:</strong> <span id="profile-target-prot">-</span> g</p>
                 <p><strong>Carboidrati target:</strong> <span id="profile-target-carb">-</span> g</p>
                 <p><strong>Grassi target:</strong> <span id="profile-target-fat">-</span> g</p>
@@ -604,13 +656,38 @@
             <h2 id="titolo-giornata"></h2>
 <div class="nav-links">
     <a href="storico.html">📊 Storico</a>
-    
+    <button type="button" id="btn-edit-profile" style="flex-grow: 1; text-align: center; padding: 10px; background-color: #009688; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 1em;">Modifica profilo</button>
     <button id="btn-export-json-ai" style="flex-grow: 1; text-align: center; padding: 10px; background-color: #673ab7; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 1em;">
         🧠 Dati Completi AI
     </button>
 </div>
                 
                 <span id="calorie-balance-text"></span>
+
+                <div class="control-mode-section">
+                    <label for="control-mode-select">Modalità controllo:</label>
+                    <select id="control-mode-select">
+                        <option value="easy">Easy</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="hard">Hard</option>
+                    </select>
+                    <span id="global-body-state" class="global-body-state state-ok">Stato corpo: —</span>
+                </div>
+                <div id="indicators-dashboard" class="indicators-dashboard" style="display:none;">
+                    <h4 style="margin-top:0;">Indicatori e range</h4>
+                    <table>
+                        <thead><tr><th>Parametro</th><th>Valore</th><th>Range (min – ottimale – max)</th><th>Stato</th></tr></thead>
+                        <tbody>
+                            <tr><td>Proteine</td><td id="ind-prot-value">—</td><td id="ind-prot-range">—</td><td id="ind-prot-state">—</td></tr>
+                            <tr><td>Calorie</td><td id="ind-kcal-value">—</td><td id="ind-kcal-range">—</td><td id="ind-kcal-state">—</td></tr>
+                            <tr><td>Fibre</td><td id="ind-fibre-value">—</td><td id="ind-fibre-range">—</td><td id="ind-fibre-state">—</td></tr>
+                            <tr><td>Grassi saturi</td><td id="ind-fatsat-value">—</td><td id="ind-fatsat-range">—</td><td id="ind-fatsat-state">—</td></tr>
+                            <tr><td>Rapporto O6:O3</td><td id="ind-omega-value">—</td><td id="ind-omega-range">—</td><td id="ind-omega-state">—</td></tr>
+                            <tr><td>Sodio</td><td id="ind-na-value">—</td><td id="ind-na-range">—</td><td id="ind-na-state">—</td></tr>
+                            <tr><td>Potassio</td><td id="ind-k-value">—</td><td id="ind-k-range">—</td><td id="ind-k-state">—</td></tr>
+                        </tbody>
+                    </table>
+                </div>
 
                 <div id="calorie-adjuster">
                     <label for="calorie-adjustment-input">Correzione Obiettivo:</label>
@@ -619,13 +696,23 @@
                     <span>kcal</span>
                 </div>
 
-                <p style="display: flex; align-items: center; gap: 10px;">
-                    <span>Proteine: <span id="totale-proteine">0</span> / <span id="obiettivo-proteine"></span> g</span>
-                    <i id="info-proteine-giornata" class="fas fa-info-circle" style="cursor: pointer; color: #1976d2; font-size: 1.2em;"></i>
-                </p>
-                <progress id="progress-proteine" class="macro-progress" value="0"></progress>
-                <p>Calorie: <span id="totale-calorie">0</span> / <span id="obiettivo-calorie"></span> kcal</p>
-                <progress id="progress-calorie" class="macro-progress" value="0"></progress>
+                <div id="row-alert-prot" class="macro-row-alert alert-ok">
+                    <span class="alert-icon"><i class="fas fa-check-circle"></i></span>
+                    <div class="alert-content">
+                        <p style="display: flex; align-items: center; gap: 10px; margin: 0 0 4px 0;">
+                            <span>Proteine: <span id="totale-proteine">0</span> / <span id="obiettivo-proteine"></span> g</span>
+                            <i id="info-proteine-giornata" class="fas fa-info-circle" style="cursor: pointer; color: #1976d2; font-size: 1.2em;"></i>
+                        </p>
+                        <progress id="progress-proteine" class="macro-progress" value="0"></progress>
+                    </div>
+                </div>
+                <div id="row-alert-kcal" class="macro-row-alert alert-ok">
+                    <span class="alert-icon"><i class="fas fa-check-circle"></i></span>
+                    <div class="alert-content">
+                        <p style="margin: 0 0 4px 0;">Calorie: <span id="totale-calorie">0</span> / <span id="obiettivo-calorie"></span> kcal</p>
+                        <progress id="progress-calorie" class="macro-progress" value="0"></progress>
+                    </div>
+                </div>
                 <p>Workout: <span id="workout-calories-totali">0</span> kcal</p>
                 <hr>
 
@@ -644,8 +731,13 @@
                     Fibre <span class="arrow">▶</span>
                 </h3>
                 <div class="collapsible-content" id="fibre-content">
-                    <p>Fibre Totali: <span id="totale-fibre-totali">0</span> / <span id="obiettivo-fibre-totali"></span> g</p>
-                    <progress id="progress-fibre-totali" class="macro-progress" value="0"></progress>
+                    <div id="row-alert-fibre" class="macro-row-alert alert-ok">
+                        <span class="alert-icon"><i class="fas fa-check-circle"></i></span>
+                        <div class="alert-content">
+                            <p style="margin: 0 0 4px 0;">Fibre Totali: <span id="totale-fibre-totali">0</span> / <span id="obiettivo-fibre-totali"></span> g</p>
+                            <progress id="progress-fibre-totali" class="macro-progress" value="0"></progress>
+                        </div>
+                    </div>
                     <div class="fats-group" style="padding-left: 15px; border-left: 3px solid #eee; margin-top: 15px;">
                         <p>Solubili: <span id="totale-fibre-solubili">0</span> / <span id="obiettivo-fibre-solubili"></span> g</p>
                         <progress id="progress-fibre-solubili" value="0"></progress>
@@ -667,11 +759,14 @@
                     <progress id="progress-fats-total" class="macro-progress" value="0"></progress>
                     
                     <div class="fats-group">
-                         <div class="fats-sub-bars-container">
-                            <div>
-                                <p>Saturi: <span id="totale-fat-sat">0</span> / <span id="obiettivo-fat-sat"></span> g</p>
+                         <div id="row-alert-fatsat" class="macro-row-alert alert-ok" style="margin-bottom:10px;">
+                            <span class="alert-icon"><i class="fas fa-check-circle"></i></span>
+                            <div class="alert-content">
+                                <p style="margin: 0 0 4px 0;">Saturi: <span id="totale-fat-sat">0</span> / <span id="obiettivo-fat-sat"></span> g</p>
                                 <progress id="progress-fat-sat" class="progress-fat-sat" value="0"></progress>
                             </div>
+                         </div>
+                         <div class="fats-sub-bars-container">
                             <div>
                                 <p>Trans: <span id="totale-fat-trans">0</span> / <span id="obiettivo-fat-trans"></span> g</p>
                                 <progress id="progress-fat-trans" value="0"></progress>
@@ -698,9 +793,14 @@
                                         <progress id="progress-omega6" value="0"></progress>
                                     </div>
                                  </div>
-                                 <p style="text-align: center; font-weight: bold; margin-top: 10px; font-size: 1.1em;">
-                                    Rapporto O6:O3: <span id="omega-ratio-value"></span>
-                                 </p>
+                                 <div id="row-alert-omega" class="macro-row-alert alert-ok" style="margin-top:10px;">
+                                    <span class="alert-icon"><i class="fas fa-check-circle"></i></span>
+                                    <div class="alert-content">
+                                        <p style="text-align: center; font-weight: bold; margin: 0; font-size: 1.1em;">
+                                            Rapporto O6:O3: <span id="omega-ratio-value"></span>
+                                        </p>
+                                    </div>
+                                 </div>
                             </div>
                         </div>
                     </div>
@@ -712,22 +812,25 @@
                 </h3>
                 <div class="collapsible-content" id="micro-content">
                     
-                    <div style="margin-bottom: 20px; padding: 10px; background-color: #f1f8e9; border: 1px solid #c8e6c9; border-radius: 8px;">
-                        <h4 style="margin-top:0; text-align: center; color: #2e7d32;">Bilancia Idrica (Anti-Cortisolo)</h4>
-                        <div class="balance-labels">
-                            <span style="color: #d32f2f;">SODIO (Na)</span>
-                            <span style="color: #388e3c;">POTASSIO (K)</span>
+                    <div id="row-alert-na" class="macro-row-alert alert-ok" style="margin-bottom: 20px; padding: 10px; border-radius: 8px;">
+                        <span class="alert-icon"><i class="fas fa-check-circle"></i></span>
+                        <div class="alert-content" style="background-color: #f1f8e9; border: 1px solid #c8e6c9; border-radius: 8px; padding: 10px;">
+                            <h4 style="margin-top:0; text-align: center; color: #2e7d32;">Bilancia Idrica (Sodio / Potassio)</h4>
+                            <div class="balance-labels">
+                                <span style="color: #d32f2f;">SODIO (Na)</span>
+                                <span style="color: #388e3c;">POTASSIO (K)</span>
+                            </div>
+                            <div class="balance-container">
+                                <div class="balance-bar-left"></div>
+                                <div class="balance-bar-right"></div>
+                                <div id="balance-marker" class="balance-marker"></div>
+                            </div>
+                            <div class="balance-labels">
+                                <span class="balance-value" id="valore-sodio">0 mg</span>
+                                <span class="balance-value" id="valore-potassio">0 mg</span>
+                            </div>
+                            <p style="text-align: center; font-size: 0.85em; margin: 5px 0 0 0; color: #555;">Obiettivo: Cursore a destra (Zona Verde)</p>
                         </div>
-                        <div class="balance-container">
-                            <div class="balance-bar-left"></div>
-                            <div class="balance-bar-right"></div>
-                            <div id="balance-marker" class="balance-marker"></div>
-                        </div>
-                        <div class="balance-labels">
-                            <span class="balance-value" id="valore-sodio">0 mg</span>
-                            <span class="balance-value" id="valore-potassio">0 mg</span>
-                        </div>
-                        <p style="text-align: center; font-size: 0.85em; margin: 5px 0 0 0; color: #555;">Obiettivo: Cursore a destra (Zona Verde)</p>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
                         <div>
@@ -1089,10 +1192,14 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
         const CLOUD_LAST_UPDATE_PATH = 'lastCloudUpdateTimestamp';
         const USER_PROFILE_LOCAL_KEY = 'trackerUserProfile';
         const USER_PROFILE_CLOUD_PATH = 'user_profile';
+        const USER_PROFILE_COMPLETED_LOCAL_KEY = 'trackerUserProfileCompleted';
+        const USER_PROFILE_COMPLETED_CLOUD_PATH = 'user_profile_completed';
         const AUTO_ADJUST_HISTORY_LOCAL_KEY = 'trackerAutoAdjustHistory';
         const AUTO_ADJUST_LAST_RUN_KEY = 'trackerAutoAdjustLastRun';
         const AUTO_ADJUST_HISTORY_CLOUD_PATH = 'auto_adjustments';
         const ADHERENCE_SCORES_LOCAL_KEY = 'trackerAdherenceScores';
+        const CONTROL_MODE_LOCAL_KEY = 'trackerControlMode';
+        const CONTROL_MODE_DEFAULT = 'medium';
 
         // AGGIORNATO: Aggiunto "sale" al prompt e rimosso "na" (ora calcolato dal sale)
         const GEMINI_PROMPT_FORMAT = `{"prot":g,"kcal":kcal,"carb":g,"zuccheri":g,"fatSat":g,"fatTrans":g,"fatMono":g,"fatPoly":g,"omega3":g,"omega6":g,"fibreTotali":g,"fibreSolubili":g,"fibreInsolubili":g,"sale":g,"mg":mg,"k":mg,"vitc":mg,"ca":mg,"vitA":µg,"vitB12":µg,"vitD":µg,"vitE":mg,"vitK":µg,"b9":µg,"b2":mg,"b6":mg,"fe":mg,"zn":mg,"cu":mg,"p":mg,"leu":mg,"iso":mg,"val":mg,"lys":mg,"met":mg,"phe":mg,"thr":mg,"trp":mg,"his":mg}`;
@@ -1181,6 +1288,9 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
         const weightValueInput = document.getElementById('weight-value');
         const btnSaveWeight = document.getElementById('btn-save-weight');
         const weightLatestInfo = document.getElementById('weight-latest-info');
+        const controlModeSelect = document.getElementById('control-mode-select');
+        const globalBodyStateEl = document.getElementById('global-body-state');
+        const indicatorsDashboardEl = document.getElementById('indicators-dashboard');
         const btnEditIngredients = document.getElementById('btn-edit-ingredients');
         const btnEditName = document.getElementById('btn-edit-name');
         const ingredientModal = document.getElementById('ingredient-modal');
@@ -1301,6 +1411,162 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
             return str.replace(/[.#$/\[\]]/g, '_');
         }
 
+        function getControlMode() {
+            const m = localStorage.getItem(CONTROL_MODE_LOCAL_KEY) || CONTROL_MODE_DEFAULT;
+            return ['easy', 'medium', 'hard'].includes(m) ? m : CONTROL_MODE_DEFAULT;
+        }
+
+        function setControlMode(mode) {
+            if (!['easy', 'medium', 'hard'].includes(mode)) return;
+            localStorage.setItem(CONTROL_MODE_LOCAL_KEY, mode);
+            if (controlModeSelect) controlModeSelect.value = mode;
+            if (db && currentUserUID) saveSingleItemToCloud(CONTROL_MODE_LOCAL_KEY, mode);
+        }
+
+        function getToleranceForMode(mode) {
+            const t = {
+                easy: { low: 0.75, high: 1.35, bandPct: 0.25 },
+                medium: { low: 0.88, high: 1.15, bandPct: 0.15 },
+                hard: { low: 0.95, high: 1.05, bandPct: 0.06 }
+            };
+            return t[mode] || t.medium;
+        }
+
+        function getNutrientRanges(obiettivi) {
+            const opt = obiettivi || {};
+            const protOpt = opt.prot || 140;
+            const kcalOpt = opt.kcal || 2300;
+            const fibreOpt = opt.fibreTotali ?? OBIETTIVI_FIBRE.fibreTotali;
+            const fatSatOpt = OBIETTIVI_FAT.fatSat;
+            const naOpt = OBIETTIVI_MICRO.na;
+            const kOpt = OBIETTIVI_MICRO.k;
+            return {
+                prot: { min: Math.round(protOpt * 0.75), optimal: protOpt, max: Math.round(protOpt * 1.35) },
+                kcal: { min: Math.round(kcalOpt * 0.8), optimal: kcalOpt, max: Math.round(kcalOpt * 1.2) },
+                fibreTotali: { min: Math.round(fibreOpt * 0.6), optimal: fibreOpt, max: 50 },
+                fatSat: { min: 0, optimal: fatSatOpt, max: Math.round(fatSatOpt * 1.5) },
+                omegaRatio: { min: 2, optimalMin: 3, optimalMax: 6, max: 12 },
+                na: { min: 800, optimal: naOpt, max: 2600 },
+                k: { min: 2600, optimal: kOpt, max: 4200 }
+            };
+        }
+
+        function computeParamState(key, value, ranges, mode) {
+            const tol = getToleranceForMode(mode);
+            if (key === 'omegaRatio') {
+                const r = ranges.omegaRatio;
+                if (value == null || (value <= 0)) return 'out';
+                if (value >= r.optimalMin && value <= r.optimalMax) return 'optimal';
+                if (value >= r.min && value <= r.max) return 'attention';
+                return 'out';
+            }
+            const range = ranges[key];
+            if (!range || value == null) return 'optimal';
+            const { min, optimal, max } = range;
+            const lowBound = key === 'fatSat' || key === 'na' ? min : (optimal * tol.low);
+            const highBound = key === 'fatSat' || key === 'na' ? optimal : (optimal * tol.high);
+            const maxBound = key === 'fatSat' || key === 'na' ? max : (optimal * (1 + tol.bandPct * 2));
+            if (key === 'fatSat' || key === 'na') {
+                if (value > max) return 'out';
+                if (value > optimal) return 'attention';
+                if (value >= min) return 'optimal';
+                return value < min ? 'attention' : 'optimal';
+            }
+            if (value < lowBound || value > maxBound) return 'out';
+            if (value >= lowBound && value <= highBound) return 'optimal';
+            return 'attention';
+        }
+
+        function computeGlobalBodyState(states) {
+            const arr = Object.values(states || {});
+            const out = arr.filter(s => s === 'out').length;
+            const att = arr.filter(s => s === 'attention').length;
+            if (out >= 2 || out >= 1 && att >= 2) return { status: 'critical', countOut: out, countAttention: att };
+            if (out >= 1 || att >= 2) return { status: 'attention', countOut: out, countAttention: att };
+            return { status: 'ok', countOut: out, countAttention: att };
+        }
+
+        function updateControlModeUI(totali, OBIETTIVI, pianoDelGiorno) {
+            const mode = getControlMode();
+            if (controlModeSelect && controlModeSelect.value !== mode) controlModeSelect.value = mode;
+            const obiettivoCalorieTotale = pianoDelGiorno.cal_base + (datiGiornalieri.workoutCalorie || 0) + (datiGiornalieri.calorieAdjustment || 0);
+            const OBIETTIVI_MERGED = { ...OBIETTIVI, prot: pianoDelGiorno.prot, kcal: obiettivoCalorieTotale, fibreTotali: OBIETTIVI_FIBRE.fibreTotali };
+            const ranges = getNutrientRanges(OBIETTIVI_MERGED);
+            const omegaRatio = (totali.omega3 > 0 && totali.omega6 > 0) ? totali.omega6 / totali.omega3 : null;
+            const states = {
+                prot: computeParamState('prot', totali.prot, ranges, mode),
+                kcal: computeParamState('kcal', totali.kcal, ranges, mode),
+                fibreTotali: computeParamState('fibreTotali', totali.fibreTotali, ranges, mode),
+                fatSat: computeParamState('fatSat', totali.fatSat, ranges, mode),
+                omegaRatio: computeParamState('omegaRatio', omegaRatio, ranges, mode),
+                na: computeParamState('na', totali.na, ranges, mode),
+                k: computeParamState('k', totali.k, ranges, mode)
+            };
+            const global = computeGlobalBodyState(states);
+            if (globalBodyStateEl) {
+                globalBodyStateEl.className = 'global-body-state state-' + global.status;
+                globalBodyStateEl.textContent = 'Stato corpo: ' + (global.status === 'ok' ? 'OK' : global.status === 'attention' ? 'Attenzione' : 'Critico');
+            }
+            const fmt = (v, u) => (v != null ? (Number(v).toFixed(v >= 100 ? 0 : 1) + (u || '')) : '—');
+            const setInd = (idVal, idRange, idState, val, r, state) => {
+                const vEl = document.getElementById(idVal);
+                const rEl = document.getElementById(idRange);
+                const sEl = document.getElementById(idState);
+                if (vEl) vEl.textContent = fmt(val, idVal.includes('kcal') ? ' kcal' : idVal.includes('na') || idVal.includes('k') ? ' mg' : ' g');
+                if (rEl) rEl.textContent = r;
+                if (sEl) {
+                    sEl.innerHTML = '<span class="indicator-dot ' + state + '"></span>' + (state === 'optimal' ? 'Ottimale' : state === 'attention' ? 'Attenzione' : 'Fuori range');
+                    sEl.className = 'param-state-' + (state === 'optimal' ? 'optimal' : state === 'attention' ? 'attention' : 'out');
+                }
+            };
+            setInd('ind-prot-value', 'ind-prot-range', 'ind-prot-state', totali.prot, ranges.prot.min + ' – ' + ranges.prot.optimal + ' – ' + ranges.prot.max + ' g', states.prot);
+            setInd('ind-kcal-value', 'ind-kcal-range', 'ind-kcal-state', totali.kcal, ranges.kcal.min + ' – ' + ranges.kcal.optimal + ' – ' + ranges.kcal.max + ' kcal', states.kcal);
+            setInd('ind-fibre-value', 'ind-fibre-range', 'ind-fibre-state', totali.fibreTotali, ranges.fibreTotali.min + ' – ' + ranges.fibreTotali.optimal + ' – ' + ranges.fibreTotali.max + ' g', states.fibreTotali);
+            setInd('ind-fatsat-value', 'ind-fatsat-range', 'ind-fatsat-state', totali.fatSat, ranges.fatSat.min + ' – ' + ranges.fatSat.optimal + ' – ' + ranges.fatSat.max + ' g', states.fatSat);
+            const ro = ranges.omegaRatio;
+            const omegaValEl = document.getElementById('ind-omega-value');
+            if (omegaValEl) omegaValEl.textContent = omegaRatio != null ? omegaRatio.toFixed(1) + ':1' : '—';
+            const indOmegaRange = document.getElementById('ind-omega-range');
+            if (indOmegaRange) indOmegaRange.textContent = ro.min + ' – ' + ro.optimalMin + '–' + ro.optimalMax + ' – ' + ro.max;
+            const indOmegaState = document.getElementById('ind-omega-state');
+            if (indOmegaState) {
+                indOmegaState.innerHTML = '<span class="indicator-dot ' + states.omegaRatio + '"></span>' + (states.omegaRatio === 'optimal' ? 'Ottimale' : states.omegaRatio === 'attention' ? 'Attenzione' : 'Fuori range');
+                indOmegaState.className = 'param-state-' + (states.omegaRatio === 'optimal' ? 'optimal' : states.omegaRatio === 'attention' ? 'attention' : 'out');
+            }
+            setInd('ind-na-value', 'ind-na-range', 'ind-na-state', totali.na, ranges.na.min + ' – ' + ranges.na.optimal + ' – ' + ranges.na.max + ' mg', states.na);
+            setInd('ind-k-value', 'ind-k-range', 'ind-k-state', totali.k, ranges.k.min + ' – ' + ranges.k.optimal + ' – ' + ranges.k.max + ' mg', states.k);
+            if (indicatorsDashboardEl) indicatorsDashboardEl.style.display = 'block';
+            const progressProt = document.getElementById('progress-proteine');
+            const progressCal = document.getElementById('progress-calorie');
+            const progressFibre = document.getElementById('progress-fibre-totali');
+            if (progressProt) { progressProt.classList.remove('progress-state-optimal', 'progress-state-attention', 'progress-state-out'); progressProt.classList.add('progress-state-' + states.prot); }
+            if (progressCal) { progressCal.classList.remove('progress-state-optimal', 'progress-state-attention', 'progress-state-out'); progressCal.classList.add('progress-state-' + states.kcal); }
+            if (progressFibre) { progressFibre.classList.remove('progress-state-optimal', 'progress-state-attention', 'progress-state-out'); progressFibre.classList.add('progress-state-' + states.fibreTotali); }
+            const alertMap = [
+                { id: 'row-alert-prot', state: states.prot },
+                { id: 'row-alert-kcal', state: states.kcal },
+                { id: 'row-alert-fibre', state: states.fibreTotali },
+                { id: 'row-alert-fatsat', state: states.fatSat },
+                { id: 'row-alert-omega', state: states.omegaRatio },
+                { id: 'row-alert-na', state: states.na }
+            ];
+            const alertClass = { optimal: 'alert-ok', attention: 'alert-attention', out: 'alert-out' };
+            const alertIcon = { optimal: 'fa-check-circle', attention: 'fa-exclamation-triangle', out: 'fa-times-circle' };
+            alertMap.forEach(function (item) {
+                const row = document.getElementById(item.id);
+                if (!row) return;
+                const s = item.state || 'optimal';
+                row.className = 'macro-row-alert ' + (alertClass[s] || 'alert-ok');
+                const iconWrap = row.querySelector('.alert-icon');
+                if (iconWrap) {
+                    const icon = iconWrap.querySelector('i');
+                    if (icon) { icon.className = 'fas ' + (alertIcon[s] || 'fa-check-circle'); }
+                }
+            });
+            window.nutritionControlStates = states;
+            window.nutritionGlobalState = global;
+        }
+
         function isUserProfileComplete(profile) {
             if (!profile) return false;
             const required = ['sex', 'age', 'height', 'weight', 'goal', 'activityLevel'];
@@ -1342,6 +1608,22 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
         }
 
         function calculateMacroTargets(profile) {
+            if (profile && profile.useManualTargets && profile.manualTargets) {
+                const m = profile.manualTargets;
+                const kcal = Number(m.kcal) || 0;
+                const prot = Number(m.prot) || 0;
+                const carb = Number(m.carb) || 0;
+                const fat = Number(m.fat) || 0;
+                if (kcal > 0 && prot > 0 && carb > 0 && fat > 0) {
+                    return {
+                        kcal: Math.round(kcal),
+                        prot: Math.round(prot),
+                        carb: Math.round(carb),
+                        zuccheri: Math.round(carb * 0.25),
+                        fat: Math.round(fat)
+                    };
+                }
+            }
             if (profile && profile.adaptiveMacros && profile.adaptiveMacros.kcal && profile.adaptiveMacros.prot && profile.adaptiveMacros.carb && profile.adaptiveMacros.fat) {
                 const override = profile.adaptiveMacros;
                 const zuccheriOverride = override.zuccheri != null ? override.zuccheri : Math.round(override.carb * 0.25);
@@ -1403,6 +1685,47 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
             return PIANO_SETTIMANALE[giornoSettimana] || PIANO_SETTIMANALE[1];
         }
 
+        function getUserProfileCompleted() {
+            try {
+                const v = localStorage.getItem(USER_PROFILE_COMPLETED_LOCAL_KEY);
+                if (v === null || v === undefined) return false;
+                return v === 'true';
+            } catch (e) {
+                return false;
+            }
+        }
+
+        async function setUserProfileCompleted(completed) {
+            const val = completed ? 'true' : 'false';
+            try {
+                localStorage.setItem(USER_PROFILE_COMPLETED_LOCAL_KEY, val);
+            } catch (e) {
+                console.error('Errore salvataggio flag profilo completato', e);
+            }
+            if (db && currentUserUID) {
+                try {
+                    await set(ref(db, `users/${currentUserUID}/${USER_PROFILE_COMPLETED_CLOUD_PATH}`), completed);
+                } catch (e) {
+                    console.error('Errore salvataggio flag profilo completato su cloud', e);
+                }
+            }
+        }
+
+        async function getUserProfileCompletedFromCloud() {
+            if (!db || !currentUserUID) return null;
+            try {
+                const snap = await get(ref(db, `users/${currentUserUID}/${USER_PROFILE_COMPLETED_CLOUD_PATH}`));
+                return snap.exists() ? !!snap.val() : null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function applyProfileSectionVisibility() {
+            if (!userProfileSection) return;
+            userProfileSection.style.display = getUserProfileCompleted() ? 'none' : 'block';
+        }
+
         function loadUserProfileFromLocal() {
             try {
                 const raw = localStorage.getItem(USER_PROFILE_LOCAL_KEY);
@@ -1437,6 +1760,14 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
                 const el = profileMealtimeInputs[key];
                 if (el && el.value) mealTimes[key] = el.value;
             });
+            const useManualTargets = document.getElementById('profile-targets-manual')?.checked || false;
+            const manualKcal = document.getElementById('profile-manual-kcal')?.value;
+            const manualProt = document.getElementById('profile-manual-prot')?.value;
+            const manualCarb = document.getElementById('profile-manual-carb')?.value;
+            const manualFat = document.getElementById('profile-manual-fat')?.value;
+            const manualTargets = (useManualTargets && manualKcal && manualProt && manualCarb && manualFat)
+                ? { kcal: Number(manualKcal), prot: Number(manualProt), carb: Number(manualCarb), fat: Number(manualFat) }
+                : (userProfile?.manualTargets || null);
             return {
                 sex: profileSexSelect?.value || '',
                 age: profileAgeInput?.value ? Number(profileAgeInput.value) : null,
@@ -1445,7 +1776,9 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
                 goal: profileGoalSelect?.value || '',
                 activityLevel: profileActivitySelect?.value || '',
                 trainingDays,
-                mealTimes
+                mealTimes,
+                useManualTargets,
+                manualTargets
             };
         }
 
@@ -1469,15 +1802,36 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
                     el.value = profile.mealTimes[key] || '';
                 });
             }
+            const useManual = !!profile.useManualTargets;
+            const autoRadio = document.getElementById('profile-targets-auto');
+            const manualRadio = document.getElementById('profile-targets-manual');
+            const manualWrap = document.getElementById('profile-manual-targets-wrap');
+            if (autoRadio) autoRadio.checked = !useManual;
+            if (manualRadio) manualRadio.checked = useManual;
+            if (manualWrap) manualWrap.style.display = useManual ? 'grid' : 'none';
+            const m = profile.manualTargets;
+            if (m) {
+                const kcalEl = document.getElementById('profile-manual-kcal');
+                const protEl = document.getElementById('profile-manual-prot');
+                const carbEl = document.getElementById('profile-manual-carb');
+                const fatEl = document.getElementById('profile-manual-fat');
+                if (kcalEl && m.kcal != null) kcalEl.value = m.kcal;
+                if (protEl && m.prot != null) protEl.value = m.prot;
+                if (carbEl && m.carb != null) carbEl.value = m.carb;
+                if (fatEl && m.fat != null) fatEl.value = m.fat;
+            }
         }
 
         function updateProfileSummary(profile) {
             if (!profileTargetKcalSpan || !profileTargetProtSpan || !profileTargetCarbSpan || !profileTargetFatSpan) return;
-            if (!isUserProfileComplete(profile)) {
+            const sourceEl = document.getElementById('profile-target-source');
+            const canShowMacros = profile && (isUserProfileComplete(profile) || (profile.useManualTargets && profile.manualTargets && profile.manualTargets.kcal && profile.manualTargets.prot && profile.manualTargets.carb && profile.manualTargets.fat));
+            if (!canShowMacros) {
                 profileTargetKcalSpan.textContent = '-';
                 profileTargetProtSpan.textContent = '-';
                 profileTargetCarbSpan.textContent = '-';
                 profileTargetFatSpan.textContent = '-';
+                if (sourceEl) sourceEl.textContent = '';
                 return;
             }
             const macros = calculateMacroTargets(profile);
@@ -1485,6 +1839,7 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
             profileTargetProtSpan.textContent = macros.prot.toFixed(0);
             profileTargetCarbSpan.textContent = macros.carb.toFixed(0);
             profileTargetFatSpan.textContent = macros.fat.toFixed(0);
+            if (sourceEl) sourceEl.textContent = profile && profile.useManualTargets ? '(target personalizzati)' : '';
         }
 
         function loadAutoAdjustHistoryFromLocal() {
@@ -1796,7 +2151,9 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
                 zuccheri,
                 fat
             };
-            userProfile.adaptiveMacros = newTargets;
+            if (!userProfile.useManualTargets) {
+                userProfile.adaptiveMacros = newTargets;
+            }
             await saveUserProfile(userProfile);
             const historyEntry = {
                 id: nowTs,
@@ -1842,6 +2199,16 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
             if (isUserProfileComplete(profile)) {
                 aggiornaUI();
                 renderMealBuilder();
+            }
+        }
+
+        function onProfileSavedSuccess(profile) {
+            const completed = isUserProfileComplete(profile);
+            if (completed) {
+                setUserProfileCompleted(true);
+                if (userProfileSection) userProfileSection.style.display = 'none';
+            } else {
+                applyProfileSectionVisibility();
             }
         }
         
@@ -1978,9 +2345,7 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
                 }
             });
             userProfile = loadUserProfileFromLocal();
-            if (userProfileSection) {
-                userProfileSection.style.display = isUserProfileComplete(userProfile) ? 'block' : 'none';
-            }
+            applyProfileSectionVisibility();
             if (userProfile) {
                 writeProfileToForm(userProfile);
                 updateProfileSummary(userProfile);
@@ -2098,16 +2463,23 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
             const targetCaloriesForBalanceText = pianoDelGiorno.cal_base + (datiGiornalieri.workoutCalorie || 0);
             const calorieDifference = totali.kcal - targetCaloriesForBalanceText;
             calorieBalanceText.className = '';
-            const tolerance = 50;
-            if (calorieDifference < -tolerance) { calorieBalanceText.textContent = `Deficit: ${Math.abs(calorieDifference).toFixed(0)} kcal`; calorieBalanceText.classList.add('balance-deficit');
-            } else if (calorieDifference > tolerance) { calorieBalanceText.textContent = `Surplus: ${calorieDifference.toFixed(0)} kcal`; calorieBalanceText.classList.add('balance-surplus');
+            const balanceTolerance = getControlMode() === 'easy' ? 80 : getControlMode() === 'hard' ? 30 : 50;
+            if (calorieDifference < -balanceTolerance) { calorieBalanceText.textContent = `Deficit: ${Math.abs(calorieDifference).toFixed(0)} kcal`; calorieBalanceText.classList.add('balance-deficit');
+            } else if (calorieDifference > balanceTolerance) { calorieBalanceText.textContent = `Surplus: ${calorieDifference.toFixed(0)} kcal`; calorieBalanceText.classList.add('balance-surplus');
             } else { calorieBalanceText.textContent = `In Pari`; calorieBalanceText.classList.add('balance-even'); }
             calorieAdjustmentInput.value = datiGiornalieri.calorieAdjustment || 0;
             
-            document.getElementById('fats-header').classList.toggle('nutrients-warning', totali.fatSat > OBIETTIVI_FAT.fatSat || totali.fatTrans > OBIETTIVI_FAT.fatTrans || totali.fatTotal > OBIETTIVI_FAT.fatTotal);
-            document.getElementById('fibre-header').classList.toggle('nutrients-warning', totali.fibreTotali < OBIETTIVI_FIBRE.fibreTotali * 0.8);
-            document.getElementById('micro-header').classList.toggle('nutrients-warning', Object.keys(OBIETTIVI_MICRO).some(k => totali[k] < OBIETTIVI_MICRO[k] * 0.5));
-            document.getElementById('vit-header').classList.toggle('nutrients-warning', Object.keys(OBIETTIVI_VIT).some(k => totali[k] < OBIETTIVI_VIT[k] * 0.5));
+            updateControlModeUI(totali, OBIETTIVI, pianoDelGiorno);
+            const mode = getControlMode();
+            const tol = getToleranceForMode(mode);
+            const fatSatOk = totali.fatSat <= OBIETTIVI_FAT.fatSat * (1 + tol.bandPct);
+            const fibreOk = totali.fibreTotali >= OBIETTIVI_FIBRE.fibreTotali * tol.low;
+            const microOk = !Object.keys(OBIETTIVI_MICRO).some(k => totali[k] < OBIETTIVI_MICRO[k] * tol.low);
+            const vitOk = !Object.keys(OBIETTIVI_VIT).some(k => totali[k] < OBIETTIVI_VIT[k] * tol.low);
+            document.getElementById('fats-header').classList.toggle('nutrients-warning', !fatSatOk || totali.fatTrans > OBIETTIVI_FAT.fatTrans || totali.fatTotal > OBIETTIVI_FAT.fatTotal * tol.high);
+            document.getElementById('fibre-header').classList.toggle('nutrients-warning', !fibreOk);
+            document.getElementById('micro-header').classList.toggle('nutrients-warning', !microOk);
+            document.getElementById('vit-header').classList.toggle('nutrients-warning', !vitOk);
             
             logBody.innerHTML = ''; 
             const nutrientKeys = ['kcal', 'na', 'fibreTotali', 'fibreSolubili', 'fibreInsolubili', ...Object.keys(OBIETTIVI_AMINO), 'fatSat', 'fatTrans', 'fatMono', 'fatPoly', 'omega3', 'omega6', 'mg', 'k', 'vitc', 'ca', 'fe', 'zn', 'cu', 'vitA', 'vitB12', 'vitD', 'vitE', 'vitK', 'b9', 'b2', 'b6', 'p'];
@@ -3488,9 +3860,7 @@ if (button.dataset.type === 'builder') {
                     authStatusP.textContent = isLoggedIn ? '' : "Non autenticato";
                     authSection.classList.toggle('logged-in', isLoggedIn);
                     mainTrackerContent.classList.toggle('authenticated', isLoggedIn);
-                    if (userProfileSection) {
-                        userProfileSection.style.display = isLoggedIn && isUserProfileComplete(userProfile) ? 'block' : (isLoggedIn ? 'block' : 'none');
-                    }
+                    applyProfileSectionVisibility();
                     cloudSyncStatusSpan.textContent = `Connessione Cloud: ${isLoggedIn ? user.email : 'Disconnesso'}`;
                     cloudSyncStatusSpan.className = `cloud-sync-status ${isLoggedIn ? 'connected' : 'disconnected'}`;
                     cloudSyncSection.querySelectorAll('button').forEach(button => button.disabled = !isLoggedIn);
@@ -3498,18 +3868,23 @@ if (button.dataset.type === 'builder') {
                     if (isLoggedIn) {
                         try {
                             const cloudProfile = await loadUserProfileFromCloud();
+                            const cloudCompleted = await getUserProfileCompletedFromCloud();
+                            if (cloudCompleted !== null) {
+                                try {
+                                    localStorage.setItem(USER_PROFILE_COMPLETED_LOCAL_KEY, cloudCompleted ? 'true' : 'false');
+                                } catch (e) {}
+                            }
                             if (cloudProfile) {
                                 userProfile = cloudProfile;
                                 writeProfileToForm(userProfile);
                                 updateProfileSummary(userProfile);
-                                if (userProfileSection) userProfileSection.style.display = 'block';
                                 aggiornaUI();
                                 renderMealBuilder();
-                            } else if (userProfileSection) {
-                                userProfileSection.style.display = 'block';
                             }
+                            applyProfileSectionVisibility();
                         } catch (e) {
                             console.error('Errore caricamento profilo da cloud', e);
+                            applyProfileSectionVisibility();
                         }
                         const lastLocalUpdate = parseInt(localStorage.getItem(LOCAL_LAST_UPDATE_KEY) || 0);
                         const cloudTimestampSnapshot = await get(ref(db, `users/${currentUserUID}/${CLOUD_LAST_UPDATE_PATH}`));
@@ -3568,6 +3943,44 @@ if (button.dataset.type === 'builder') {
             
             btnDownloadManual.addEventListener('click', () => loadAllTrackerDataFromCloud(false));
 
+            const btnEditProfile = document.getElementById('btn-edit-profile');
+            if (btnEditProfile && userProfileSection) {
+                btnEditProfile.addEventListener('click', () => {
+                    userProfileSection.style.display = 'block';
+                    userProfileSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                });
+            }
+
+            if (controlModeSelect) {
+                controlModeSelect.value = getControlMode();
+                controlModeSelect.addEventListener('change', () => {
+                    setControlMode(controlModeSelect.value);
+                    aggiornaUI();
+                });
+            }
+
+            const profileTargetsAuto = document.getElementById('profile-targets-auto');
+            const profileTargetsManual = document.getElementById('profile-targets-manual');
+            const profileManualTargetsWrap = document.getElementById('profile-manual-targets-wrap');
+            function syncProfileTargetsMode() {
+                const manual = profileTargetsManual && profileTargetsManual.checked;
+                if (profileManualTargetsWrap) profileManualTargetsWrap.style.display = manual ? 'grid' : 'none';
+                if (manual && userProfile && !userProfile.manualTargets) {
+                    const base = { ...userProfile, useManualTargets: false };
+                    const macros = calculateMacroTargets(base);
+                    const kcalEl = document.getElementById('profile-manual-kcal');
+                    const protEl = document.getElementById('profile-manual-prot');
+                    const carbEl = document.getElementById('profile-manual-carb');
+                    const fatEl = document.getElementById('profile-manual-fat');
+                    if (kcalEl && !kcalEl.value) kcalEl.value = macros.kcal;
+                    if (protEl && !protEl.value) protEl.value = macros.prot;
+                    if (carbEl && !carbEl.value) carbEl.value = macros.carb;
+                    if (fatEl && !fatEl.value) fatEl.value = macros.fat;
+                }
+            }
+            if (profileTargetsAuto) profileTargetsAuto.addEventListener('change', syncProfileTargetsMode);
+            if (profileTargetsManual) profileTargetsManual.addEventListener('change', syncProfileTargetsMode);
+
             if (btnSaveProfile) {
                 btnSaveProfile.addEventListener('click', async () => {
                     const profile = readProfileFromForm();
@@ -3577,21 +3990,21 @@ if (button.dataset.type === 'builder') {
                     } else {
                         alert('Profilo utente salvato e piano giornaliero aggiornato.');
                     }
-                    if (userProfileSection) {
-                        userProfileSection.style.display = 'block';
-                    }
+                    onProfileSavedSuccess(profile);
                 });
             }
 
             if (btnResetProfile) {
-                btnResetProfile.addEventListener('click', () => {
+                btnResetProfile.addEventListener('click', async () => {
                     userProfile = null;
                     try {
                         localStorage.removeItem(USER_PROFILE_LOCAL_KEY);
+                        localStorage.removeItem(USER_PROFILE_COMPLETED_LOCAL_KEY);
                     } catch (e) {
                         console.error('Errore reset profilo locale', e);
                     }
-                    if (userProfileSection) userProfileSection.style.display = 'none';
+                    await setUserProfileCompleted(false);
+                    if (userProfileSection) userProfileSection.style.display = 'block';
                     writeProfileToForm({
                         sex: '',
                         age: null,
@@ -3600,7 +4013,9 @@ if (button.dataset.type === 'builder') {
                         goal: '',
                         activityLevel: '',
                         trainingDays: [],
-                        mealTimes: {}
+                        mealTimes: {},
+                        useManualTargets: false,
+                        manualTargets: null
                     });
                     updateProfileSummary(null);
                     aggiornaUI();
@@ -4039,6 +4454,12 @@ if (button.dataset.type === 'builder') {
         window.analyzeLast7DaysForAutoAdaptation = analyzeLast7DaysForAutoAdaptation;
         window.loadAdherenceScoresFromLocal = loadAdherenceScoresFromLocal;
         window.computeAdherenceScore = computeAdherenceScore;
+        window.getControlMode = getControlMode;
+        window.setControlMode = setControlMode;
+        window.getToleranceForMode = getToleranceForMode;
+        window.getNutrientRanges = getNutrientRanges;
+        window.computeParamState = computeParamState;
+        window.computeGlobalBodyState = computeGlobalBodyState;
 
 });
     </script>
