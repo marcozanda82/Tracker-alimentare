@@ -1542,6 +1542,23 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
             });
             return { idealProt, idealKcal };
         }
+        function getPranzoTime(profile) {
+            return (profile && profile.mealTimes && profile.mealTimes.pranzo) || DEFAULT_MEAL_TIMES.pranzo;
+        }
+        function isBeforeFirstMainMeal(currentTimeStr, profile) {
+            return currentTimeStr < getPranzoTime(profile);
+        }
+        function computeTrajectoryGlobalState(actualProt, actualKcal, idealProt, idealKcal) {
+            const ratioProt = idealProt > 0 ? actualProt / idealProt : 1;
+            const ratioKcal = idealKcal > 0 ? actualKcal / idealKcal : 1;
+            const minRatio = Math.min(ratioProt, ratioKcal);
+            const maxRatio = Math.max(ratioProt, ratioKcal);
+            if (minRatio >= 0.80 && maxRatio <= 1.20) return { status: 'in_traiettoria', protState: 'optimal', kcalState: 'optimal' };
+            if (minRatio >= 0.65 && minRatio < 0.80) return { status: 'recuperabile', protState: ratioProt < 0.80 ? 'attention' : 'optimal', kcalState: ratioKcal < 0.80 ? 'attention' : 'optimal' };
+            if (minRatio < 0.65) return { status: 'fuori_traiettoria', protState: ratioProt < 0.65 ? 'out' : (ratioProt < 0.80 ? 'attention' : 'optimal'), kcalState: ratioKcal < 0.65 ? 'out' : (ratioKcal < 0.80 ? 'attention' : 'optimal') };
+            if (maxRatio > 1.35) return { status: 'fuori_traiettoria', protState: ratioProt > 1.35 ? 'out' : 'optimal', kcalState: ratioKcal > 1.35 ? 'out' : 'optimal' };
+            return { status: 'recuperabile', protState: ratioProt < 0.80 ? 'attention' : 'optimal', kcalState: ratioKcal < 0.80 ? 'attention' : 'optimal' };
+        }
         function getActualCumulativeUpToTime(log, currentTimeStr) {
             let actualProt = 0, actualKcal = 0;
             (log || []).forEach(entry => {
@@ -1716,7 +1733,7 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
             const OBIETTIVI_MERGED = { ...OBIETTIVI, prot: pianoDelGiorno.prot, kcal: obiettivoCalorieTotale, fibreTotali: OBIETTIVI_FIBRE.fibreTotali };
             const ranges = getNutrientRanges(OBIETTIVI_MERGED);
             const omegaRatio = (totali.omega3 > 0 && totali.omega6 > 0) ? totali.omega6 / totali.omega3 : null;
-            const states = {
+            let states = {
                 prot: computeParamState('prot', totali.prot, ranges, mode),
                 kcal: computeParamState('kcal', totali.kcal, ranges, mode),
                 fibreTotali: computeParamState('fibreTotali', totali.fibreTotali, ranges, mode),
@@ -1725,10 +1742,38 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
                 na: computeParamState('na', totali.na, ranges, mode),
                 k: computeParamState('k', totali.k, ranges, mode)
             };
-            const global = computeGlobalBodyState(states);
+            let global = computeGlobalBodyState(states);
+            const isToday = giornoVisualizzato === getTodayString();
+            const currentTimeStr = getCurrentTimeString();
+            const beforeMainMeal = isToday && userProfile && isBeforeFirstMainMeal(currentTimeStr, userProfile);
+            if (isToday) {
+                if (beforeMainMeal || !userProfile) {
+                    states = { ...states, prot: 'optimal', kcal: 'optimal' };
+                    global = { status: 'in_traiettoria' };
+                } else {
+                    const personalProfile = getOrUpdatePersonalTemporalProfile();
+                    if (personalProfile) {
+                        const mealTimesOrdered = getMealTimesOrdered(userProfile);
+                        const dailyProt = OBIETTIVI_MERGED.prot || 0;
+                        const dailyKcal = OBIETTIVI_MERGED.kcal || 0;
+                        const ideal = getIdealCumulativeUpToTime(mealTimesOrdered, dailyProt, dailyKcal, currentTimeStr, personalProfile);
+                        const actual = getActualCumulativeUpToTime(datiGiornalieri.log || [], currentTimeStr);
+                        const traj = computeTrajectoryGlobalState(actual.actualProt, actual.actualKcal, ideal.idealProt, ideal.idealKcal);
+                        global = { status: traj.status };
+                        states = { ...states, prot: traj.protState, kcal: traj.kcalState };
+                    } else {
+                        global = { status: 'in_traiettoria' };
+                        states = { ...states, prot: 'optimal', kcal: 'optimal' };
+                    }
+                }
+            }
+            const statusToClass = { in_traiettoria: 'ok', recuperabile: 'attention', fuori_traiettoria: 'critical', ok: 'ok', attention: 'attention', critical: 'critical' };
+            const statusToLabel = { in_traiettoria: 'In traiettoria', recuperabile: 'Recuperabile', fuori_traiettoria: 'Fuori traiettoria', ok: 'OK', attention: 'Attenzione', critical: 'Critico' };
+            const globalClass = statusToClass[global.status] || 'ok';
+            const globalLabel = statusToLabel[global.status] || 'In traiettoria';
             if (globalBodyStateEl) {
-                globalBodyStateEl.className = 'global-body-state state-' + global.status;
-                globalBodyStateEl.textContent = 'Stato corpo: ' + (global.status === 'ok' ? 'OK' : global.status === 'attention' ? 'Attenzione' : 'Critico');
+                globalBodyStateEl.className = 'global-body-state state-' + globalClass;
+                globalBodyStateEl.textContent = 'Stato corpo: ' + globalLabel;
             }
             const fmt = (v, u) => (v != null ? (Number(v).toFixed(v >= 100 ? 0 : 1) + (u || '')) : '—');
             const setInd = (idVal, idRange, idState, val, r, state) => {
@@ -5204,4 +5249,355 @@ function gestisciQuantitaEInserimento(data, qtaUtente, pasto) {
             const qtaInfo = r.data.lastQta ? ` (ultimo: ${r.data.lastQta}g)` : '';
             btn.textContent = `${r.data.desc}${qtaInfo}`;
             btn.style.cssText = 'display:block; width:100%; margin:5px 0; padding:10px; border:1px solid #1976d2; background:white; color:#1976d2; border-radius:6px; cursor:pointer; text-align:left; transition:all 0.2s;';
-            btn.onmouseov
+            btn.onmouseover = () => { btn.style.background='#1976d2'; btn.style.color='white'; };
+            btn.onmouseout = () => { btn.style.background='white'; btn.style.color='#1976d2'; };
+            btn.onclick = () => {
+                div.remove();
+                gestisciQuantitaEInserimento(r.data, qtaUtente, pasto);
+            };
+            div.appendChild(btn);
+        });
+        
+        addMessageElement(div);
+    }
+
+    function mostraDialogoNuovoAlimento(nome, qtaUtente, pasto) {
+        const div = document.createElement('div');
+        div.style.cssText = 'background:#fff3e0; border:2px solid #ff9800; padding:15px; border-radius:8px; margin:10px 0; max-width:90%;';
+        div.innerHTML = `<p style="margin:0 0 15px 0; font-weight:600; color:#e65100;">"${nome}" non trovato</p>`;
+        
+        const btnManual = document.createElement('button');
+        btnManual.textContent = '✏️ Compila manualmente nel form';
+        btnManual.style.cssText = 'display:block; width:100%; margin:8px 0; padding:12px; border:1px solid #4caf50; background:#e8f5e9; color:#2e7d32; border-radius:6px; cursor:pointer; font-weight:600;';
+        btnManual.onclick = () => {
+            div.remove();
+            document.getElementById('builder-desc').value = nome;
+            if (qtaUtente > 0) document.getElementById('builder-qta').value = qtaUtente;
+            document.getElementById('builder-desc').focus();
+            document.getElementById('food-adder').scrollIntoView({ behavior: 'smooth' });
+            addMessage(`Compila i dati per <strong>${nome}</strong> nel form sopra`, 'assistant');
+        };
+        div.appendChild(btnManual);
+        
+        const btnAI = document.createElement('button');
+        btnAI.textContent = '🤖 Genera con AI e salva';
+        btnAI.style.cssText = 'display:block; width:100%; margin:8px 0; padding:12px; border:1px solid #667eea; background:#e8eaf6; color:#3f51b5; border-radius:6px; cursor:pointer; font-weight:600;';
+        btnAI.onclick = async () => {
+            btnAI.disabled = true;
+            btnManual.disabled = true;
+            btnAI.textContent = '⏳ Generazione...';
+            
+            try {
+                const prompt = `Fornisci dati nutrizionali completi per 100g di "${nome}". 
+Formato JSON: {"prot":0.0,"kcal":0,"carb":0.0,"zuccheri":0.0,"fatTotal":0.0,"fatSat":0.0,"fatMono":0.0,"fatPoly":0.0,"omega3":0.0,"omega6":0.0,"fibreTotali":0.0,"fibreSolubili":0.0,"fibreInsolubili":0.0,"sale":0.0,"na":0,"mg":0,"k":0,"vitc":0,"ca":0,"fe":0,"zn":0,"cu":0,"p":0,"vitA":0,"vitB12":0,"vitD":0,"vitE":0,"vitK":0,"b9":0,"b2":0,"b6":0,"leu":0,"iso":0,"val":0,"lys":0,"met":0,"phe":0,"thr":0,"trp":0,"his":0}
+Solo JSON, senza testo.`;
+                
+                const raw = await callGeminiAPI(prompt);
+                const clean = raw.substring(raw.indexOf('{'), raw.lastIndexOf('}') + 1);
+                const newData = JSON.parse(clean);
+                newData.desc = nome.charAt(0).toUpperCase() + nome.slice(1);
+                
+                div.innerHTML = `
+                    <p style="margin:0 0 10px 0; font-weight:600; color:#2e7d32;">✅ Dati generati per ${nome}</p>
+                    <div style="background:#f5f5f5; padding:10px; border-radius:4px; font-size:0.85em; margin-bottom:15px;">
+                        Prot: ${newData.prot || 0}g | Kcal: ${newData.kcal || 0} | Carb: ${newData.carb || 0}g
+                    </div>
+                `;
+                
+                const btnConfirm = document.createElement('button');
+                btnConfirm.textContent = '✅ Conferma e aggiungi';
+                btnConfirm.style.cssText = 'display:inline-block; margin:5px; padding:10px 20px; border:none; background:#4caf50; color:white; border-radius:6px; cursor:pointer; font-weight:600;';
+                btnConfirm.onclick = () => {
+                    const key = window.sanitizeFirebaseKey ? window.sanitizeFirebaseKey(nome.toLowerCase()) : nome.toLowerCase().replace(/[.#$[\]\/]/g, '_');
+                    if (!window.foodDatabase) window.foodDatabase = {};
+                    window.foodDatabase[key] = newData;
+                    if (window.salvaFoodDatabase) window.salvaFoodDatabase();
+                    
+                    div.remove();
+                    gestisciQuantitaEInserimento(newData, qtaUtente, pasto);
+                };
+                
+                const btnCancel = document.createElement('button');
+                btnCancel.textContent = '❌ Annulla';
+                btnCancel.style.cssText = 'display:inline-block; margin:5px; padding:10px 20px; border:none; background:#f44336; color:white; border-radius:6px; cursor:pointer;';
+                btnCancel.onclick = () => {
+                    div.remove();
+                    addMessage('Annullato', 'assistant');
+                };
+                
+                div.appendChild(btnConfirm);
+                div.appendChild(btnCancel);
+                
+            } catch (e) {
+                div.remove();
+                addMessage(`❌ Errore: ${e.message}`, 'assistant');
+            }
+        };
+        div.appendChild(btnAI);
+        
+        addMessageElement(div);
+    }
+
+    function chiediQuantitaManuale(data, pasto) {
+        const div = document.createElement('div');
+        div.style.cssText = 'background:#f5f5f5; padding:15px; border-radius:8px; margin:10px 0; border:1px solid #ddd;';
+        div.innerHTML = `
+            <p style="margin:0 0 10px 0;">Quanti grammi di <strong>${data.desc}</strong>?</p>
+            <input type="number" id="temp-qta-input" placeholder="es. 150" style="width:100px; padding:8px; border:1px solid #ddd; border-radius:4px; margin-right:10px;">
+            <button id="temp-qta-btn" style="padding:8px 16px; background:#1976d2; color:white; border:none; border-radius:4px; cursor:pointer;">Conferma</button>
+        `;
+        
+        addMessageElement(div);
+        
+        setTimeout(() => {
+            const input = document.getElementById('temp-qta-input');
+            const btn = document.getElementById('temp-qta-btn');
+            if (input) input.focus();
+            
+            const conferma = () => {
+                const qta = parseFloat(input.value);
+                if (qta > 0) {
+                    div.remove();
+                    procediInserimentoFinale(data, qta, pasto);
+                } else {
+                    input.style.borderColor = 'red';
+                }
+            };
+            
+            if (btn) btn.onclick = conferma;
+            if (input) {
+                input.onkeypress = (e) => { if (e.key === 'Enter') conferma(); };
+                input.oninput = () => { input.style.borderColor = '#ddd'; };
+            }
+        }, 100);
+    }
+
+    function procediInserimentoFinale(data, qta, pasto) {
+        if (!data || !data.desc) return;
+        
+        // Salva lastQta nel database
+        const key = window.sanitizeFirebaseKey ? window.sanitizeFirebaseKey(data.desc.toLowerCase()) : data.desc.toLowerCase().replace(/[.#$[\]\/]/g, '_');
+        if (window.foodDatabase) {
+            if (!window.foodDatabase[key]) window.foodDatabase[key] = { ...data };
+            window.foodDatabase[key].lastQta = qta;
+            if (window.salvaFoodDatabase) window.salvaFoodDatabase();
+        }
+        
+        // Sincronizza array
+        let currentData = JSON.parse(localStorage.getItem('trackerPastoInCostruzione')) || [];
+        if (!window.pastoInCostruzione) {
+            window.pastoInCostruzione = currentData;
+        } else if (window.pastoInCostruzione.length < currentData.length) {
+            window.pastoInCostruzione = currentData;
+        }
+        
+        let item = { desc: data.desc, qta: qta, selezionato: true };
+        for (const k in data) { 
+            if (!['desc', 'lastQta', 'ingredienti'].includes(k)) {
+                const val100g = parseFloat(data[k]) || 0;
+                item[k] = (val100g / 100) * qta; 
+            }
+        }
+        
+        window.pastoInCostruzione.push(item);
+        localStorage.setItem('trackerPastoInCostruzione', JSON.stringify(window.pastoInCostruzione));
+        
+        if (pasto && document.getElementById('meal-type-selector')) {
+            const pastoMap = {
+                'colazione': 'merenda1', 'merenda1': 'merenda1', 'merenda am': 'merenda1',
+                'pranzo': 'pranzo', 
+                'merenda': 'merenda2', 'merenda2': 'merenda2', 'merenda pm': 'merenda2',
+                'cena': 'cena'
+            };
+            const mappedPasto = pastoMap[pasto.toLowerCase()] || 'merenda1';
+            document.getElementById('meal-type-selector').value = mappedPasto;
+            const today = window.getTodayString ? window.getTodayString() : new Date().toISOString().split('T')[0];
+            localStorage.setItem('lastMealTypeSelected_' + today, mappedPasto);
+        }
+
+        if (typeof window.renderMealBuilder === 'function') {
+            window.renderMealBuilder();
+            const builder = document.getElementById('meal-builder-sezione');
+            if (builder) {
+                builder.dataset.visible = "true";
+                builder.style.display = "block";
+                setTimeout(() => builder.scrollIntoView({ behavior: 'smooth' }), 100);
+            }
+        }
+        
+        addMessage(`✅ <strong>${item.desc}</strong> (${qta}g) aggiunto!`, 'assistant');
+    }
+
+    async function addFoodDirectly(nome, qta, pasto) {
+        if (!nome) return;
+        
+        const results = cercaInDatabase(nome);
+        
+        if (results.length === 0) {
+            mostraDialogoNuovoAlimento(nome, qta, pasto);
+        } else if (results.length === 1) {
+            gestisciQuantitaEInserimento(results[0].data, qta, pasto);
+        } else {
+            mostraSelezioneMultipla(nome, results, qta, pasto);
+        }
+    }
+    // 4. UTILITY UI
+    function addMessage(text, role) {
+        if (!aiMessages) return;
+        const d = document.createElement('div');
+        d.style.cssText = role === 'user' 
+            ? 'background:#667eea; color:white; padding:10px 15px; border-radius:18px 18px 4px 18px; margin:5px 0 5px auto; max-width:80%; word-wrap:break-word;'
+            : 'background:white; color:#333; padding:10px 15px; border-radius:18px 18px 18px 4px; margin:5px auto 5px 0; max-width:80%; border:1px solid #e0e0e0; word-wrap:break-word;';
+        d.innerHTML = text.replace(/\n/g, '<br>');
+        aiMessages.appendChild(d);
+        aiMessages.scrollTop = aiMessages.scrollHeight;
+        return d;
+    }
+
+    function addMessageElement(el) {
+        if (!aiMessages) return;
+        const d = document.createElement('div');
+        d.style.cssText = 'margin:5px auto 5px 0; max-width:80%;';
+        d.appendChild(el);
+        aiMessages.appendChild(d);
+        aiMessages.scrollTop = aiMessages.scrollHeight;
+        return d;
+    }
+
+    // 5. GESTIONE EVENTI
+    
+    if (aiToggle) {
+        aiToggle.onclick = (e) => {
+            if (e.target === aiOpenSettings || e.target.closest('#ai-open-settings')) return;
+            aiWidget.classList.toggle('minimized');
+            if (aiToggleIcon) aiToggleIcon.textContent = aiWidget.classList.contains('minimized') ? '▲' : '▼';
+            if (aiWidget.classList.contains('minimized') && aiChatSettings) {
+                aiChatSettings.style.display = 'none';
+            }
+        };
+    }
+    
+    if (aiOpenSettings) {
+        aiOpenSettings.onclick = (e) => {
+            e.stopPropagation();
+            if (aiChatSettings) {
+                const isVisible = aiChatSettings.style.display === 'block';
+                aiChatSettings.style.display = isVisible ? 'none' : 'block';
+                if (!isVisible && aiApiKey1) aiApiKey1.focus();
+            }
+        };
+    }
+    
+    if (aiCloseSettings) {
+        aiCloseSettings.onclick = (e) => {
+            e.stopPropagation();
+            if (aiChatSettings) aiChatSettings.style.display = 'none';
+        };
+    }
+    
+    if (aiSaveApiKey) {
+        aiSaveApiKey.onclick = (e) => {
+            e.stopPropagation();
+            const key1 = aiApiKey1 ? aiApiKey1.value.trim() : '';
+            const key2 = aiApiKey2 ? aiApiKey2.value.trim() : '';
+            
+            if (!key1 && !key2) {
+                if (aiApiStatus) {
+                    aiApiStatus.textContent = '❌ Inserisci almeno una chiave';
+                    aiApiStatus.style.color = '#d32f2f';
+                }
+                return;
+            }
+            
+            if (key1) localStorage.setItem('gemini_api_key_1', key1);
+            if (key2) localStorage.setItem('gemini_api_key_2', key2);
+            
+            if (aiApiStatus) {
+                const msg = key1 && key2 ? '✅ Entrambe le chiavi salvate!' : 
+                           key1 ? '✅ Chiave primaria salvata!' : '✅ Chiave secondaria salvata!';
+                aiApiStatus.textContent = msg;
+                aiApiStatus.style.color = '#2e7d32';
+            }
+            setTimeout(() => {
+                if (aiChatSettings) aiChatSettings.style.display = 'none';
+            }, 1200);
+        };
+    }
+
+if (aiSendBtn) {
+        aiSendBtn.onclick = async () => {
+            const text = aiInput.value.trim();
+            if (!text) return;
+            addMessage(text, 'user');
+            aiInput.value = '';
+            
+            const loading = addMessage("🧠 Elaboro...", "assistant");
+            loading.style.fontStyle = 'italic';
+            loading.style.color = '#666';
+
+            try {
+                // PROMPT AVANZATO: Gestisce CIBO e ALLENAMENTO
+                const prompt = `Analizza: "${text}".
+                
+                CASO 1: CIBO (es. "ho mangiato mela", "pasta 100g")
+                - Rispondi: [AGGIUNGI: nome | grammi | pasto]
+                - Se mancano i grammi, scrivi 0.
+                - Pasto default: quello attuale.
+
+                CASO 2: ALLENAMENTO (es. "palestra 200kcal", "corsa", "lavoro pesante")
+                - Rispondi: [ALLENAMENTO: descrizione | kcal]
+                - Se l'utente scrive le kcal, usa quelle.
+                - Se mancano le kcal, STIMALE tu (es. 1h pesi=300, 30min corsa=250, lavoro ufficio=0).
+
+                Rispondi SOLO con i comandi tra parentesi quadre.`;
+                
+                const resp = await callGeminiAPI(prompt);
+                if (loading) loading.remove();
+
+                let foundAny = false;
+
+                // 1. Cerca comandi CIBO
+                const regexFood = /\[AGGIUNGI:\s*([^|\]]+?)\s*\|\s*([0-9.,]+)\s*\|\s*([^\]]+?)\]/gi;
+                let matchFood;
+                while ((matchFood = regexFood.exec(resp)) !== null) {
+                    foundAny = true;
+                    const nome = matchFood[1].trim();
+                    const qta = parseFloat(matchFood[2].replace(',', '.')) || 0;
+                    const pasto = matchFood[3].trim().toLowerCase();
+                    await gestisciQuantitaEInserimento({ desc: nome }, qta, pasto); // Usa la tua funzione smart
+                }
+
+                // 2. Cerca comandi ALLENAMENTO
+                const regexWorkout = /\[ALLENAMENTO:\s*([^|\]]+?)\s*\|\s*([0-9.,]+)\]/gi;
+                let matchWorkout;
+                while ((matchWorkout = regexWorkout.exec(resp)) !== null) {
+                    foundAny = true;
+                    const desc = matchWorkout[1].trim();
+                    const kcal = parseFloat(matchWorkout[2].replace(',', '.')) || 0;
+                    addWorkoutDirectly(desc, kcal); // Chiama la nuova funzione diretta
+                }
+
+                if (!foundAny) {
+                    addMessage(resp, 'assistant'); // Se non trova comandi, mostra la risposta testuale
+                }
+
+            } catch (e) {
+                if (loading) loading.remove();
+                addMessage(`❌ Errore: ${e.message}`, "assistant");
+            }
+        };
+    }
+
+    if (aiInput) {
+        aiInput.onkeypress = (e) => { 
+            if (e.key === 'Enter' && !e.shiftKey) { 
+                e.preventDefault(); 
+                aiSendBtn.click(); 
+            } 
+        };
+    }
+
+})();
+</script>
+</body>
+</html>
