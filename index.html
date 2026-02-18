@@ -704,7 +704,9 @@
                         <div><label for="strategia-focus">Focus</label><select id="strategia-focus"><option value="">—</option><option value="ricomposizione">Ricomposizione</option><option value="deficit">Deficit</option><option value="massa">Massa</option></select></div>
                     </div>
                     <div style="margin-top: 8px;"><label for="strategia-note">Note libere</label><textarea id="strategia-note" rows="2" placeholder="Note sulla strategia..."></textarea></div>
-                    <div style="margin-top: 8px;"><label for="strategia-timing">Timing indicativo pasti</label><textarea id="strategia-timing" rows="2" placeholder="es. Colazione 8:00, Pranzo 13:00, Cena 20:00"></textarea></div>
+                    <div style="margin-top: 8px;"><label for="strategia-timing">Timing indicativo pasti (testo)</label><textarea id="strategia-timing" rows="2" placeholder="es. Colazione 8:00, Pranzo 13:00, Cena 20:00"></textarea></div>
+                    <div style="margin-top: 10px;"><label for="strategia-json-paste">Incolla JSON strategia (include <code>meals_timing</code>)</label><textarea id="strategia-json-paste" rows="6" placeholder='{"kcalTarget":2200,"protTarget":140,"meals_timing":{"breakfast":{"time":"09:30","type":"light"},"lunch":{"time":"13:30","type":"high_protein"},"snack":{"time":"17:00","type":"pre_workout"},"dinner":{"time":"20:30","type":"protein_focus"}}}' style="font-size: 0.85em; font-family: monospace;"></textarea><button type="button" id="btn-applica-json-strategia" style="background-color: #5e35b1; margin-top: 6px;">Applica JSON</button></div>
+                    <div id="strategia-timing-adherence" style="display: none; margin-top: 12px; padding: 10px; background: #f3e5f5; border-radius: 8px; border-left: 4px solid #7b1fa2; font-size: 0.9em;"></div>
                     <div style="margin-top: 12px; display: flex; gap: 10px; align-items: center;">
                         <button type="button" id="btn-salva-strategia" style="background-color: #7b1fa2;">Salva strategia</button>
                         <span id="strategia-badge" style="display: none; font-size: 0.85em; color: #7b1fa2; font-weight: 600;">Strategia attiva</span>
@@ -2934,7 +2936,64 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
             setVal('strategia-note', s && s.note ? s.note : '');
             setVal('strategia-timing', s && s.timingPasti ? s.timingPasti : '');
             const badge = document.getElementById('strategia-badge');
-            if (badge) badge.style.display = (s && (s.kcalTarget != null || s.protTarget != null)) ? 'inline' : 'none';
+            if (badge) badge.style.display = (s && (s.kcalTarget != null || s.protTarget != null || (s.meals_timing && Object.keys(s.meals_timing).length))) ? 'inline' : 'none';
+        }
+
+        const STRATEGIA_TIMING_WINDOW_MIN = 90;
+        function timeStrToMinutes(t) {
+            if (!t || typeof t !== 'string') return 0;
+            const [h, m] = t.trim().split(':').map(Number);
+            return (isFinite(h) ? h : 0) * 60 + (isFinite(m) ? m : 0);
+        }
+        function computeTimingAdherence(log, meals_timing) {
+            if (!meals_timing || typeof meals_timing !== 'object') return [];
+            const mealTimes = [];
+            (log || []).forEach(entry => {
+                if (entry.type === 'workout') return;
+                mealTimes.push(timeStrToMinutes(getEntryTime(entry)));
+            });
+            const result = [];
+            const slotLabels = { breakfast: 'Colazione', lunch: 'Pranzo', snack: 'Spuntino', dinner: 'Cena' };
+            Object.keys(meals_timing).forEach(slotKey => {
+                const slot = meals_timing[slotKey];
+                const slotTime = (slot && slot.time) ? String(slot.time).trim() : '';
+                const slotType = (slot && slot.type) ? String(slot.type) : '';
+                if (!slotTime) return;
+                const slotMin = timeStrToMinutes(slotTime);
+                const low = slotMin - STRATEGIA_TIMING_WINDOW_MIN;
+                const high = slotMin + STRATEGIA_TIMING_WINDOW_MIN;
+                const found = mealTimes.some(entryMin => entryMin >= low && entryMin <= high);
+                result.push({
+                    slotKey,
+                    label: slotLabels[slotKey] || slotKey,
+                    time: slotTime,
+                    type: slotType,
+                    status: found ? 'ok' : 'missing'
+                });
+            });
+            return result;
+        }
+        function renderStrategiaTimingAdherence() {
+            const block = document.getElementById('strategia-timing-adherence');
+            if (!block) return;
+            const s = getDailyStrategy(giornoVisualizzato);
+            const mt = s && s.meals_timing && Object.keys(s.meals_timing).length > 0 ? s.meals_timing : null;
+            if (!mt) {
+                block.style.display = 'none';
+                return;
+            }
+            const adherence = computeTimingAdherence(datiGiornalieri.log || [], mt);
+            if (adherence.length === 0) {
+                block.style.display = 'none';
+                return;
+            }
+            block.style.display = 'block';
+            const lines = adherence.map(a => {
+                const typeStr = a.type ? ` (${a.type})` : '';
+                if (a.status === 'ok') return `<span style="color:#2e7d32;">✓ ${a.label} ${a.time}${typeStr}: in orario</span>`;
+                return `<span style="color:#c62828;">✗ ${a.label} ${a.time}${typeStr}: non registrato</span>`;
+            });
+            block.innerHTML = '<strong>Aderenza timing strategia</strong><br>' + lines.join('<br>');
         }
 
         function calcolaObiettiviPasto(mealType, giornoCorrenteString) {
@@ -3019,7 +3078,8 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
             };
             
             const titoloBase = `${pianoDelGiorno.tipo} - ${dataVisualizzata.toLocaleDateString('it-IT', {day: 'numeric', month: 'long', year: 'numeric'})}`;
-            titoloGiornataEl.textContent = (dailyStrategy && (dailyStrategy.kcalTarget != null || dailyStrategy.protTarget != null)) ? titoloBase + ' · Strategia attiva' : titoloBase;
+            const hasStrategia = dailyStrategy && (dailyStrategy.kcalTarget != null || dailyStrategy.protTarget != null || (dailyStrategy.meals_timing && Object.keys(dailyStrategy.meals_timing).length > 0));
+            titoloGiornataEl.textContent = hasStrategia ? titoloBase + ' · Strategia attiva' : titoloBase;
             
             let totali = { 
                 prot: 0, kcal: 0, carb: 0, zuccheri: 0, fatTotal: 0, fatSat: 0, fatTrans: 0, fatMono: 0, fatPoly: 0, omega3: 0, omega6: 0, 
@@ -3206,6 +3266,7 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
                 }
             });
             updateTemporalAnalysisDashboard(OBIETTIVI, datiGiornalieri.log, pianoDelGiorno);
+            renderStrategiaTimingAdherence();
         }
 function calcolaObiettiviPastoConArray(mealType, giornoCorrenteString, pastoArray) {
     const dataVisualizzata = new Date(giornoCorrenteString);
@@ -4076,21 +4137,50 @@ Regole:
             });
 
             document.getElementById('btn-salva-strategia').addEventListener('click', () => {
+                const current = getDailyStrategy(giornoVisualizzato) || {};
                 const kcalEl = document.getElementById('strategia-kcal');
                 const protEl = document.getElementById('strategia-prot');
                 const kcalTarget = kcalEl.value.trim() ? parseInt(kcalEl.value, 10) : null;
                 const protTarget = protEl.value.trim() ? parseInt(protEl.value, 10) : null;
                 const dailyStrategy = {
-                    kcalTarget: isFinite(kcalTarget) ? kcalTarget : null,
-                    protTarget: isFinite(protTarget) ? protTarget : null,
-                    tipoGiornata: (document.getElementById('strategia-tipo').value || '').trim() || undefined,
-                    focus: (document.getElementById('strategia-focus').value || '').trim() || undefined,
-                    note: (document.getElementById('strategia-note').value || '').trim() || undefined,
-                    timingPasti: (document.getElementById('strategia-timing').value || '').trim() || undefined
+                    ...current,
+                    kcalTarget: isFinite(kcalTarget) ? kcalTarget : (current.kcalTarget ?? null),
+                    protTarget: isFinite(protTarget) ? protTarget : (current.protTarget ?? null),
+                    tipoGiornata: (document.getElementById('strategia-tipo').value || '').trim() || current.tipoGiornata || undefined,
+                    focus: (document.getElementById('strategia-focus').value || '').trim() || current.focus || undefined,
+                    note: (document.getElementById('strategia-note').value || '').trim() || current.note || undefined,
+                    timingPasti: (document.getElementById('strategia-timing').value || '').trim() || current.timingPasti || undefined
                 };
                 setDailyStrategy(giornoVisualizzato, dailyStrategy);
                 fillStrategiaForm();
                 aggiornaUI();
+            });
+
+            document.getElementById('btn-applica-json-strategia').addEventListener('click', () => {
+                const raw = (document.getElementById('strategia-json-paste').value || '').trim().replace(/```json|```/g, '');
+                if (!raw) return;
+                try {
+                    const parsed = JSON.parse(raw);
+                    const current = getDailyStrategy(giornoVisualizzato) || {};
+                    const merged = {
+                        ...current,
+                        kcalTarget: parsed.kcalTarget != null ? Number(parsed.kcalTarget) : current.kcalTarget,
+                        protTarget: parsed.protTarget != null ? Number(parsed.protTarget) : current.protTarget,
+                        tipoGiornata: parsed.tipoGiornata || current.tipoGiornata,
+                        focus: parsed.focus || current.focus,
+                        note: parsed.note != null ? String(parsed.note) : current.note,
+                        timingPasti: parsed.timingPasti != null ? String(parsed.timingPasti) : current.timingPasti
+                    };
+                    if (parsed.meals_timing && typeof parsed.meals_timing === 'object') {
+                        merged.meals_timing = parsed.meals_timing;
+                    }
+                    setDailyStrategy(giornoVisualizzato, merged);
+                    fillStrategiaForm();
+                    document.getElementById('strategia-json-paste').value = '';
+                    aggiornaUI();
+                } catch (e) {
+                    alert('JSON non valido: ' + (e.message || e));
+                }
             });
 
             ['progress-proteine', 'progress-calorie', 'progress-carboidrati', 'progress-zuccheri', 
