@@ -66,6 +66,17 @@
         .global-body-state.state-ok { background: #e8f5e9; color: #1b5e20; border: 1px solid #81c784; }
         .global-body-state.state-attention { background: #fff8e1; color: #e65100; border: 1px solid #ffb74d; }
         .global-body-state.state-critical { background: #ffebee; color: #b71c1c; border: 1px solid #e57373; }
+        .global-body-state-compact { font-size: 0.9em; padding: 6px 10px; }
+        .control-mode-section-secondary { margin-top: 8px; }
+        .guida-giornata { margin-bottom: 16px; padding: 16px; border-radius: 10px; background: #f8f9fa; border: 1px solid #e9ecef; }
+        .guida-giornata-title { margin: 0 0 10px 0; font-size: 1em; font-weight: 600; color: #495057; text-transform: uppercase; letter-spacing: 0.02em; }
+        .guida-main-message { margin: 0 0 10px 0; font-size: 1.15em; font-weight: 700; line-height: 1.3; }
+        .guida-main-message.guida-ok { color: #1b5e20; }
+        .guida-main-message.guida-recuperabile { color: #e65100; }
+        .guida-main-message.guida-correggere { color: #b71c1c; }
+        .guida-explanation { margin: 0 0 12px 0; font-size: 0.95em; color: #555; line-height: 1.45; }
+        .guida-suggestions { margin: 0; padding-left: 20px; font-size: 0.9em; color: #333; line-height: 1.5; }
+        .guida-suggestions li { margin-bottom: 4px; }
         .temporal-analysis-dashboard { margin-top: 12px; padding: 12px; background: #e3f2fd; border: 1px solid #90caf9; border-radius: 8px; font-size: 0.9em; }
         .temporal-grid { display: flex; flex-direction: column; gap: 6px; }
         .temporal-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -680,14 +691,21 @@
                 
                 <span id="calorie-balance-text"></span>
 
-                <div class="control-mode-section">
+                <div id="guida-giornata" class="guida-giornata">
+                    <h3 class="guida-giornata-title">Guida della giornata</h3>
+                    <p id="guida-main-message" class="guida-main-message">—</p>
+                    <p id="guida-explanation" class="guida-explanation"></p>
+                    <ul id="guida-suggestions" class="guida-suggestions"></ul>
+                </div>
+
+                <div class="control-mode-section control-mode-section-secondary">
                     <label for="control-mode-select">Modalità controllo:</label>
                     <select id="control-mode-select">
                         <option value="easy">Easy</option>
                         <option value="medium" selected>Medium</option>
                         <option value="hard">Hard</option>
                     </select>
-                    <span id="global-body-state" class="global-body-state state-ok">Stato corpo: —</span>
+                    <span id="global-body-state" class="global-body-state global-body-state-compact state-ok">Stato corpo: —</span>
                 </div>
                 <div id="temporal-analysis-dashboard" class="temporal-analysis-dashboard" style="display:none;">
                     <h4 style="margin-top:0;">Analisi temporale (fino a quest'ora)</h4>
@@ -1842,6 +1860,58 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
             });
             window.nutritionControlStates = states;
             window.nutritionGlobalState = global;
+            updateGuideSection(global);
+        }
+
+        function getGuideContent(globalStatus) {
+            const status = globalStatus && globalStatus.status ? globalStatus.status : 'ok';
+            if (status === 'in_traiettoria' || status === 'ok') {
+                return {
+                    mainMessage: 'In traiettoria',
+                    messageClass: 'guida-ok',
+                    explanation: 'Stai seguendo bene la tua giornata. I tuoi pasti sono in linea con il tuo pattern abituale.',
+                    suggestions: ['Continua così: mantieni ritmo e porzioni nei prossimi pasti.']
+                };
+            }
+            if (status === 'recuperabile' || status === 'attention') {
+                return {
+                    mainMessage: 'Recuperabile',
+                    messageClass: 'guida-recuperabile',
+                    explanation: 'Sei un po\' indietro rispetto alla tua traiettoria, ma la giornata è ancora riequilibrabile.',
+                    suggestions: [
+                        'Concentra proteine e calorie nei pasti principali che restano (pranzo e/o cena).',
+                        'Aggiungi uno spuntino nutriente se manca ancora tanto all\'obiettivo.'
+                    ]
+                };
+            }
+            return {
+                mainMessage: 'Da correggere',
+                messageClass: 'guida-correggere',
+                explanation: 'Sei fuori traiettoria per questa ora. Niente allarme: puoi ancora dare una direzione migliore alla giornata.',
+                suggestions: [
+                    'Priorità al prossimo pasto: proteine e calorie in linea con il tuo obiettivo.',
+                    'Clicca sui singoli indicatori (proteine, calorie, ecc.) per suggerimenti concreti su cosa mangiare.'
+                ]
+            };
+        }
+
+        function updateGuideSection(global) {
+            const block = document.getElementById('guida-giornata');
+            if (!block) return;
+            const content = getGuideContent(global);
+            const mainEl = document.getElementById('guida-main-message');
+            const explEl = document.getElementById('guida-explanation');
+            const suggEl = document.getElementById('guida-suggestions');
+            if (mainEl) { mainEl.textContent = content.mainMessage; mainEl.className = 'guida-main-message ' + (content.messageClass || ''); }
+            if (explEl) explEl.textContent = content.explanation || '';
+            if (suggEl) {
+                suggEl.innerHTML = '';
+                (content.suggestions || []).slice(0, 2).forEach(function (s) {
+                    const li = document.createElement('li');
+                    li.textContent = s;
+                    suggEl.appendChild(li);
+                });
+            }
         }
 
         function generateNutrientExplanation(param, currentValue, target, timeOfDay, trajectoryState, alertState) {
