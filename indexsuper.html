@@ -1572,8 +1572,56 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
         function getPranzoTime(profile) {
             return (profile && profile.mealTimes && profile.mealTimes.pranzo) || DEFAULT_MEAL_TIMES.pranzo;
         }
+        function getCenaTime(profile) {
+            return (profile && profile.mealTimes && profile.mealTimes.cena) || DEFAULT_MEAL_TIMES.cena;
+        }
         function isBeforeFirstMainMeal(currentTimeStr, profile) {
             return currentTimeStr < getPranzoTime(profile);
+        }
+        function isAfterCena(currentTimeStr, profile) {
+            return currentTimeStr >= getCenaTime(profile);
+        }
+        function isUserCoerente() {
+            const todayStr = getTodayString();
+            let daysInRange = 0;
+            let daysChecked = 0;
+            for (let i = 1; i <= 7; i++) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const dateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+                const raw = localStorage.getItem(`trackerStorico_${dateStr}`);
+                if (!raw) continue;
+                try {
+                    const data = JSON.parse(raw);
+                    if (!data || !data.log || !data.log.length) continue;
+                    const dataDate = new Date(dateStr + 'T12:00:00');
+                    const piano = getPianoDelGiornoForDate(dataDate);
+                    const targetKcal = piano.cal_base + (data.workoutCalorie || 0) + (data.calorieAdjustment || 0);
+                    const targetProt = piano.prot || 0;
+                    let actualKcal = 0, actualProt = 0;
+                    (data.log || []).forEach(entry => {
+                        if (entry.type === 'workout') return;
+                        const items = entry.type === 'meal' ? entry.items : [entry];
+                        items.forEach(item => { actualKcal += (item.kcal || item.cal) || 0; actualProt += item.prot || 0; });
+                    });
+                    daysChecked++;
+                    const ratioKcal = targetKcal > 0 ? actualKcal / targetKcal : 1;
+                    const ratioProt = targetProt > 0 ? actualProt / targetProt : 1;
+                    if (ratioKcal >= 0.85 && ratioKcal <= 1.15 && ratioProt >= 0.85 && ratioProt <= 1.15) daysInRange++;
+                } catch (e) {}
+            }
+            return daysChecked >= 3 && daysInRange >= Math.min(4, daysChecked);
+        }
+        function pranzoCenaShareKcal(profile) {
+            const personalProfile = getOrUpdatePersonalTemporalProfile();
+            if (!personalProfile) return 0;
+            return (personalProfile.pranzo && personalProfile.pranzo.cal_perc || 0) + (personalProfile.cena && personalProfile.cena.cal_perc || 0);
+        }
+        function allowRealTrajectoryEvaluation(currentTimeStr, totaliKcal, dailyKcal, profile) {
+            if (!profile) return false;
+            const afterCena = isAfterCena(currentTimeStr, profile);
+            const over80Kcal = dailyKcal > 0 && totaliKcal >= 0.8 * dailyKcal;
+            return afterCena || over80Kcal;
         }
         function computeTrajectoryGlobalState(actualProt, actualKcal, idealProt, idealKcal) {
             const ratioProt = idealProt > 0 ? actualProt / idealProt : 1;
@@ -1779,13 +1827,30 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
                     global = { status: 'in_traiettoria' };
                 } else {
                     const personalProfile = getOrUpdatePersonalTemporalProfile();
-                    if (personalProfile) {
+                    const dailyKcal = OBIETTIVI_MERGED.kcal || 0;
+                    const totaliKcal = totali.kcal || 0;
+                    const afterCena = userProfile && isAfterCena(currentTimeStr, userProfile);
+                    const over80Kcal = dailyKcal > 0 && totaliKcal >= 0.8 * dailyKcal;
+                    const allowRealEval = afterCena || over80Kcal;
+                    const before19 = currentTimeStr < '19:00';
+                    const pranzoCenaShare = pranzoCenaShareKcal(userProfile);
+                    const heavyPranzoCena = pranzoCenaShare > 0.60;
+                    const beforeCena = userProfile && currentTimeStr < getCenaTime(userProfile);
+                    const userCoerente = isUserCoerente();
+                    if (before19 && !allowRealEval) {
+                        states = { ...states, prot: 'optimal', kcal: 'optimal' };
+                        global = { status: 'presto_valutazione' };
+                    } else if (heavyPranzoCena && beforeCena && !allowRealEval) {
+                        states = { ...states, prot: 'optimal', kcal: 'optimal' };
+                        global = { status: 'in_traiettoria' };
+                    } else if (personalProfile && allowRealEval) {
                         const mealTimesOrdered = getMealTimesOrdered(userProfile);
                         const dailyProt = OBIETTIVI_MERGED.prot || 0;
-                        const dailyKcal = OBIETTIVI_MERGED.kcal || 0;
                         const ideal = getIdealCumulativeUpToTime(mealTimesOrdered, dailyProt, dailyKcal, currentTimeStr, personalProfile);
                         const actual = getActualCumulativeUpToTime(datiGiornalieri.log || [], currentTimeStr);
-                        const traj = computeTrajectoryGlobalState(actual.actualProt, actual.actualKcal, ideal.idealProt, ideal.idealKcal);
+                        let traj = computeTrajectoryGlobalState(actual.actualProt, actual.actualKcal, ideal.idealProt, ideal.idealKcal);
+                        if (userCoerente && traj.status === 'fuori_traiettoria') traj = { status: 'recuperabile', protState: traj.protState === 'out' ? 'attention' : traj.protState, kcalState: traj.kcalState === 'out' ? 'attention' : traj.kcalState };
+                        if (before19 && traj.status === 'fuori_traiettoria') { traj = { status: 'recuperabile', protState: traj.protState === 'out' ? 'attention' : traj.protState, kcalState: traj.kcalState === 'out' ? 'attention' : traj.kcalState }; }
                         global = { status: traj.status };
                         states = { ...states, prot: traj.protState, kcal: traj.kcalState };
                     } else {
@@ -1794,8 +1859,12 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
                     }
                 }
             }
-            const statusToClass = { in_traiettoria: 'ok', recuperabile: 'attention', fuori_traiettoria: 'critical', ok: 'ok', attention: 'attention', critical: 'critical' };
-            const statusToLabel = { in_traiettoria: 'In traiettoria', recuperabile: 'Recuperabile', fuori_traiettoria: 'Fuori traiettoria', ok: 'OK', attention: 'Attenzione', critical: 'Critico' };
+            const outKeys = Object.keys(states).filter(k => states[k] === 'out');
+            if (outKeys.length > 1) {
+                outKeys.slice(1).forEach(k => { states[k] = 'attention'; });
+            }
+            const statusToClass = { in_traiettoria: 'ok', recuperabile: 'attention', fuori_traiettoria: 'critical', presto_valutazione: 'ok', ok: 'ok', attention: 'attention', critical: 'critical' };
+            const statusToLabel = { in_traiettoria: 'In traiettoria', recuperabile: 'Recuperabile', fuori_traiettoria: 'Fuori traiettoria', presto_valutazione: 'Presto per valutazione reale', ok: 'OK', attention: 'Attenzione', critical: 'Critico' };
             const globalClass = statusToClass[global.status] || 'ok';
             const globalLabel = statusToLabel[global.status] || 'In traiettoria';
             if (globalBodyStateEl) {
@@ -1865,6 +1934,14 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
 
         function getGuideContent(globalStatus) {
             const status = globalStatus && globalStatus.status ? globalStatus.status : 'ok';
+            if (status === 'presto_valutazione') {
+                return {
+                    mainMessage: 'Presto per valutazione reale',
+                    messageClass: 'guida-ok',
+                    explanation: 'È ancora presto per una valutazione completa. La maggior parte delle calorie e proteine arriva spesso a pranzo e cena: continua a registrare i pasti.',
+                    suggestions: ['Registra pranzo e cena per avere un quadro fedele della giornata.']
+                };
+            }
             if (status === 'in_traiettoria' || status === 'ok') {
                 return {
                     mainMessage: 'In traiettoria',
@@ -1887,10 +1964,10 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
             return {
                 mainMessage: 'Da correggere',
                 messageClass: 'guida-correggere',
-                explanation: 'Sei fuori traiettoria per questa ora. Niente allarme: puoi ancora dare una direzione migliore alla giornata.',
+                explanation: 'Sei fuori traiettoria. Puoi ancora riequilibrare con il pasto successivo o domani.',
                 suggestions: [
                     'Priorità al prossimo pasto: proteine e calorie in linea con il tuo obiettivo.',
-                    'Clicca sui singoli indicatori (proteine, calorie, ecc.) per suggerimenti concreti su cosa mangiare.'
+                    'Clicca sui singoli indicatori per suggerimenti concreti su cosa mangiare.'
                 ]
             };
         }
