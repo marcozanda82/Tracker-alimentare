@@ -257,10 +257,13 @@
             text-decoration: none;
             cursor: pointer;
         }
-        .macro-row-alert { cursor: pointer; }
+        .macro-row-alert { cursor: default; }
+        .macro-row-alert .alert-icon { cursor: pointer; }
+        .macro-row-alert .nutrient-info-icon { cursor: pointer; color: #1976d2; }
         .nutrient-explanation-content { max-width: 520px; }
         .nutrient-explanation-title { margin: 0 0 16px 0; font-size: 1.25em; color: #1a237e; border-bottom: 1px solid #e8eaf6; padding-bottom: 8px; }
         .nutrient-explanation-body p { margin: 0 0 14px 0; line-height: 1.5; font-size: 0.95em; }
+        .nutrient-explanation-coach { background: #e8f5e9; border-left: 4px solid #4caf50; padding: 12px; border-radius: 0 8px 8px 0; margin: 0 0 14px 0; line-height: 1.5; font-size: 0.95em; color: #1b5e20; }
         .nutrient-explanation-reason { font-weight: 600; color: #333; }
         .nutrient-explanation-context { color: #555; }
         .nutrient-explanation-missing { color: #1565c0; font-weight: 500; }
@@ -747,21 +750,21 @@
                     <span>kcal</span>
                 </div>
 
-                <div id="row-alert-prot" class="macro-row-alert alert-ok" data-param="prot" title="Clicca per spiegazione">
-                    <span class="alert-icon"><i class="fas fa-check-circle"></i></span>
+                <div id="row-alert-prot" class="macro-row-alert alert-ok" data-param="prot">
+                    <span class="alert-icon" title="Spiegazione stato"><i class="fas fa-check-circle"></i></span>
                     <div class="alert-content">
                         <p style="display: flex; align-items: center; gap: 10px; margin: 0 0 4px 0;">
                             <span>Proteine: <span id="totale-proteine">0</span> / <span id="obiettivo-proteine"></span> g</span>
-                            <i id="info-proteine-giornata" class="fas fa-info-circle" style="cursor: pointer; color: #1976d2; font-size: 1.2em;"></i>
+                            <i id="info-proteine-giornata" class="fas fa-info-circle nutrient-info-icon" data-param="prot" title="Spiegazione" style="color: #1976d2; font-size: 1.2em;"></i>
                         </p>
-                        <progress id="progress-proteine" class="macro-progress" value="0"></progress>
+                        <progress id="progress-proteine" class="macro-progress" value="0" title="Clicca per elenco alimenti"></progress>
                     </div>
                 </div>
-                <div id="row-alert-kcal" class="macro-row-alert alert-ok" data-param="kcal" title="Clicca per spiegazione">
-                    <span class="alert-icon"><i class="fas fa-check-circle"></i></span>
+                <div id="row-alert-kcal" class="macro-row-alert alert-ok" data-param="kcal">
+                    <span class="alert-icon" title="Spiegazione stato"><i class="fas fa-check-circle"></i></span>
                     <div class="alert-content">
-                        <p style="margin: 0 0 4px 0;">Calorie: <span id="totale-calorie">0</span> / <span id="obiettivo-calorie"></span> kcal</p>
-                        <progress id="progress-calorie" class="macro-progress" value="0"></progress>
+                        <p style="margin: 0 0 4px 0;">Calorie: <span id="totale-calorie">0</span> / <span id="obiettivo-calorie"></span> kcal <i class="fas fa-info-circle nutrient-info-icon" data-param="kcal" title="Spiegazione"></i></p>
+                        <progress id="progress-calorie" class="macro-progress" value="0" title="Clicca per elenco alimenti"></progress>
                     </div>
                 </div>
                 <p>Workout: <span id="workout-calories-totali">0</span> kcal</p>
@@ -782,11 +785,11 @@
                     Fibre <span class="arrow">▶</span>
                 </h3>
                 <div class="collapsible-content" id="fibre-content">
-                    <div id="row-alert-fibre" class="macro-row-alert alert-ok" data-param="fibreTotali" title="Clicca per spiegazione">
-                        <span class="alert-icon"><i class="fas fa-check-circle"></i></span>
+                    <div id="row-alert-fibre" class="macro-row-alert alert-ok" data-param="fibreTotali">
+                        <span class="alert-icon" title="Spiegazione stato"><i class="fas fa-check-circle"></i></span>
                         <div class="alert-content">
-                            <p style="margin: 0 0 4px 0;">Fibre Totali: <span id="totale-fibre-totali">0</span> / <span id="obiettivo-fibre-totali"></span> g</p>
-                            <progress id="progress-fibre-totali" class="macro-progress" value="0"></progress>
+                            <p style="margin: 0 0 4px 0;">Fibre Totali: <span id="totale-fibre-totali">0</span> / <span id="obiettivo-fibre-totali"></span> g <i class="fas fa-info-circle nutrient-info-icon" data-param="fibreTotali" title="Spiegazione"></i></p>
+                            <progress id="progress-fibre-totali" class="macro-progress" value="0" title="Clicca per elenco alimenti"></progress>
                         </div>
                     </div>
                     <div class="fats-group" style="padding-left: 15px; border-left: 3px solid #eee; margin-top: 15px;">
@@ -810,11 +813,11 @@
                     <progress id="progress-fats-total" class="macro-progress" value="0"></progress>
                     
                     <div class="fats-group">
-                         <div id="row-alert-fatsat" class="macro-row-alert alert-ok" data-param="fatSat" title="Clicca per spiegazione" style="margin-bottom:10px;">
-                            <span class="alert-icon"><i class="fas fa-check-circle"></i></span>
+                         <div id="row-alert-fatsat" class="macro-row-alert alert-ok" data-param="fatSat" style="margin-bottom:10px;">
+                            <span class="alert-icon" title="Spiegazione stato"><i class="fas fa-check-circle"></i></span>
                             <div class="alert-content">
                                 <p style="margin: 0 0 4px 0;">Saturi: <span id="totale-fat-sat">0</span> / <span id="obiettivo-fat-sat"></span> g</p>
-                                <progress id="progress-fat-sat" class="progress-fat-sat" value="0"></progress>
+                                <progress id="progress-fat-sat" class="progress-fat-sat" value="0" title="Clicca per elenco alimenti"></progress>
                             </div>
                          </div>
                          <div class="fats-sub-bars-container">
@@ -844,8 +847,8 @@
                                         <progress id="progress-omega6" value="0"></progress>
                                     </div>
                                  </div>
-                                 <div id="row-alert-omega" class="macro-row-alert alert-ok" data-param="omegaRatio" title="Clicca per spiegazione" style="margin-top:10px;">
-                                    <span class="alert-icon"><i class="fas fa-check-circle"></i></span>
+                                 <div id="row-alert-omega" class="macro-row-alert alert-ok" data-param="omegaRatio" style="margin-top:10px;">
+                                    <span class="alert-icon" title="Spiegazione stato"><i class="fas fa-check-circle"></i></span>
                                     <div class="alert-content">
                                         <p style="text-align: center; font-weight: bold; margin: 0; font-size: 1.1em;">
                                             Rapporto O6:O3: <span id="omega-ratio-value"></span>
@@ -863,8 +866,8 @@
                 </h3>
                 <div class="collapsible-content" id="micro-content">
                     
-                    <div id="row-alert-na" class="macro-row-alert alert-ok" data-param="na" title="Clicca per spiegazione" style="margin-bottom: 20px; padding: 10px; border-radius: 8px;">
-                        <span class="alert-icon"><i class="fas fa-check-circle"></i></span>
+                    <div id="row-alert-na" class="macro-row-alert alert-ok" data-param="na" style="margin-bottom: 20px; padding: 10px; border-radius: 8px;">
+                        <span class="alert-icon" title="Spiegazione stato"><i class="fas fa-check-circle"></i></span>
                         <div class="alert-content" style="background-color: #f1f8e9; border: 1px solid #c8e6c9; border-radius: 8px; padding: 10px;">
                             <h4 style="margin-top:0; text-align: center; color: #2e7d32;">Bilancia Idrica (Sodio / Potassio)</h4>
                             <div class="balance-labels">
@@ -1159,7 +1162,7 @@
     <div id="nutrient-confirm-modal" class="modal"><div class="modal-content"><span class="modal-close" data-modal="nutrient-confirm-modal">&times;</span><h2>Conferma Dati Nutrizionali</h2><p>Controlla e correggi i valori estratti dalla foto prima di confermare.</p><div id="nutrient-confirm-list"><p id="ocr-status-nutrients" style="text-align: center; color: #888; display: block;">In attesa di una foto...</p></div><div class="nutrient-confirm-buttons"><button id="btn-cancel-nutrients" style="background-color: #607d8b;">Annulla</button><button id="btn-confirm-nutrients" style="background-color: #2e7d32;">Conferma e Compila</button></div></div></div><input type="file" id="nutrient-photo-input" accept="image/*" style="display: none;">
     <div id="barcode-scanner-modal" class="modal"><div class="modal-content"><span class="modal-close" data-modal="barcode-scanner-modal">&times;</span><h2>Scansiona Codice a Barre</h2><p style="text-align: center;">Inquadra il codice a barre del prodotto.</p><div id="scanner-container" style="position: relative; width: 100%; padding-top: 75%;"><video id="barcode-scanner-video" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 1px solid #ccc; border-radius: 8px;"></video><div id="scanner-overlay" style="position: absolute; top: 50%; left: 50%; width: 80%; height: 2px; background-color: red; transform: translate(-50%, -50%); box-shadow: 0 0 10px red;"></div></div><p id="barcode-scanner-status" style="text-align: center; margin-top: 15px; font-weight: bold; min-height: 20px;"></p></div></div>
     <div id="diff-modal" class="modal"><div class="modal-content"><span class="modal-close" data-modal="diff-modal">&times;</span><h2 id="diff-modal-title">Confronta Valori Nutrizionali</h2><p>Sono state trovate differenze significative. Scegli quali valori mantenere per ogni nutriente.</p><div id="diff-modal-list" style="max-height: 50vh; overflow-y: auto; padding: 10px; border: 1px solid #eee; border-radius: 8px; margin-top: 15px;"></div><div class="nutrient-confirm-buttons" style="margin-top: 20px;"><button id="btn-cancel-diff" style="background-color: #607d8b;">Annulla</button><button id="btn-apply-diff" style="background-color: #2e7d32;">Applica Modifiche</button></div></div></div>
-    <div id="nutrient-explanation-modal" class="modal"><div class="modal-content nutrient-explanation-content"><span class="modal-close" data-modal="nutrient-explanation-modal">&times;</span><h2 id="nutrient-explanation-title" class="nutrient-explanation-title"></h2><div class="nutrient-explanation-body"><p id="nutrient-explanation-reason" class="nutrient-explanation-reason"></p><p id="nutrient-explanation-context" class="nutrient-explanation-context"></p><p id="nutrient-explanation-missing" class="nutrient-explanation-missing"></p><p id="nutrient-explanation-recovery" class="nutrient-explanation-recovery"></p></div></div></div>
+    <div id="nutrient-explanation-modal" class="modal"><div class="modal-content nutrient-explanation-content"><span class="modal-close" data-modal="nutrient-explanation-modal">&times;</span><h2 id="nutrient-explanation-title" class="nutrient-explanation-title"></h2><div class="nutrient-explanation-body"><p id="nutrient-explanation-coach" class="nutrient-explanation-coach"></p><p id="nutrient-explanation-reason" class="nutrient-explanation-reason"></p><p id="nutrient-explanation-context" class="nutrient-explanation-context"></p><p id="nutrient-explanation-missing" class="nutrient-explanation-missing"></p><p id="nutrient-explanation-recovery" class="nutrient-explanation-recovery"></p></div></div></div>
 
    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js" type="module"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js" type="module"></script>
@@ -2003,49 +2006,107 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
             }
         }
 
-        function generateNutrientExplanation(param, currentValue, target, timeOfDay, trajectoryState, alertState) {
+        function getDailyNutrientTotalFromLog(log, param) {
+            if (!log || !Array.isArray(log)) return param === 'omegaRatio' ? { o3: 0, o6: 0 } : 0;
+            let prot = 0, kcal = 0, fibreTotali = 0, fatSat = 0, na = 0, omega3 = 0, omega6 = 0;
+            log.forEach(entry => {
+                const items = entry.type === 'meal' ? (entry.items || []) : (entry.type === 'workout' ? [] : [entry]);
+                items.forEach(item => {
+                    if (!item) return;
+                    prot += item.prot || 0;
+                    kcal += (item.kcal || item.cal) || 0;
+                    fibreTotali += item.fibreTotali || 0;
+                    fatSat += item.fatSat || 0;
+                    na += item.na || 0;
+                    omega3 += item.omega3 || 0;
+                    omega6 += item.omega6 || 0;
+                });
+            });
+            if (param === 'prot') return prot;
+            if (param === 'kcal') return kcal;
+            if (param === 'fibreTotali') return fibreTotali;
+            if (param === 'fatSat') return fatSat;
+            if (param === 'na') return na;
+            if (param === 'omegaRatio') return (omega3 > 0 && omega6 > 0) ? omega6 / omega3 : null;
+            return 0;
+        }
+
+        function getNutrient7DayAverage(param) {
+            const baseDate = giornoVisualizzato || getTodayString('ymd');
+            let sum = 0, count = 0;
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(baseDate);
+                d.setDate(d.getDate() - i);
+                const dateString = d.toISOString().split('T')[0];
+                const raw = localStorage.getItem(`trackerStorico_${dateString}`);
+                if (!raw) continue;
+                try {
+                    const dayData = JSON.parse(raw);
+                    const log = dayData && dayData.log;
+                    const val = getDailyNutrientTotalFromLog(log, param);
+                    if (param === 'omegaRatio') {
+                        if (val != null && isFinite(val)) { sum += val; count++; }
+                    } else if (typeof val === 'number' && isFinite(val)) {
+                        sum += val;
+                        count++;
+                    }
+                } catch (e) { /* skip */ }
+            }
+            const avg = count > 0 ? sum / count : null;
+            return { avg, count };
+        }
+
+        function generateNutrientExplanation(param, currentValue, target, timeOfDay, trajectoryState, alertState, avg7) {
             const cv = Number(currentValue) || 0;
             const tg = Number(target) || 0;
             const diff = tg - cv;
             const titles = { prot: 'Proteine', kcal: 'Calorie', fibreTotali: 'Fibre', fatSat: 'Grassi saturi', omegaRatio: 'Rapporto Omega 6:3', na: 'Sodio e potassio' };
             const title = titles[param] || param;
-            let reason = '', context = '', missing = '', recovery = '';
+            let reason = '', context = '', missing = '', recovery = '', coachMessage = '';
             const traj = trajectoryState || 'in_traiettoria';
             const isRecoverable = traj === 'recuperabile' || traj === 'in_traiettoria';
-            const isOut = alertState === 'out' || alertState === 'attention';
+            const stateLabel = alertState === 'out' ? 'Fuori range' : (alertState === 'attention' ? 'Attenzione' : 'Ok');
+            const avg = (avg7 && avg7.count > 0) ? avg7.avg : null;
+            const withinPattern = avg != null && tg > 0 && (param === 'omegaRatio' ? (avg >= 2 && avg <= 8 && Math.abs(cv - avg) <= 2) : (Math.abs(cv - avg) <= Math.max(tg * 0.2, 5)));
             if (param === 'prot') {
                 reason = cv < tg * 0.85 ? 'Le proteine sono basse per questo punto della giornata rispetto alla tua traiettoria abituale.' : (cv > tg * 1.15 ? 'Le proteine sono in eccesso rispetto all\'obiettivo.' : 'Le proteine sono in linea con la tua traiettoria.');
                 context = isRecoverable ? 'La giornata è ancora recuperabile: puoi distribuire le proteine nei pasti rimanenti.' : (traj === 'fuori_traiettoria' ? 'Sei indietro rispetto alla tua media: concentra le proteine a pranzo e cena.' : 'Stai seguendo bene il tuo pattern abituale.');
                 missing = diff > 0 ? 'Mancano circa ' + Math.round(diff) + ' g di proteine all\'obiettivo giornaliero.' : (diff < 0 ? 'Hai circa ' + Math.round(-diff) + ' g di proteine in più rispetto all\'obiettivo.' : 'Obiettivo proteine raggiunto.');
                 recovery = diff > 0 ? 'Idee: petto di pollo (30 g/100 g), tonno (26 g), uova (6 g/uovo), ricotta (11 g/100 g), legumi a pranzo o cena. Aggiungi una porzione da 150 g di carne/pesce o 2 uova + 80 g ricotta.' : (diff < 0 ? 'Mantieni le porzioni nei prossimi pasti; non serve ridurre se il resto della giornata è bilanciato.' : 'Prosegui così.');
+                coachMessage = (stateLabel === 'Ok' ? 'Stato: in range. ' : 'Stato: ' + stateLabel.toLowerCase() + '. ') + (avg != null ? 'Rispetto alla media degli ultimi 7 giorni ' + (withinPattern ? 'sei in linea con il tuo pattern abituale. ' : (cv < avg ? 'sei leggermente sotto. ' : 'sei sopra. ')) : '') + (isRecoverable && diff > 0 ? 'Giornata ancora recuperabile con una cena proteica.' : (isRecoverable ? 'Giornata in linea; prosegui così.' : 'Concentra le proteine nei pasti rimanenti.'));
             } else if (param === 'kcal') {
                 reason = cv < tg * 0.85 ? 'Le calorie sono basse per questo punto della giornata rispetto alla tua traiettoria.' : (cv > tg * 1.15 ? 'Le calorie superano l\'obiettivo giornaliero.' : 'Le calorie sono in linea con la tua traiettoria.');
                 context = isRecoverable ? 'La giornata è ancora recuperabile: puoi riequilibrare con i pasti rimanenti.' : (traj === 'fuori_traiettoria' ? 'Sei sotto la tua media abituale a quest\'ora: pranzo e cena possono compensare.' : 'Andamento in linea con le tue abitudini.');
                 missing = diff > 0 ? 'Mancano circa ' + Math.round(diff) + ' kcal all\'obiettivo.' : (diff < 0 ? 'Hai circa ' + Math.round(-diff) + ' kcal in più rispetto all\'obiettivo.' : 'Obiettivo calorico raggiunto.');
                 recovery = diff > 0 ? 'Aggiungi uno spuntino (frutta secca, yogurt, pane e marmellata) o porzioni leggermente più abbondanti a pranzo/cena. Es: 30 g mandorle (~170 kcal), 1 yogurt greco (~100 kcal), 1 toast (~150 kcal).' : (diff < 0 ? 'Puoi alleggerire leggermente i pasti successivi o mantenere se è un giorno di recupero.' : 'Prosegui così.');
+                coachMessage = (stateLabel === 'Ok' ? 'Stato: in range. ' : 'Stato: ' + stateLabel.toLowerCase() + '. ') + (avg != null ? 'Rispetto agli ultimi 7 giorni ' + (withinPattern ? 'sei in linea con le tue abitudini. ' : (cv < avg ? 'sei sotto. ' : 'sei sopra. ')) : '') + (isRecoverable && diff > 0 ? 'Puoi recuperare con pranzo e cena.' : (isRecoverable ? 'Andamento ok.' : 'Pranzo e cena possono riequilibrare.'));
             } else if (param === 'fibreTotali') {
                 reason = cv < tg * 0.8 ? 'Le fibre sono sotto l\'obiettivo: importante per sazietà e salute intestinale.' : (cv > 45 ? 'Fibre molto alte: ok, ma bevi a sufficienza.' : 'Le fibre sono in range.');
                 context = isRecoverable ? 'Puoi raggiungere l\'obiettivo con verdura a pranzo e cena e frutta.' : 'Aggiungi fonti di fibre nei prossimi pasti.';
                 missing = diff > 0 ? 'Mancano circa ' + Math.round(diff) + ' g di fibre.' : (diff < 0 ? 'Fibre sopra obiettivo: va bene.' : 'Obiettivo fibre raggiunto.');
                 recovery = diff > 0 ? 'Aggiungi: insalata o verdure cotte (2–3 g/100 g), legumi (7–8 g/100 g), frutta (2–3 g/100 g), cereali integrali. Es: 150 g broccoli + 80 g ceci + 1 mela ≈ 10–12 g fibre.' : 'Prosegui così.';
+                coachMessage = (stateLabel === 'Ok' ? 'Stato: in range. ' : 'Stato: ' + stateLabel.toLowerCase() + '. ') + (avg != null ? 'Rispetto alla media degli ultimi 7 giorni ' + (withinPattern ? 'sei in linea. ' : '') : '') + (isRecoverable && diff > 0 ? 'Recuperabile con verdura e frutta a pranzo e cena.' : 'Prosegui così.');
             } else if (param === 'fatSat') {
                 reason = cv > tg * 1.2 ? 'I grassi saturi superano l\'obiettivo: meglio non eccedere per la salute cardiovascolare.' : (cv <= tg ? 'Grassi saturi in range.' : 'Grassi saturi leggermente sopra.');
                 context = 'Riducendo formaggi grassi, burro e salumi nei pasti successivi rientri in traiettoria.';
                 missing = diff < 0 ? 'Hai circa ' + Math.round(-diff) + ' g di saturi in più rispetto all\'obiettivo.' : (diff > 0 ? 'Sei sotto obiettivo: va bene.' : 'In range.');
                 recovery = cv > tg ? 'Scegli carni magre, poco burro/formaggio, preferisci olio extravergine. Es: riduci formaggio a 30–40 g, evita secondi molto grassi a cena.' : 'Prosegui così.';
+                coachMessage = (stateLabel === 'Ok' ? 'Stato: in range. ' : 'Stato: ' + stateLabel.toLowerCase() + '. ') + (avg != null ? 'Rispetto agli ultimi 7 giorni ' + (withinPattern ? 'sei in linea. ' : '') : '') + (cv > tg ? 'Suggerimento: preferisci olio e carni magre nei pasti successivi.' : 'Prosegui così.');
             } else if (param === 'omegaRatio') {
                 const ratio = cv;
                 reason = ratio > 8 ? 'Il rapporto Omega 6:3 è troppo alto: aumenta l\'infiammazione. Ideale 3:1–6:1.' : (ratio >= 3 && ratio <= 6 ? 'Rapporto Omega 6:3 in range ottimale.' : 'Rapporto da riequilibrare.');
                 context = ratio > 6 ? 'Aumentando gli Omega 3 e moderando gli Omega 6 (oli di semi, snack) migliori il bilancio.' : 'Mantieni pesce e fonti di omega 3.';
                 missing = ratio > 6 ? 'Rapporto attuale troppo alto: punta a ridurlo sotto 6:1 aumentando Omega 3.' : 'Rapporto in range.';
                 recovery = ratio > 6 ? 'Aumenta: salmone, sgombro, sardine, noci, semi di lino, olio di lino. Riduci: oli di semi (girasole, mais), snack industriali. Es: 2 porzioni di pesce grasso a settimana, 1 cucchiaio di semi di lino.' : 'Prosegui così.';
+                coachMessage = (stateLabel === 'Ok' ? 'Stato: in range. ' : 'Stato: ' + stateLabel.toLowerCase() + '. ') + (avg != null ? 'Media ultimi 7 giorni: rapporto ' + (avg.toFixed(1)) + ':1. ' : '') + (ratio > 6 ? 'Suggerimento: più pesce grasso e semi di lino, meno oli di semi.' : 'Mantieni le tue abitudini.');
             } else if (param === 'na') {
                 reason = cv > 2300 ? 'Il sodio è alto: meglio restare sotto 2,3 g per la pressione.' : (cv < 800 ? 'Il sodio è basso: controlla che il potassio non sia troppo alto in rapporto.' : 'Sodio in range; bilancia con il potassio.');
                 context = 'L\'equilibrio sodio/potassio (più K che Na) aiuta. Cursore a destra = zona verde.';
                 missing = cv > 2300 ? 'Riduci il sodio di circa ' + Math.round(cv - 2300) + ' mg: meno sale e cibi trasformati.' : (cv < 800 ? 'Puoi usare un po\' più di sale a tavola se il potassio è alto.' : 'Bilancio sodio/potassio ok.');
                 recovery = cv > 2300 ? 'Meno sale aggiunto, meno salumi/formaggi salati, meno prodotti in scatola. Scegli erbe e spezie. Aumenta potassio: banana, spinaci, patate, fagioli.' : 'Aumenta potassio con verdura e frutta; limita sale aggiunto.';
+                coachMessage = (stateLabel === 'Ok' ? 'Stato: in range. ' : 'Stato: ' + stateLabel.toLowerCase() + '. ') + (avg != null ? 'Media ultimi 7 giorni: ' + Math.round(avg) + ' mg. ' : '') + (cv > 2300 ? 'Suggerimento: meno sale e prodotti trasformati, più verdura e frutta.' : 'Bilancio ok; mantieni varietà.');
             }
-            return { title, reason, context, missing, recovery };
+            return { title, reason, context, missing, recovery, coachMessage: coachMessage || (stateLabel + '. ' + (isRecoverable ? 'Giornata recuperabile.' : 'Prosegui così.')) };
         }
 
         function openNutrientExplanationModal(param) {
@@ -2069,10 +2130,13 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
                 currentValue = parseFloat(t) || 0;
                 target = 1500;
             }
-            const expl = generateNutrientExplanation(param, currentValue, target, timeOfDay, trajectoryState, alertState);
+            const avg7 = getNutrient7DayAverage(param);
+            const expl = generateNutrientExplanation(param, currentValue, target, timeOfDay, trajectoryState, alertState, avg7);
             const modal = document.getElementById('nutrient-explanation-modal');
             if (!modal) return;
             document.getElementById('nutrient-explanation-title').textContent = expl.title;
+            const coachEl = document.getElementById('nutrient-explanation-coach');
+            if (coachEl) { coachEl.textContent = expl.coachMessage || ''; coachEl.style.display = expl.coachMessage ? 'block' : 'none'; }
             document.getElementById('nutrient-explanation-reason').textContent = expl.reason;
             document.getElementById('nutrient-explanation-context').textContent = expl.context;
             document.getElementById('nutrient-explanation-missing').textContent = expl.missing;
@@ -4028,19 +4092,6 @@ Regole:
                 }
             });
 
-            document.getElementById('info-proteine-giornata').addEventListener('click', () => {
-                const log = datiGiornalieri.log || [];
-                const totaliGiornata = log.reduce((acc, entry) => {
-                    const items = entry.type === 'meal' ? entry.items : (entry.type === 'workout' ? [] : [entry]);
-                    items.forEach(item => {
-                        for (const key in item) {
-                            if (typeof item[key] === 'number') acc[key] = (acc[key] || 0) + item[key];
-                        }
-                    });
-                    return acc;
-                }, {});
-                apriModalAminoacidi(totaliGiornata, "Dettaglio Proteine del Giorno");
-            });
 
             document.getElementById('info-proteine-pasto').addEventListener('click', () => {
                 const totaliPasto = pastoInCostruzione.reduce((acc, item) => {
@@ -4199,10 +4250,14 @@ btnSalvaPasto.addEventListener('click', () => {
             });
 
             document.body.addEventListener('click', (e) => {
-                const alertRow = e.target.closest('.macro-row-alert');
-                if (alertRow && !e.target.closest('#info-proteine-giornata')) {
-                    const param = alertRow.getAttribute('data-param');
-                    if (param) { openNutrientExplanationModal(param); return; }
+                const row = e.target.closest('.macro-row-alert');
+                const infoOrAlertIcon = e.target.closest('.alert-icon, .nutrient-info-icon');
+                if (row && infoOrAlertIcon) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const param = infoOrAlertIcon.getAttribute('data-param') || row.getAttribute('data-param');
+                    if (param) { openNutrientExplanationModal(param); }
+                    return;
                 }
                 const icon = e.target.closest('.ingredient-icon');
                 if (icon) {
@@ -5851,22 +5906,3 @@ if (aiSendBtn) {
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
