@@ -2252,7 +2252,7 @@ Restituisci SOLO il JSON.`;
                         line2.classList.add('all-done');
                     } else if (next) {
                         const timeStr = (next.time || '').toString().trim().slice(0, 5);
-                        const typeParen = next.typeHint ? ' (' + (next.typeHint.replace(/^ — /, '').replace(/_/g, ' ') + ')' : '';
+                        const typeParen = next.typeHint ? ' (' + (next.typeHint.replace(/^ — /, '').replace(/_/g, ' ') ) + ')' : '';
                         line2.textContent = '🎯 Prossimo obiettivo: ' + next.label + ' entro ' + timeStr + typeParen;
                         line2.classList.remove('all-done');
                     } else {
@@ -6375,3 +6375,4 @@ if (aiSendBtn) {
 <div id="toast" aria-live="polite"></div>
 </body>
 </html>
+
