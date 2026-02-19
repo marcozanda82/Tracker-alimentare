@@ -74,6 +74,13 @@
         .guida-main-message.guida-ok { color: #1b5e20; }
         .guida-main-message.guida-recuperabile { color: #e65100; }
         .guida-main-message.guida-correggere { color: #b71c1c; }
+        .prossimo-obiettivo-panel { margin-bottom: 16px; padding: 18px 20px; border-radius: 12px; background: #f0f4ff; border: 1px solid #c5cae9; }
+        .prossimo-obiettivo-panel .panel-title { margin: 0 0 12px 0; font-size: 1.1em; font-weight: 700; color: #3949ab; }
+        .prossimo-obiettivo-panel .panel-goal { font-size: 1.2em; font-weight: 600; color: #1a237e; line-height: 1.4; margin: 0 0 8px 0; }
+        .prossimo-obiettivo-panel .panel-goal.all-done { color: #2e7d32; }
+        .prossimo-obiettivo-panel .panel-workout { margin-top: 12px; padding-top: 12px; border-top: 1px solid #c5cae9; font-size: 1em; color: #5c6bc0; }
+        .strategia-feedback-modal .feedback-success { background: #e8f5e9; border: 1px solid #81c784; color: #1b5e20; }
+        .strategia-feedback-modal .feedback-error { background: #ffebee; border: 1px solid #e57373; color: #b71c1c; }
         .guida-explanation { margin: 0 0 12px 0; font-size: 0.95em; color: #555; line-height: 1.45; }
         .guida-suggestions { margin: 0; padding-left: 20px; font-size: 0.9em; color: #333; line-height: 1.5; }
         .guida-suggestions li { margin-bottom: 4px; }
@@ -728,10 +735,17 @@
                 <span id="calorie-balance-text"></span>
 
                 <div id="guida-giornata" class="guida-giornata" data-coach-only>
-                    <h3 class="guida-giornata-title">Guida della giornata</h3>
-                    <p id="guida-main-message" class="guida-main-message">—</p>
-                    <p id="guida-explanation" class="guida-explanation"></p>
-                    <ul id="guida-suggestions" class="guida-suggestions"></ul>
+                    <div id="prossimo-obiettivo-wrap" style="display: none;">
+                        <h3 class="panel-title">🎯 Prossimo obiettivo</h3>
+                        <p id="prossimo-obiettivo-text" class="panel-goal">—</p>
+                        <p id="prossimo-obiettivo-workout" class="panel-workout" style="display: none;"></p>
+                    </div>
+                    <div id="guida-classic-wrap">
+                        <h3 class="guida-giornata-title">Guida della giornata</h3>
+                        <p id="guida-main-message" class="guida-main-message">—</p>
+                        <p id="guida-explanation" class="guida-explanation"></p>
+                        <ul id="guida-suggestions" class="guida-suggestions"></ul>
+                    </div>
                 </div>
 
                 <div id="control-mode-section-wrapper" class="control-mode-section control-mode-section-secondary" data-coach-only>
@@ -1195,6 +1209,7 @@
     <div id="nutrient-confirm-modal" class="modal"><div class="modal-content"><span class="modal-close" data-modal="nutrient-confirm-modal">&times;</span><h2>Conferma Dati Nutrizionali</h2><p>Controlla e correggi i valori estratti dalla foto prima di confermare.</p><div id="nutrient-confirm-list"><p id="ocr-status-nutrients" style="text-align: center; color: #888; display: block;">In attesa di una foto...</p></div><div class="nutrient-confirm-buttons"><button id="btn-cancel-nutrients" style="background-color: #607d8b;">Annulla</button><button id="btn-confirm-nutrients" style="background-color: #2e7d32;">Conferma e Compila</button></div></div></div><input type="file" id="nutrient-photo-input" accept="image/*" style="display: none;">
     <div id="barcode-scanner-modal" class="modal"><div class="modal-content"><span class="modal-close" data-modal="barcode-scanner-modal">&times;</span><h2>Scansiona Codice a Barre</h2><p style="text-align: center;">Inquadra il codice a barre del prodotto.</p><div id="scanner-container" style="position: relative; width: 100%; padding-top: 75%;"><video id="barcode-scanner-video" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 1px solid #ccc; border-radius: 8px;"></video><div id="scanner-overlay" style="position: absolute; top: 50%; left: 50%; width: 80%; height: 2px; background-color: red; transform: translate(-50%, -50%); box-shadow: 0 0 10px red;"></div></div><p id="barcode-scanner-status" style="text-align: center; margin-top: 15px; font-weight: bold; min-height: 20px;"></p></div></div>
     <div id="diff-modal" class="modal"><div class="modal-content"><span class="modal-close" data-modal="diff-modal">&times;</span><h2 id="diff-modal-title">Confronta Valori Nutrizionali</h2><p>Sono state trovate differenze significative. Scegli quali valori mantenere per ogni nutriente.</p><div id="diff-modal-list" style="max-height: 50vh; overflow-y: auto; padding: 10px; border: 1px solid #eee; border-radius: 8px; margin-top: 15px;"></div><div class="nutrient-confirm-buttons" style="margin-top: 20px;"><button id="btn-cancel-diff" style="background-color: #607d8b;">Annulla</button><button id="btn-apply-diff" style="background-color: #2e7d32;">Applica Modifiche</button></div></div></div>
+    <div id="strategia-feedback-modal" class="modal strategia-feedback-modal" style="display: none;"><div class="modal-content" id="strategia-feedback-content" style="max-width: 400px; text-align: center; padding: 24px;"><p id="strategia-feedback-title" style="margin: 0 0 10px 0; font-size: 1.2em; font-weight: 700;"></p><p id="strategia-feedback-sub" style="margin: 0; font-size: 0.95em; opacity: 0.9;"></p></div></div>
     <div id="nutrient-explanation-modal" class="modal"><div class="modal-content nutrient-explanation-content"><span class="modal-close" data-modal="nutrient-explanation-modal">&times;</span><h2 id="nutrient-explanation-title" class="nutrient-explanation-title"></h2><div class="nutrient-explanation-body"><p id="nutrient-explanation-coach" class="nutrient-explanation-coach"></p><p id="nutrient-explanation-reason" class="nutrient-explanation-reason"></p><p id="nutrient-explanation-context" class="nutrient-explanation-context"></p><p id="nutrient-explanation-missing" class="nutrient-explanation-missing"></p><p id="nutrient-explanation-recovery" class="nutrient-explanation-recovery"></p></div></div></div>
 
    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js" type="module"></script>
@@ -2148,13 +2163,89 @@ Restituisci SOLO il JSON.`;
             };
         }
 
+        const MEALS_ORDER_STRATEGIA = ['breakfast', 'lunch', 'snack', 'dinner'];
+        const SLOT_LABELS = { breakfast: 'Colazione', lunch: 'Pranzo', snack: 'Spuntino', dinner: 'Cena' };
+        function getNextGoalFromStrategy(log, meals_timing) {
+            if (!meals_timing || typeof meals_timing !== 'object') return null;
+            const mealMinutes = [];
+            (log || []).forEach(entry => {
+                if (entry.type === 'workout') return;
+                mealMinutes.push(timeStrToMinutes(getEntryTime(entry)));
+            });
+            for (let i = 0; i < MEALS_ORDER_STRATEGIA.length; i++) {
+                const slotKey = MEALS_ORDER_STRATEGIA[i];
+                const slot = meals_timing[slotKey];
+                if (!slot || !slot.time) continue;
+                const slotMin = timeStrToMinutes(String(slot.time).trim());
+                const low = slotMin - STRATEGIA_TIMING_WINDOW_MIN;
+                const high = slotMin + STRATEGIA_TIMING_WINDOW_MIN;
+                const found = mealMinutes.some(m => m >= low && m <= high);
+                if (!found) {
+                    const label = SLOT_LABELS[slotKey] || slotKey;
+                    const typeHint = (slot.type && slot.type.trim()) ? ' — ' + slot.type.replace(/_/g, ' ') : '';
+                    return { type: 'meal', slotKey, time: slot.time, label, typeHint, message: label + ' ore ' + slot.time + typeHint };
+                }
+            }
+            return { type: 'all_done', message: 'Giornata in linea con la strategia' };
+        }
+        function updateProssimoObiettivoPanel() {
+            const block = document.getElementById('guida-giornata');
+            const wrap = document.getElementById('prossimo-obiettivo-wrap');
+            const classicWrap = document.getElementById('guida-classic-wrap');
+            const goalEl = document.getElementById('prossimo-obiettivo-text');
+            const workoutEl = document.getElementById('prossimo-obiettivo-workout');
+            if (!block || !wrap || !classicWrap || !goalEl) return;
+            if (getAppMode() !== 'coach') { wrap.style.display = 'none'; classicWrap.style.display = ''; block.classList.remove('prossimo-obiettivo-panel'); return; }
+            const strategy = getDailyStrategy(giornoVisualizzato);
+            const mt = strategy && strategy.meals_timing && Object.keys(strategy.meals_timing).length > 0 ? strategy.meals_timing : null;
+            if (!mt) {
+                wrap.style.display = 'none';
+                classicWrap.style.display = '';
+                block.classList.remove('prossimo-obiettivo-panel');
+                return;
+            }
+            const next = getNextGoalFromStrategy(datiGiornalieri.log || [], mt);
+            wrap.style.display = 'block';
+            classicWrap.style.display = 'none';
+            block.classList.add('prossimo-obiettivo-panel');
+            if (next) {
+                const timeStr = (next.time || '').toString().trim().slice(0, 5);
+                goalEl.textContent = next.type === 'all_done' ? next.message : (next.typeHint ? next.label + ' ore ' + timeStr + next.typeHint : next.label + ' entro le ' + timeStr);
+                goalEl.classList.toggle('all-done', next.type === 'all_done');
+            } else {
+                goalEl.textContent = '—';
+                goalEl.classList.remove('all-done');
+            }
+            if (workoutEl) {
+                const w = strategy && strategy.workout && (strategy.workout.time || strategy.workout.desc);
+                if (w) {
+                    workoutEl.style.display = 'block';
+                    workoutEl.textContent = '🏋️ Allenamento oggi: ' + (strategy.workout.desc || 'Allenamento') + (strategy.workout.time ? ' ore ' + strategy.workout.time.replace(/^(\d{1,2}:\d{2}).*/, '$1') : '');
+                } else {
+                    workoutEl.style.display = 'none';
+                }
+            }
+        }
         function updateGuideSection(global) {
             const block = document.getElementById('guida-giornata');
             if (!block) return;
+            if (getAppMode() === 'coach') {
+                const strategy = getDailyStrategy(giornoVisualizzato);
+                const mt = strategy && strategy.meals_timing && Object.keys(strategy.meals_timing).length > 0;
+                if (mt) {
+                    updateProssimoObiettivoPanel();
+                    return;
+                }
+            }
             const content = getGuideContent(global);
             const mainEl = document.getElementById('guida-main-message');
             const explEl = document.getElementById('guida-explanation');
             const suggEl = document.getElementById('guida-suggestions');
+            const wrap = document.getElementById('prossimo-obiettivo-wrap');
+            const classicWrap = document.getElementById('guida-classic-wrap');
+            if (wrap) wrap.style.display = 'none';
+            if (classicWrap) classicWrap.style.display = '';
+            block.classList.remove('prossimo-obiettivo-panel');
             if (mainEl) { mainEl.textContent = content.mainMessage; mainEl.className = 'guida-main-message ' + (content.messageClass || ''); }
             if (explEl) explEl.textContent = content.explanation || '';
             if (suggEl) {
@@ -2164,6 +2255,22 @@ Restituisci SOLO il JSON.`;
                     li.textContent = s;
                     suggEl.appendChild(li);
                 });
+            }
+        }
+        function showStrategiaFeedback(kind) {
+            const modal = document.getElementById('strategia-feedback-modal');
+            const content = document.getElementById('strategia-feedback-content');
+            const titleEl = document.getElementById('strategia-feedback-title');
+            const subEl = document.getElementById('strategia-feedback-sub');
+            if (!modal || !content || !titleEl || !subEl) return;
+            content.className = 'modal-content ' + (kind === 'success' ? 'feedback-success' : 'feedback-error');
+            titleEl.textContent = kind === 'success' ? 'Strategia giornaliera caricata' : 'Errore nel JSON. Controlla formato.';
+            subEl.textContent = kind === 'success' ? 'La giornata è ora guidata dalla strategia concordata.' : '';
+            subEl.style.display = kind === 'success' ? 'block' : 'none';
+            modal.style.display = 'block';
+            if (kind === 'success') {
+                clearTimeout(showStrategiaFeedback._tid);
+                showStrategiaFeedback._tid = setTimeout(() => { modal.style.display = 'none'; }, 2500);
             }
         }
 
@@ -4310,12 +4417,16 @@ Regole:
                     if (parsed.meals_timing && typeof parsed.meals_timing === 'object') {
                         merged.meals_timing = parsed.meals_timing;
                     }
+                    if (parsed.workout && typeof parsed.workout === 'object') {
+                        merged.workout = { time: parsed.workout.time, desc: parsed.workout.desc || parsed.workout.description || '' };
+                    }
                     setDailyStrategy(giornoVisualizzato, merged);
                     fillStrategiaForm();
                     document.getElementById('strategia-json-paste').value = '';
                     aggiornaUI();
+                    showStrategiaFeedback('success');
                 } catch (e) {
-                    alert('JSON non valido: ' + (e.message || e));
+                    showStrategiaFeedback('error');
                 }
             });
 
