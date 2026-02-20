@@ -1245,13 +1245,15 @@
 
    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js" type="module"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js" type="module"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js" type="module"></script> 
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-functions.js" type="module"></script> 
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js" type="module"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js" type="module"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-functions.js" type="module"></script>
     <script type="module">
         import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-functions.js";
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
         import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
         window.httpsCallable = httpsCallable; // Esporta per la chat AI
 
         let functions;
@@ -1272,11 +1274,13 @@
         let pastoInCostruzione = JSON.parse(localStorage.getItem('trackerPastoInCostruzione')) || [];
 window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
         
-        let db; 
-        let auth; 
-        let firebaseApp; 
-        let currentUserUID = null; 
+        let db;
+        let auth;
+        let firebaseApp;
+        let firestore = null;
+        let currentUserUID = null;
         let userProfile = null;
+        window.currentStrategy = null;
 
         const PIANO_SETTIMANALE = {
             0: { tipo: '💧 Riposo (Deficit)', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
@@ -1650,6 +1654,51 @@ Restituisci SOLO il JSON.`;
             if (!dateString || !strategy) return;
             localStorage.setItem(STRATEGIA_STORAGE_PREFIX + dateString, JSON.stringify(strategy));
         }
+
+        /* ---------- PERSISTENZA STRATEGIA AI GLOBALE (Firestore) ---------- */
+        async function salvaStrategiaGlobale(strategyObj) {
+            if (!currentUserUID || !firestore || !strategyObj) return;
+            try {
+                const refStrategy = doc(firestore, 'users', currentUserUID, 'ai', 'strategy');
+                const existing = await getDoc(refStrategy);
+                const existingData = existing.exists() ? existing.data() : {};
+                const payload = {
+                    phase: (strategyObj.focus && String(strategyObj.focus).trim()) || existingData.phase || 'default',
+                    kcalTarget: strategyObj.kcalTarget != null ? Number(strategyObj.kcalTarget) : (existingData.kcalTarget ?? 0),
+                    proteinTarget: strategyObj.protTarget != null ? Number(strategyObj.protTarget) : (existingData.proteinTarget ?? 0),
+                    carbTarget: existingData.carbTarget ?? strategyObj.carbTarget ?? 0,
+                    fatTarget: existingData.fatTarget ?? strategyObj.fatTarget ?? 0,
+                    coachMode: typeof getAppMode === 'function' ? getAppMode() : (existingData.coachMode || 'tracker'),
+                    lastUpdate: serverTimestamp(),
+                    version: (existingData.version || 0) + 1
+                };
+                await setDoc(refStrategy, payload, { merge: true });
+                window.currentStrategy = payload;
+                console.log('AI strategy saved');
+            } catch (e) {
+                console.error('Errore salvataggio strategia AI globale', e);
+            }
+        }
+
+        async function caricaStrategiaGlobale() {
+            if (!currentUserUID || !firestore) return;
+            try {
+                const refStrategy = doc(firestore, 'users', currentUserUID, 'ai', 'strategy');
+                const snap = await getDoc(refStrategy);
+                if (snap.exists()) {
+                    const data = snap.data();
+                    window.currentStrategy = data;
+                    console.log('AI strategy loaded');
+                } else {
+                    window.currentStrategy = null;
+                    console.log('no strategy found');
+                }
+            } catch (e) {
+                console.error('Errore caricamento strategia AI globale', e);
+                window.currentStrategy = null;
+            }
+        }
+        /* ---------- FINE PERSISTENZA STRATEGIA AI GLOBALE ---------- */
 
         function getTodayString(format = 'ymd') { return new Date().toISOString().split('T')[0]; }
         function getCurrentTimeString() {
@@ -2275,7 +2324,7 @@ Restituisci SOLO il JSON.`;
                         line2.classList.add('all-done');
                     } else if (next) {
                         const timeStr = (next.time || '').toString().trim().slice(0, 5);
-                        const typeParen = next.typeHint ? ' (' + next.typeHint.replace(/^ — /, '').replace(/_/g, ' ') + ')' : '';
+                        const typeParen = next.typeHint ? ' (' + (next.typeHint.replace(/^ — /, '').replace(/_/g, ' ') + ')' : '';
                         line2.textContent = '🎯 Prossimo obiettivo: ' + next.label + ' entro ' + timeStr + typeParen;
                         line2.classList.remove('all-done');
                     } else {
@@ -4465,6 +4514,7 @@ Regole:
                 setDailyStrategy(giornoVisualizzato, dailyStrategy);
                 fillStrategiaForm();
                 aggiornaUI();
+                salvaStrategiaGlobale(dailyStrategy);
             });
 
             document.getElementById('btn-applica-json-strategia').addEventListener('click', () => {
@@ -4942,6 +4992,7 @@ if (button.dataset.type === 'builder') {
                 if (!getApps().some(app => app.name === "globalTrackerApp")) { firebaseApp = initializeApp(firebaseConfig, "globalTrackerApp"); } else { firebaseApp = getApp("globalTrackerApp"); }
                 db = getDatabase(firebaseApp);
                 auth = getAuth(firebaseApp);
+                firestore = getFirestore(firebaseApp);
                 functions = getFunctions(firebaseApp, 'europe-west1');
                 window.functions = functions; // Esporta per la chat AI
                 console.log("Firebase inizializzato.");
@@ -4949,6 +5000,7 @@ if (button.dataset.type === 'builder') {
                 onAuthStateChanged(auth, async (user) => {
                     const isLoggedIn = !!user;
                     currentUserUID = user?.uid;
+                    if (!isLoggedIn) window.currentStrategy = null;
                     authFormFields.style.display = isLoggedIn ? 'none' : 'block';
                     document.getElementById('auth-header').style.display = isLoggedIn ? 'none' : 'block';
                     welcomeMessage.style.display = isLoggedIn ? 'block' : 'none';
@@ -4983,6 +5035,7 @@ if (button.dataset.type === 'builder') {
                             console.error('Errore caricamento profilo da cloud', e);
                             applyProfileSectionVisibility();
                         }
+                        await caricaStrategiaGlobale();
                         const lastLocalUpdate = parseInt(localStorage.getItem(LOCAL_LAST_UPDATE_KEY) || 0);
                         const cloudTimestampSnapshot = await get(ref(db, `users/${currentUserUID}/${CLOUD_LAST_UPDATE_PATH}`));
                         const lastCloudUpdate = cloudTimestampSnapshot.exists() ? cloudTimestampSnapshot.val() : 0;
@@ -6398,4 +6451,3 @@ if (aiSendBtn) {
 <div id="toast" aria-live="polite"></div>
 </body>
 </html>
-
