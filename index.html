@@ -5001,11 +5001,11 @@ if (button.dataset.type === 'builder') {
             const authHandlers = {
                 register: () => createUserWithEmailAndPassword(auth, userEmailInput.value, userPasswordInput.value),
                 login: () => signInWithEmailAndPassword(auth, userEmailInput.value, userPasswordInput.value),
-                signOut: () => signOut(auth)
+                doSignOut: () => signOut(auth)
             };
-            btnRegister.addEventListener('click', async () => { try { await authHandlers.register(); alert("Registrazione completata!"); } catch (e) { alert(e.message); } });
-            btnLogin.addEventListener('click', async () => { try { await authHandlers.login(); alert("Accesso effettuato!"); } catch (e) { alert(e.message); } });
-            btnSignOut.addEventListener('click', async () => { try { await authHandlers.signOut(); alert("Disconnessione avvenuta."); } catch (e) { alert(e.message); } });
+            btnRegister.addEventListener('click', async () => { try { if (!auth) { alert("Firebase non inizializzato. Ricarica la pagina."); return; } await authHandlers.register(); alert("Registrazione completata!"); } catch (e) { alert(e.message); } });
+            btnLogin.addEventListener('click', async () => { try { if (!auth) { alert("Firebase non inizializzato. Ricarica la pagina."); return; } await authHandlers.login(); alert("Accesso effettuato!"); } catch (e) { alert(e.message); } });
+            btnSignOut.addEventListener('click', async () => { try { if (!auth) return; await authHandlers.doSignOut(); alert("Disconnessione avvenuta."); } catch (e) { alert(e.message); } });
             
             async function loadAllTrackerDataFromCloud(skipConfirm = false) {
                 const dataRef = (db && currentUserUID) ? ref(db, `users/${currentUserUID}/tracker_data/`) : null;
