@@ -16,11 +16,20 @@
         h2 { font-size: 1.4em; margin-top: 30px; }
         h3 { font-size: 1.1em; color: #333; border-bottom: 1px solid #eee; margin-top: 20px; }
         h4 { font-size: 1em; color: #1565c0; margin-top: 20px; margin-bottom: 10px; font-weight: 600; }
-        #titolo-giornata-panel { text-align: center; margin-bottom: 24px; padding: 20px 16px 24px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        #titolo-giornata-panel .titolo-line1 { margin: 0 0 14px 0; font-size: 1em; font-weight: 500; color: #6b7280; letter-spacing: 0.01em; line-height: 1.4; }
-        #titolo-giornata-panel .titolo-next { margin: 0 0 10px 0; font-size: 1.25em; font-weight: 700; color: #1e293b; line-height: 1.35; letter-spacing: -0.01em; }
-        #titolo-giornata-panel .titolo-next.all-done { color: #059669; font-weight: 600; }
-        #titolo-giornata-panel .titolo-workout { margin: 0; font-size: 0.9em; font-weight: 400; color: #9ca3af; line-height: 1.4; }
+        /* Lavagna coach – header giornaliero con data e tabella di marcia */
+        #titolo-giornata-panel { margin-bottom: 28px; padding: 24px 20px 28px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; text-align: left; }
+        #titolo-giornata-panel .lavagna-date { margin: 0 0 6px 0; font-size: 0.95em; font-weight: 400; color: #6b7280; letter-spacing: 0.02em; line-height: 1.4; }
+        #titolo-giornata-panel .lavagna-title { margin: 0 0 16px 0; font-size: 1.15em; font-weight: 600; color: #374151; line-height: 1.35; }
+        #titolo-giornata-panel .lavagna-list { list-style: none; padding: 0; margin: 0 0 12px 0; }
+        #titolo-giornata-panel .lavagna-item { padding: 6px 0; font-size: 0.95em; line-height: 1.45; color: #374151; border-bottom: 1px solid rgba(0,0,0,0.06); }
+        #titolo-giornata-panel .lavagna-item:last-child { border-bottom: none; }
+        #titolo-giornata-panel .lavagna-item.completed { text-decoration: line-through; color: #9ca3af; opacity: 0.6; }
+        #titolo-giornata-panel .lavagna-item.current { font-weight: 700; color: #1e293b; opacity: 1; }
+        #titolo-giornata-panel .lavagna-item.future { color: #9ca3af; font-weight: 400; }
+        #titolo-giornata-panel .lavagna-all-done { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(0,0,0,0.06); font-size: 0.95em; font-weight: 600; color: #059669; }
+        #titolo-giornata-panel .lavagna-no-strategy { margin-top: 8px; font-size: 0.95em; color: #6b7280; }
+        #titolo-giornata-panel .lavagna-no-strategy .btn-strategia { margin-top: 12px; display: inline-block; padding: 8px 16px; font-size: 0.9em; background: #7b1fa2; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; }
+        #titolo-giornata-panel .lavagna-no-strategy .btn-strategia:hover { background: #6a1b9a; }
         .sezione { margin-bottom: 25px; padding: 20px; background-color: #fafafa; border: 1px solid #e0e0e0; border-radius: 8px; border-left-width: 5px; }
         label { display: block; margin-bottom: 8px; font-weight: 600; color: #555; }
         input[type="text"], input[type="number"], input[type="date"], select, input[type="email"], input[type="password"], textarea {
@@ -706,9 +715,14 @@
                 <button type="button" id="mode-coach" class="mode-btn" data-mode="coach">Coach</button>
             </div>
             <div id="titolo-giornata-panel">
-                <p id="titolo-giornata-line1" class="titolo-line1"></p>
-                <p id="titolo-giornata-next" class="titolo-next" style="display: none;"></p>
-                <p id="titolo-giornata-workout" class="titolo-workout" style="display: none;"></p>
+                <p id="lavagna-date" class="lavagna-date"></p>
+                <p id="lavagna-title" class="lavagna-title">📋 Tabella di marcia oggi</p>
+                <div id="lavagna-no-strategy" class="lavagna-no-strategy" style="display: none;">
+                    Nessuna strategia caricata per oggi.
+                    <button type="button" class="btn-strategia" id="btn-apri-strategia">Apri strategia</button>
+                </div>
+                <ul id="lavagna-list" class="lavagna-list" style="display: none;"></ul>
+                <p id="lavagna-all-done" class="lavagna-all-done" style="display: none;">✔ Giornata completata</p>
             </div>
 <div class="nav-links">
     <a href="storico.html">📊 Storico</a>
@@ -2235,43 +2249,74 @@ Restituisci SOLO il JSON.`;
                 }
             }
         }
+        function buildLavagnaActivities(meals_timing, workout) {
+            const rows = [];
+            const slotLabels = { breakfast: 'Colazione', lunch: 'Pranzo', snack: 'Spuntino', dinner: 'Cena' };
+            MEALS_ORDER_STRATEGIA.forEach(slotKey => {
+                const slot = meals_timing[slotKey];
+                if (!slot || !slot.time) return;
+                const timeStr = String(slot.time).trim().slice(0, 5);
+                const label = slotLabels[slotKey] || slotKey;
+                const typeHint = (slot.type && slot.type.trim()) ? ' — ' + slot.type.replace(/_/g, ' ') : '';
+                rows.push({ type: 'meal', slotKey, time: timeStr, timeMin: timeStrToMinutes(slot.time), label, typeHint });
+            });
+            if (workout && (workout.time || workout.desc)) {
+                const timeStr = workout.time ? String(workout.time).trim().slice(0, 5) : '23:59';
+                rows.push({ type: 'workout', time: timeStr, timeMin: workout.time ? timeStrToMinutes(workout.time) : 24 * 60 - 1, label: 'Workout', desc: workout.desc || 'Allenamento' });
+            }
+            rows.sort((a, b) => a.timeMin - b.timeMin);
+            return rows;
+        }
         function updateTitoloPanel(dataVisualizzata, pianoDelGiorno, dailyStrategy) {
-            const line1 = document.getElementById('titolo-giornata-line1');
-            const line2 = document.getElementById('titolo-giornata-next');
-            const line3 = document.getElementById('titolo-giornata-workout');
-            if (!line1) return;
+            const dateEl = document.getElementById('lavagna-date');
+            const noStrategyEl = document.getElementById('lavagna-no-strategy');
+            const listEl = document.getElementById('lavagna-list');
+            const allDoneEl = document.getElementById('lavagna-all-done');
+            if (!dateEl) return;
             const dateStr = dataVisualizzata.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
-            line1.textContent = `${pianoDelGiorno.tipo} – ${dateStr}`;
+            dateEl.textContent = '📅 ' + dateStr;
             const mt = dailyStrategy && dailyStrategy.meals_timing && Object.keys(dailyStrategy.meals_timing).length > 0 ? dailyStrategy.meals_timing : null;
-            if (getAppMode() === 'coach' && mt) {
-                const next = getNextStrategicMeal(datiGiornalieri.log || [], mt);
-                if (line2) {
-                    line2.style.display = 'block';
-                    if (next && next.type === 'all_done') {
-                        line2.textContent = '🏁 Strategia completata oggi';
-                        line2.classList.add('all-done');
-                    } else if (next) {
-                        const timeStr = (next.time || '').toString().trim().slice(0, 5);
-                        const typeParen = next.typeHint ? ' (' + (next.typeHint.replace(/^ — /, '').replace(/_/g, ' ') ) + ')' : '';
-                        line2.textContent = '🎯 Prossimo obiettivo: ' + next.label + ' entro ' + timeStr + typeParen;
-                        line2.classList.remove('all-done');
-                    } else {
-                        line2.textContent = '—';
-                        line2.classList.remove('all-done');
-                    }
-                }
-            } else {
-                if (line2) line2.style.display = 'none';
+            const workout = dailyStrategy && dailyStrategy.workout ? dailyStrategy.workout : null;
+            if (!mt || Object.keys(mt).length === 0) {
+                noStrategyEl.style.display = 'block';
+                listEl.style.display = 'none';
+                allDoneEl.style.display = 'none';
+                return;
             }
-            if (line3) {
-                const w = dailyStrategy && dailyStrategy.workout && (dailyStrategy.workout.time || dailyStrategy.workout.desc);
-                if (w) {
-                    line3.style.display = 'block';
-                    line3.textContent = '🏋️ Workout: ' + (dailyStrategy.workout.desc || 'Allenamento') + (dailyStrategy.workout.time ? ' ore ' + dailyStrategy.workout.time.toString().trim().slice(0, 5) : '');
+            noStrategyEl.style.display = 'none';
+            const activities = buildLavagnaActivities(mt, workout);
+            const log = datiGiornalieri.log || [];
+            const adherence = computeTimingAdherence(log, mt);
+            const mealStatus = {};
+            adherence.forEach(a => { mealStatus[a.slotKey] = a.status; });
+            const hasWorkoutLogged = log.some(e => e.type === 'workout');
+            let currentFound = false;
+            listEl.innerHTML = '';
+            listEl.style.display = 'block';
+            activities.forEach(act => {
+                let status = 'future';
+                if (act.type === 'meal') {
+                    if (mealStatus[act.slotKey] === 'ok') status = 'completed';
+                    else if (!currentFound) { status = 'current'; currentFound = true; }
                 } else {
-                    line3.style.display = 'none';
+                    if (hasWorkoutLogged) status = 'completed';
+                    else if (!currentFound) { status = 'current'; currentFound = true; }
                 }
-            }
+                const li = document.createElement('li');
+                li.className = 'lavagna-item ' + status;
+                let text = act.label + ' ' + act.time;
+                if (act.typeHint) text += act.typeHint;
+                if (act.type === 'workout' && act.desc) text += ' · ' + act.desc;
+                if (status === 'current') text = '🎯 ' + text;
+                if (status === 'completed') text = '✓ ' + text;
+                li.textContent = text;
+                listEl.appendChild(li);
+            });
+            const allCompleted = activities.length > 0 && activities.every(act => {
+                if (act.type === 'meal') return mealStatus[act.slotKey] === 'ok';
+                return hasWorkoutLogged;
+            });
+            allDoneEl.style.display = allCompleted ? 'block' : 'none';
         }
         function updateGuideSection(global) {
             const block = document.getElementById('guida-giornata');
@@ -4443,6 +4488,13 @@ Regole:
                 fillStrategiaForm();
                 aggiornaUI();
             });
+            const btnApriStrategia = document.getElementById('btn-apri-strategia');
+            if (btnApriStrategia) {
+                btnApriStrategia.addEventListener('click', () => {
+                    const el = document.getElementById('strategia-giornata-sezione');
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                });
+            }
 
             document.getElementById('btn-applica-json-strategia').addEventListener('click', () => {
                 const raw = (document.getElementById('strategia-json-paste').value || '').trim().replace(/```json|```/g, '');
@@ -6375,4 +6427,3 @@ if (aiSendBtn) {
 <div id="toast" aria-live="polite"></div>
 </body>
 </html>
-
