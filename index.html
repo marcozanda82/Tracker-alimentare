@@ -17,10 +17,10 @@
         h3 { font-size: 1.1em; color: #333; border-bottom: 1px solid #eee; margin-top: 20px; }
         h4 { font-size: 1em; color: #1565c0; margin-top: 20px; margin-bottom: 10px; font-weight: 600; }
         /* Lavagna coach – header giornaliero con data e tabella di marcia */
-        #titolo-giornata-panel { margin-bottom: 28px; padding: 24px 20px 28px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; text-align: left; }
+        #titolo-giornata-panel { margin-bottom: 28px; padding: 24px 20px 28px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; text-align: left; height: auto !important; min-height: min-content; width: 100%; box-sizing: border-box; }
         #titolo-giornata-panel .lavagna-date { margin: 0 0 6px 0; font-size: 0.95em; font-weight: 400; color: #6b7280; letter-spacing: 0.02em; line-height: 1.4; }
         #titolo-giornata-panel .lavagna-title { margin: 0 0 16px 0; font-size: 1.15em; font-weight: 600; color: #374151; line-height: 1.35; }
-        #titolo-giornata-panel .lavagna-list { list-style: none; padding: 0; margin: 0 0 12px 0; }
+        #titolo-giornata-panel .lavagna-list { list-style: none; padding: 0; margin: 0 0 12px 0; max-height: none; height: auto; }
         #titolo-giornata-panel .lavagna-item { padding: 6px 0; font-size: 0.95em; line-height: 1.45; color: #374151; border-bottom: 1px solid rgba(0,0,0,0.06); }
         #titolo-giornata-panel .lavagna-item:last-child { border-bottom: none; }
         #titolo-giornata-panel .lavagna-item.completed { text-decoration: line-through; color: #9ca3af; opacity: 0.6; }
@@ -40,8 +40,8 @@
             .meal-builder-time-desktop .time-sep { font-weight: 600; color: #333; }
         }
         /* Lavagna sempre visibile su desktop e mobile (no collapse) */
-        #titolo-giornata-panel { display: block !important; overflow: visible; min-height: 0; }
-        #titolo-giornata-panel .lavagna-list { overflow: visible; max-height: none; }
+        #titolo-giornata-panel { display: block !important; overflow: visible; min-height: min-content; height: auto !important; width: 100%; box-sizing: border-box; }
+        #titolo-giornata-panel .lavagna-list { overflow: visible; max-height: none; height: auto; }
         @media (min-width: 768px) {
             #titolo-giornata-panel { display: block !important; }
         }
@@ -322,12 +322,12 @@
             border-bottom: none;
             margin-bottom: 0;
         }
-.vitamin-weekly-summary h4 {
-    margin-top: 0;
-    margin-bottom: 8px;
-    color: #1565c0;
-    border: none;
-}
+        .vitamin-weekly-summary h4 {
+            margin-top: 0;
+            margin-bottom: 8px;
+            color: #1565c0;
+            border: none;
+        }
         .vitamin-weekly-summary p {
             margin: 4px 0;
             font-size: 0.95em;
@@ -6000,6 +6000,18 @@ if (button.dataset.type === 'builder') {
                 bottom: 10px !important;
             }
         }
+
+        /* Desktop: evita sovrapposizione del widget Chat AI sul contenuto */
+        @media (min-width: 768px) and (max-width: 1250px) {
+            body {
+                justify-content: flex-start;
+                padding-left: 20px;
+            }
+            .container {
+                max-width: calc(100% - 420px);
+                margin-right: auto;
+            }
+        }
     </style>
 
 <script>
@@ -6565,7 +6577,6 @@ if (aiSendBtn) {
 <div id="toast" aria-live="polite"></div>
 </body>
 </html>
-
 
 
 
