@@ -2726,7 +2726,8 @@ Restituisci SOLO il JSON.`;
             }
             if (db && currentUserUID) {
                 try {
-                    await set(ref(db, `users/${currentUserUID}/${USER_PROFILE_COMPLETED_CLOUD_PATH}`), completed);
+                    const path = `users/${currentUserUID}/${USER_PROFILE_COMPLETED_CLOUD_PATH}`;
+                    await set(ref(db, path), completed);
                 } catch (e) {
                     console.error('Errore salvataggio flag profilo completato su cloud', e);
                 }
@@ -6564,3 +6565,22 @@ if (aiSendBtn) {
 <div id="toast" aria-live="polite"></div>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
