@@ -16,35 +16,11 @@
         h2 { font-size: 1.4em; margin-top: 30px; }
         h3 { font-size: 1.1em; color: #333; border-bottom: 1px solid #eee; margin-top: 20px; }
         h4 { font-size: 1em; color: #1565c0; margin-top: 20px; margin-bottom: 10px; font-weight: 600; }
-        /* Lavagna coach – header giornaliero con data e tabella di marcia */
-        #titolo-giornata-panel { margin-bottom: 28px; padding: 24px 20px 28px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; text-align: left; height: auto !important; min-height: min-content; width: 100%; box-sizing: border-box; }
-        #titolo-giornata-panel .lavagna-date { margin: 0 0 6px 0; font-size: 0.95em; font-weight: 400; color: #6b7280; letter-spacing: 0.02em; line-height: 1.4; }
-        #titolo-giornata-panel .lavagna-title { margin: 0 0 16px 0; font-size: 1.15em; font-weight: 600; color: #374151; line-height: 1.35; }
-        #titolo-giornata-panel .lavagna-list { list-style: none; padding: 0; margin: 0 0 12px 0; max-height: none; height: auto; }
-        #titolo-giornata-panel .lavagna-item { padding: 6px 0; font-size: 0.95em; line-height: 1.45; color: #374151; border-bottom: 1px solid rgba(0,0,0,0.06); }
-        #titolo-giornata-panel .lavagna-item:last-child { border-bottom: none; }
-        #titolo-giornata-panel .lavagna-item.completed { text-decoration: line-through; color: #9ca3af; opacity: 0.6; }
-        #titolo-giornata-panel .lavagna-item.current { font-weight: 700; color: #1e293b; opacity: 1; }
-        #titolo-giornata-panel .lavagna-item.future { color: #9ca3af; font-weight: 400; }
-        #titolo-giornata-panel .lavagna-all-done { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(0,0,0,0.06); font-size: 0.95em; font-weight: 600; color: #059669; }
-        #titolo-giornata-panel .lavagna-no-strategy { margin-top: 8px; font-size: 0.95em; color: #6b7280; }
-        #titolo-giornata-panel .lavagna-no-strategy .btn-strategia { margin-top: 12px; display: inline-block; padding: 8px 16px; font-size: 0.9em; background: #7b1fa2; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; }
-        #titolo-giornata-panel .lavagna-no-strategy .btn-strategia:hover { background: #6a1b9a; }
-        .meal-builder-time-wrap { position: relative; }
-        .meal-builder-time-desktop { display: none; }
-        .meal-builder-time-wrap .meal-builder-time-native { display: block; }
-        @media (min-width: 768px) {
-            .meal-builder-time-wrap .meal-builder-time-native { display: none; }
-            .meal-builder-time-desktop { display: flex; align-items: center; gap: 4px; }
-            .meal-builder-time-desktop select { min-width: 4em; padding: 6px 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 1em; }
-            .meal-builder-time-desktop .time-sep { font-weight: 600; color: #333; }
-        }
-        /* Lavagna sempre visibile su desktop e mobile (no collapse) */
-        #titolo-giornata-panel { display: block !important; overflow: visible; min-height: min-content; height: auto !important; width: 100%; box-sizing: border-box; }
-        #titolo-giornata-panel .lavagna-list { overflow: visible; max-height: none; height: auto; }
-        @media (min-width: 768px) {
-            #titolo-giornata-panel { display: block !important; }
-        }
+        #titolo-giornata-panel { text-align: center; margin-bottom: 24px; padding: 20px 16px 24px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        #titolo-giornata-panel .titolo-line1 { margin: 0 0 14px 0; font-size: 1em; font-weight: 500; color: #6b7280; letter-spacing: 0.01em; line-height: 1.4; }
+        #titolo-giornata-panel .titolo-next { margin: 0 0 10px 0; font-size: 1.25em; font-weight: 700; color: #1e293b; line-height: 1.35; letter-spacing: -0.01em; }
+        #titolo-giornata-panel .titolo-next.all-done { color: #059669; font-weight: 600; }
+        #titolo-giornata-panel .titolo-workout { margin: 0; font-size: 0.9em; font-weight: 400; color: #9ca3af; line-height: 1.4; }
         .sezione { margin-bottom: 25px; padding: 20px; background-color: #fafafa; border: 1px solid #e0e0e0; border-radius: 8px; border-left-width: 5px; }
         label { display: block; margin-bottom: 8px; font-weight: 600; color: #555; }
         input[type="text"], input[type="number"], input[type="date"], select, input[type="email"], input[type="password"], textarea {
@@ -730,14 +706,9 @@
                 <button type="button" id="mode-coach" class="mode-btn" data-mode="coach">Coach</button>
             </div>
             <div id="titolo-giornata-panel">
-                <p id="lavagna-date" class="lavagna-date"></p>
-                <p id="lavagna-title" class="lavagna-title">📋 Tabella di marcia oggi</p>
-                <div id="lavagna-no-strategy" class="lavagna-no-strategy" style="display: none;">
-                    Nessuna strategia caricata per oggi.
-                    <button type="button" class="btn-strategia" id="btn-apri-strategia">Apri strategia</button>
-                </div>
-                <ul id="lavagna-list" class="lavagna-list" style="display: none;"></ul>
-                <p id="lavagna-all-done" class="lavagna-all-done" style="display: none;">✔ Giornata completata</p>
+                <p id="titolo-giornata-line1" class="titolo-line1"></p>
+                <p id="titolo-giornata-next" class="titolo-next" style="display: none;"></p>
+                <p id="titolo-giornata-workout" class="titolo-workout" style="display: none;"></p>
             </div>
 <div class="nav-links">
     <a href="storico.html">📊 Storico</a>
@@ -748,11 +719,7 @@
 </div>
 
                 <div id="strategia-giornata-sezione" class="sezione strategia-giornata" style="border-left-color: #7b1fa2; margin-top: 12px;">
-                    <h3 class="collapsible-header" id="strategia-header" style="margin: 0 0 0 0; font-size: 1.1em;">
-                        <span>📋 Strategia del giorno</span>
-                        <span class="arrow">▶</span>
-                    </h3>
-                    <div class="collapsible-content" id="strategia-content">
+                    <h3 style="margin: 0 0 12px 0; font-size: 1.1em;">📋 Strategia del giorno</h3>
                     <p style="font-size: 0.85em; color: #666; margin: 0 0 12px 0;">Obiettivi concordati per questa data. La dashboard confronta la giornata reale con la strategia (verde / arancio / rosso).</p>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                         <div><label for="strategia-kcal">Kcal target</label><input type="number" id="strategia-kcal" min="800" max="6000" step="50" placeholder="es. 2200"></div>
@@ -770,9 +737,6 @@
                         <button type="button" id="btn-genera-prompt-chatgpt" style="background-color: #10a37f;">🧠 Genera prompt per ChatGPT</button>
                         <button type="button" id="btn-salva-strategia" style="background-color: #7b1fa2;">Salva strategia</button>
                         <span id="strategia-badge" style="display: none; font-size: 0.85em; color: #7b1fa2; font-weight: 600;">Strategia attiva</span>
-                        <button type="button" id="btn-modifica-strategia" style="display: none; background-color: #5e35b1; font-size: 0.9em;">✏️ Modifica strategia</button>
-                        <button type="button" id="btn-rimuovi-strategia" style="display: none; background-color: #c62828; font-size: 0.9em;">🗑️ Rimuovi strategia</button>
-                    </div>
                     </div>
                 </div>
                 
@@ -1074,6 +1038,7 @@
                         <div id="custom-suggestions"></div>
                     </div>
                     <div><label>Quantità (g)</label><input type="text" id="builder-qta"></div>
+                    <div><label>Orario</label><input type="time" id="builder-time" title="Orario pasto/alimento"></div>
                     <div><label>Proteine/100g</label><input type="number" id="builder-prot" step="0.1"></div>
                     <div><label>Kcal/100g</label><input type="number" id="builder-kcal" min="0"></div>
                     <div><label>Carboidrati/100g</label><input type="number" id="builder-carb" step="0.1"></div>
@@ -1165,15 +1130,6 @@
                     <option value="merenda2">Merenda PM</option>
                     <option value="cena">Cena</option>
                 </select>
-                <div class="meal-builder-time-wrap" style="margin-top: 8px;">
-                    <label for="meal-builder-time">Orario pasto</label>
-                    <input type="time" id="meal-builder-time" title="Orario per l'intero pasto" class="meal-builder-time-native">
-                    <div class="meal-builder-time-desktop" aria-hidden="true">
-                        <select id="meal-builder-time-h" title="Ore (0-23)"><option value="00">00</option></select>
-                        <span class="time-sep">:</span>
-                        <select id="meal-builder-time-m" title="Minuti (0-59)"><option value="00">00</option></select>
-                    </div>
-                </div>
                 <table id="log-pasto-builder">
                     <thead><tr><th>Sel.</th><th>Descrizione</th><th>(g)</th><th>Prot</th><th>Kcal</th><th>Azione</th></tr></thead>
                     <tbody id="log-pasto-builder-body"></tbody>
@@ -1668,16 +1624,8 @@ Restituisci SOLO il JSON.`;
             } catch (e) { return null; }
         }
         function setDailyStrategy(dateString, strategy) {
-            if (!dateString) return;
-            if (!strategy || (typeof strategy === 'object' && Object.keys(strategy).length === 0)) {
-                try { localStorage.removeItem(STRATEGIA_STORAGE_PREFIX + dateString); } catch (e) {}
-                return;
-            }
+            if (!dateString || !strategy) return;
             localStorage.setItem(STRATEGIA_STORAGE_PREFIX + dateString, JSON.stringify(strategy));
-        }
-        function clearDailyStrategy(dateString) {
-            if (!dateString) return;
-            try { localStorage.removeItem(STRATEGIA_STORAGE_PREFIX + dateString); } catch (e) {}
         }
 
         function getTodayString(format = 'ymd') { return new Date().toISOString().split('T')[0]; }
@@ -2225,53 +2173,6 @@ Restituisci SOLO il JSON.`;
 
         const MEALS_ORDER_STRATEGIA = ['breakfast', 'lunch', 'snack', 'dinner'];
         const SLOT_LABELS = { breakfast: 'Colazione', lunch: 'Pranzo', snack: 'Spuntino', dinner: 'Cena' };
-        const MEAL_TYPE_TO_SLOT = { merenda1: 'breakfast', pranzo: 'lunch', merenda2: 'snack', cena: 'dinner' };
-        function setMealBuilderTimeDefault() {
-            const el = document.getElementById('meal-builder-time');
-            const selector = document.getElementById('meal-type-selector');
-            if (!el) return;
-            const strategy = getDailyStrategy(giornoVisualizzato || getTodayString());
-            const mt = strategy && strategy.meals_timing && typeof strategy.meals_timing === 'object' ? strategy.meals_timing : null;
-            const mealType = (selector && selector.value) ? selector.value : 'merenda1';
-            const slotKey = MEAL_TYPE_TO_SLOT[mealType];
-            const slot = mt && slotKey ? mt[slotKey] : null;
-            const timeStr = (slot && slot.time) ? String(slot.time).trim().slice(0, 5) : getCurrentTimeString();
-            el.value = timeStr;
-            syncMealBuilderTimeFromInput();
-        }
-        function syncMealBuilderTimeFromInput() {
-            const input = document.getElementById('meal-builder-time');
-            const sh = document.getElementById('meal-builder-time-h');
-            const sm = document.getElementById('meal-builder-time-m');
-            if (!input || !sh || !sm) return;
-            const v = (input.value || '').trim();
-            const [h, m] = v ? v.split(':') : [null, null];
-            const hour = Math.min(23, Math.max(0, parseInt(h, 10) || 0));
-            const min = Math.min(59, Math.max(0, parseInt(m, 10) || 0));
-            if (sh.value !== String(hour).padStart(2, '0')) sh.value = String(hour).padStart(2, '0');
-            if (sm.value !== String(min).padStart(2, '0')) sm.value = String(min).padStart(2, '0');
-        }
-        function initMealBuilderTimeDesktop() {
-            const sh = document.getElementById('meal-builder-time-h');
-            const sm = document.getElementById('meal-builder-time-m');
-            const input = document.getElementById('meal-builder-time');
-            if (!sh || !sm || !input) return;
-            if (sh.options.length <= 1) {
-                sh.innerHTML = ''; sm.innerHTML = '';
-                for (let i = 0; i <= 23; i++) sh.appendChild(new Option(String(i).padStart(2, '0'), String(i).padStart(2, '0')));
-                for (let i = 0; i <= 59; i++) sm.appendChild(new Option(String(i).padStart(2, '0'), String(i).padStart(2, '0')));
-            }
-            sh.addEventListener('change', () => {
-                const h = Math.min(23, Math.max(0, parseInt(sh.value, 10) || 0));
-                const m = Math.min(59, Math.max(0, parseInt(sm.value, 10) || 0));
-                input.value = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
-            });
-            sm.addEventListener('change', () => {
-                const h = Math.min(23, Math.max(0, parseInt(sh.value, 10) || 0));
-                const m = Math.min(59, Math.max(0, parseInt(sm.value, 10) || 0));
-                input.value = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
-            });
-        }
         function getNextStrategicMeal(log, meals_timing) { return getNextGoalFromStrategy(log, meals_timing); }
         function getNextGoalFromStrategy(log, meals_timing) {
             if (!meals_timing || typeof meals_timing !== 'object') return null;
@@ -2334,74 +2235,43 @@ Restituisci SOLO il JSON.`;
                 }
             }
         }
-        function buildLavagnaActivities(meals_timing, workout) {
-            const rows = [];
-            const slotLabels = { breakfast: 'Colazione', lunch: 'Pranzo', snack: 'Spuntino', dinner: 'Cena' };
-            MEALS_ORDER_STRATEGIA.forEach(slotKey => {
-                const slot = meals_timing[slotKey];
-                if (!slot || !slot.time) return;
-                const timeStr = String(slot.time).trim().slice(0, 5);
-                const label = slotLabels[slotKey] || slotKey;
-                const typeHint = (slot.type && slot.type.trim()) ? ' — ' + slot.type.replace(/_/g, ' ') : '';
-                rows.push({ type: 'meal', slotKey, time: timeStr, timeMin: timeStrToMinutes(slot.time), label, typeHint });
-            });
-            if (workout && (workout.time || workout.desc)) {
-                const timeStr = workout.time ? String(workout.time).trim().slice(0, 5) : '23:59';
-                rows.push({ type: 'workout', time: timeStr, timeMin: workout.time ? timeStrToMinutes(workout.time) : 24 * 60 - 1, label: 'Workout', desc: workout.desc || 'Allenamento' });
-            }
-            rows.sort((a, b) => a.timeMin - b.timeMin);
-            return rows;
-        }
         function updateTitoloPanel(dataVisualizzata, pianoDelGiorno, dailyStrategy) {
-            const dateEl = document.getElementById('lavagna-date');
-            const noStrategyEl = document.getElementById('lavagna-no-strategy');
-            const listEl = document.getElementById('lavagna-list');
-            const allDoneEl = document.getElementById('lavagna-all-done');
-            if (!dateEl) return;
+            const line1 = document.getElementById('titolo-giornata-line1');
+            const line2 = document.getElementById('titolo-giornata-next');
+            const line3 = document.getElementById('titolo-giornata-workout');
+            if (!line1) return;
             const dateStr = dataVisualizzata.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
-            dateEl.textContent = '📅 ' + dateStr;
+            line1.textContent = `${pianoDelGiorno.tipo} – ${dateStr}`;
             const mt = dailyStrategy && dailyStrategy.meals_timing && Object.keys(dailyStrategy.meals_timing).length > 0 ? dailyStrategy.meals_timing : null;
-            const workout = dailyStrategy && dailyStrategy.workout ? dailyStrategy.workout : null;
-            if (!mt || Object.keys(mt).length === 0) {
-                noStrategyEl.style.display = 'block';
-                listEl.style.display = 'none';
-                allDoneEl.style.display = 'none';
-                return;
-            }
-            noStrategyEl.style.display = 'none';
-            const activities = buildLavagnaActivities(mt, workout);
-            const log = datiGiornalieri.log || [];
-            const adherence = computeTimingAdherence(log, mt);
-            const mealStatus = {};
-            adherence.forEach(a => { mealStatus[a.slotKey] = a.status; });
-            const hasWorkoutLogged = log.some(e => e.type === 'workout');
-            let currentFound = false;
-            listEl.innerHTML = '';
-            listEl.style.display = 'block';
-            activities.forEach(act => {
-                let status = 'future';
-                if (act.type === 'meal') {
-                    if (mealStatus[act.slotKey] === 'ok') status = 'completed';
-                    else if (!currentFound) { status = 'current'; currentFound = true; }
-                } else {
-                    if (hasWorkoutLogged) status = 'completed';
-                    else if (!currentFound) { status = 'current'; currentFound = true; }
+            if (getAppMode() === 'coach' && mt) {
+                const next = getNextStrategicMeal(datiGiornalieri.log || [], mt);
+                if (line2) {
+                    line2.style.display = 'block';
+                    if (next && next.type === 'all_done') {
+                        line2.textContent = '🏁 Strategia completata oggi';
+                        line2.classList.add('all-done');
+                    } else if (next) {
+                        const timeStr = (next.time || '').toString().trim().slice(0, 5);
+                        const typeParen = next.typeHint ? ' (' + (next.typeHint.replace(/^ — /, '').replace(/_/g, ' ') + ')' : '';
+                        line2.textContent = '🎯 Prossimo obiettivo: ' + next.label + ' entro ' + timeStr + typeParen;
+                        line2.classList.remove('all-done');
+                    } else {
+                        line2.textContent = '—';
+                        line2.classList.remove('all-done');
+                    }
                 }
-                const li = document.createElement('li');
-                li.className = 'lavagna-item ' + status;
-                let text = act.label + ' ' + act.time;
-                if (act.typeHint) text += act.typeHint;
-                if (act.type === 'workout' && act.desc) text += ' · ' + act.desc;
-                if (status === 'current') text = '🎯 ' + text;
-                if (status === 'completed') text = '✓ ' + text;
-                li.textContent = text;
-                listEl.appendChild(li);
-            });
-            const allCompleted = activities.length > 0 && activities.every(act => {
-                if (act.type === 'meal') return mealStatus[act.slotKey] === 'ok';
-                return hasWorkoutLogged;
-            });
-            allDoneEl.style.display = allCompleted ? 'block' : 'none';
+            } else {
+                if (line2) line2.style.display = 'none';
+            }
+            if (line3) {
+                const w = dailyStrategy && dailyStrategy.workout && (dailyStrategy.workout.time || dailyStrategy.workout.desc);
+                if (w) {
+                    line3.style.display = 'block';
+                    line3.textContent = '🏋️ Workout: ' + (dailyStrategy.workout.desc || 'Allenamento') + (dailyStrategy.workout.time ? ' ore ' + dailyStrategy.workout.time.toString().trim().slice(0, 5) : '');
+                } else {
+                    line3.style.display = 'none';
+                }
+            }
         }
         function updateGuideSection(global) {
             const block = document.getElementById('guida-giornata');
@@ -2726,8 +2596,7 @@ Restituisci SOLO il JSON.`;
             }
             if (db && currentUserUID) {
                 try {
-                    const path = `users/${currentUserUID}/${USER_PROFILE_COMPLETED_CLOUD_PATH}`;
-                    await set(ref(db, path), completed);
+                    await set(ref(db, `users/${currentUserUID}/${USER_PROFILE_COMPLETED_CLOUD_PATH}`), completed);
                 } catch (e) {
                     console.error('Errore salvataggio flag profilo completato su cloud', e);
                 }
@@ -3320,32 +3189,6 @@ Restituisci SOLO il JSON.`;
             console.log(`Caricato il giorno: ${giornoVisualizzato} da localStorage`); 
         }
 
-        function hasDailyStrategy() {
-            const s = getDailyStrategy(giornoVisualizzato);
-            return !!(s && (s.kcalTarget != null || s.protTarget != null || (s.meals_timing && Object.keys(s.meals_timing).length)));
-        }
-        function openStrategiaCollapsible() {
-            const header = document.getElementById('strategia-header');
-            const content = document.getElementById('strategia-content');
-            if (header && content) {
-                header.classList.add('expanded');
-                content.classList.add('expanded');
-                if (header.querySelector('.arrow')) header.querySelector('.arrow').textContent = '▼';
-            }
-        }
-        function closeStrategiaCollapsible() {
-            const header = document.getElementById('strategia-header');
-            const content = document.getElementById('strategia-content');
-            if (header && content) {
-                header.classList.remove('expanded');
-                content.classList.remove('expanded');
-                if (header.querySelector('.arrow')) header.querySelector('.arrow').textContent = '▶';
-            }
-        }
-        function syncStrategiaCollapsibleState() {
-            if (getAppMode() !== 'coach') return;
-            if (hasDailyStrategy()) closeStrategiaCollapsible(); else openStrategiaCollapsible();
-        }
         function fillStrategiaForm() {
             const s = getDailyStrategy(giornoVisualizzato);
             const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = (v != null && v !== '') ? String(v) : ''; };
@@ -3356,12 +3199,7 @@ Restituisci SOLO il JSON.`;
             setVal('strategia-note', s && s.note ? s.note : '');
             setVal('strategia-timing', s && s.timingPasti ? s.timingPasti : '');
             const badge = document.getElementById('strategia-badge');
-            const btnModifica = document.getElementById('btn-modifica-strategia');
-            const btnRimuovi = document.getElementById('btn-rimuovi-strategia');
-            const hasStrategy = getAppMode() === 'coach' && hasDailyStrategy();
-            if (badge) badge.style.display = hasStrategy ? 'inline' : 'none';
-            if (btnModifica) btnModifica.style.display = hasStrategy ? 'inline-block' : 'none';
-            if (btnRimuovi) btnRimuovi.style.display = hasStrategy ? 'inline-block' : 'none';
+            if (badge) badge.style.display = (getAppMode() === 'coach' && s && (s.kcalTarget != null || s.protTarget != null || (s.meals_timing && Object.keys(s.meals_timing).length))) ? 'inline' : 'none';
         }
 
         const STRATEGIA_TIMING_WINDOW_MIN = 90;
@@ -3487,8 +3325,8 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
                 const lastMealTypeSelected = localStorage.getItem('lastMealTypeSelected_' + getTodayString());
                 mealTypeSelector.value = (lastMealTypeSelected && MEAL_TYPE_SEQUENCE.includes(lastMealTypeSelected)) ? lastMealTypeSelected : MEAL_TYPE_SEQUENCE[0];
             }
-            setMealBuilderTimeDefault();
-            initMealBuilderTimeDesktop();
+            const builderTimeEl = document.getElementById('builder-time');
+            if (builderTimeEl && !builderTimeEl.value) builderTimeEl.value = getCurrentTimeString();
             console.log("Interfaccia app avviata con successo con dati locali.");
         }
 
@@ -3693,7 +3531,6 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
             updateTemporalAnalysisDashboard(OBIETTIVI, datiGiornalieri.log, pianoDelGiorno);
             renderStrategiaTimingAdherence();
             updateModeVisibility();
-            syncStrategiaCollapsibleState();
         }
 function calcolaObiettiviPastoConArray(mealType, giornoCorrenteString, pastoArray) {
     const dataVisualizzata = new Date(giornoCorrenteString);
@@ -3963,7 +3800,8 @@ window.renderMealBuilder = renderMealBuilder;
             foodDatabase[sanitizedKey] = foodData;
             salvaFoodDatabase();
             
-            foodItem.time = isSingle ? getCurrentTimeString() : ((document.getElementById('meal-builder-time') || {}).value || getCurrentTimeString());
+            const timeInput = document.getElementById('builder-time');
+            foodItem.time = (timeInput && timeInput.value) ? timeInput.value : getCurrentTimeString();
             if (isSingle) {
                 foodItem.type = 'single';
             } else {
@@ -4604,33 +4442,7 @@ Regole:
                 setDailyStrategy(giornoVisualizzato, dailyStrategy);
                 fillStrategiaForm();
                 aggiornaUI();
-                setTimeout(closeStrategiaCollapsible, 1000);
             });
-            const btnModificaStrategia = document.getElementById('btn-modifica-strategia');
-            if (btnModificaStrategia) {
-                btnModificaStrategia.addEventListener('click', () => {
-                    openStrategiaCollapsible();
-                    document.getElementById('strategia-giornata-sezione').scrollIntoView({ behavior: 'smooth', block: 'start' });
-                });
-            }
-            const btnRimuoviStrategia = document.getElementById('btn-rimuovi-strategia');
-            if (btnRimuoviStrategia) {
-                btnRimuoviStrategia.addEventListener('click', () => {
-                    if (!confirm('Rimuovere la strategia per questo giorno?')) return;
-                    clearDailyStrategy(giornoVisualizzato);
-                    fillStrategiaForm();
-                    aggiornaUI();
-                    openStrategiaCollapsible();
-                    document.getElementById('strategia-giornata-sezione').scrollIntoView({ behavior: 'smooth', block: 'start' });
-                });
-            }
-            const btnApriStrategia = document.getElementById('btn-apri-strategia');
-            if (btnApriStrategia) {
-                btnApriStrategia.addEventListener('click', () => {
-                    const el = document.getElementById('strategia-giornata-sezione');
-                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                });
-            }
 
             document.getElementById('btn-applica-json-strategia').addEventListener('click', () => {
                 const raw = (document.getElementById('strategia-json-paste').value || '').trim().replace(/```json|```/g, '');
@@ -4658,7 +4470,6 @@ Regole:
                     document.getElementById('strategia-json-paste').value = '';
                     aggiornaUI();
                     showStrategiaFeedback('success');
-                    setTimeout(closeStrategiaCollapsible, 1000);
                 } catch (e) {
                     showStrategiaFeedback('error');
                 }
@@ -4767,7 +4578,7 @@ Regole:
               });
             }
         
-            ['carbs-header', 'fats-header', 'micro-header', 'vit-header', 'workout-header', 'nutrients-header', 'fibre-header', 'strategia-header'].forEach(id => {
+            ['carbs-header', 'fats-header', 'micro-header', 'vit-header', 'workout-header', 'nutrients-header', 'fibre-header'].forEach(id => {
                 const header = document.getElementById(id);
                 if(header) {
                     header.addEventListener('click', (e) => {
@@ -4862,7 +4673,6 @@ mealBuilderSezione.addEventListener('change', (e) => {
                     const value = e.target.value;
                     localStorage.setItem('lastMealTypeSelected_' + getTodayString(), value);
                     saveSingleItemToCloud('lastMealTypeSelected_' + getTodayString(), value);
-                    setMealBuilderTimeDefault();
                     renderMealBuilder();
                 }
             });
@@ -4870,7 +4680,7 @@ mealBuilderSezione.addEventListener('change', (e) => {
 btnSalvaPasto.addEventListener('click', () => {
     const alimentiSelezionati = pastoInCostruzione.filter(item => item.selezionato !== false);
     if (alimentiSelezionati.length === 0) { alert("Nessun alimento selezionato."); return; }
-    const timeInput = document.getElementById('meal-builder-time');
+    const timeInput = document.getElementById('builder-time');
     const mealTime = (timeInput && timeInput.value) ? timeInput.value : getCurrentTimeString();
     const mealName = mealTypeSelector.options[mealTypeSelector.selectedIndex].text, mealId = mealTypeSelector.value;
     alimentiSelezionati.forEach(item => { item.time = item.time || mealTime; });
@@ -4934,8 +4744,8 @@ btnSalvaPasto.addEventListener('click', () => {
                     const itemToEdit = datiGiornalieri.log[index];
                     if (!itemToEdit || !confirm("Vuoi modificare questa voce? Verrà spostata nel 'Costruttore Pasto'.")) return;
                     const timeToUse = getEntryTime(itemToEdit);
-                    const mealBuilderTimeEl = document.getElementById('meal-builder-time');
-                    if (mealBuilderTimeEl) { mealBuilderTimeEl.value = timeToUse; syncMealBuilderTimeFromInput(); }
+                    const builderTimeEl = document.getElementById('builder-time');
+                    if (builderTimeEl) builderTimeEl.value = timeToUse;
                     pastoInCostruzione = (itemToEdit.type === 'meal' ? itemToEdit.items : [itemToEdit]).map(item => ({...item, selezionato: true, time: item.time || timeToUse}));
                     datiGiornalieri.log.splice(index, 1); 
                     salvaPastoInCostruzione(); 
@@ -6000,18 +5810,6 @@ if (button.dataset.type === 'builder') {
                 bottom: 10px !important;
             }
         }
-
-        /* Desktop: evita sovrapposizione del widget Chat AI sul contenuto */
-        @media (min-width: 768px) and (max-width: 1250px) {
-            body {
-                justify-content: flex-start;
-                padding-left: 20px;
-            }
-            .container {
-                max-width: calc(100% - 420px);
-                margin-right: auto;
-            }
-        }
     </style>
 
 <script>
@@ -6577,22 +6375,3 @@ if (aiSendBtn) {
 <div id="toast" aria-live="polite"></div>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
