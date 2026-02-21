@@ -801,6 +801,7 @@
                     <option value="merenda2">Merenda PM</option>
                     <option value="cena">Cena</option>
                 </select>
+                <input type="time" id="orario-costruttore" style="padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
                 <table id="log-pasto-builder">
                     <thead><tr><th>Sel.</th><th>Descrizione</th><th>(g)</th><th>Prot</th><th>Kcal</th><th>Azione</th></tr></thead>
                     <tbody id="log-pasto-builder-body"></tbody>
@@ -879,9 +880,9 @@
                     Una volta autenticato, puoi sincronizzare i dati. Lo scaricamento manuale sovrascrive i dati locali.
                 </p>
             </div>
-            <div id="pannello-composizione" style="margin-top: 30px; padding: 15px; background: #e3f2fd; border-radius: 8px; display: none;">
-                <h3 style="margin-top: 0; color: #0d47a1;"><i class="fas fa-weight"></i> Composizione Corporea Attuale</h3>
-                <div id="dati-composizione" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; font-weight: 500;"></div>
+            <div id="pannello-composizione" style="margin-top: 30px; padding: 15px; background: #f0f4f8; border-radius: 8px; border-left: 4px solid #0d47a1; display: none;">
+                <h3 style="margin-top: 0; color: #0d47a1; font-size: 1.1em;"><i class="fas fa-chart-pie"></i> Composizione Corporea</h3>
+                <div id="dati-composizione" style="display: flex; flex-wrap: wrap; gap: 15px; font-weight: 500; font-size: 0.95em;"></div>
             </div>
         </div>
     </div>
@@ -933,7 +934,8 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
         let currentUserUID = null;
         let lastKnownWeight = null;
         let ultimaPesataData = null;
-        let orariPastiCorrente = {}; 
+        let orariPastiCorrente = {};
+        let composizioneGiornoCorrente = null; 
 
         const PIANO_SETTIMANALE = {
             0: { tipo: '💧 Riposo (Deficit)', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
@@ -1191,19 +1193,25 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
             }
         }
 
-        /** Legge il documento giornata da Firestore (peso + orariPasti). */
+        /** Legge il documento giornata da Firestore (peso, orariPasti, grasso, muscoli, viscerale). */
         async function getGiornataFirestore(dateStr) {
-            if (!firestore || !currentUserUID || !dateStr) return { peso: null, orariPasti: {} };
+            if (!firestore || !currentUserUID || !dateStr) return { peso: null, orariPasti: {}, grasso: null, muscoli: null, viscerale: null };
             try {
                 const docRef = doc(firestore, 'users', currentUserUID, 'giornate', dateStr);
                 const snap = await getDoc(docRef);
-                if (!snap.exists()) return { peso: null, orariPasti: {} };
+                if (!snap.exists()) return { peso: null, orariPasti: {}, grasso: null, muscoli: null, viscerale: null };
                 const d = snap.data();
                 const orari = (d.orariPasti && typeof d.orariPasti === 'object') ? { ...d.orariPasti } : {};
-                return { peso: d.peso != null ? Number(d.peso) : null, orariPasti: orari };
+                return {
+                    peso: d.peso != null ? Number(d.peso) : null,
+                    orariPasti: orari,
+                    grasso: d.grasso != null ? Number(d.grasso) : null,
+                    muscoli: d.muscoli != null ? Number(d.muscoli) : null,
+                    viscerale: d.viscerale != null ? Number(d.viscerale) : null
+                };
             } catch (e) {
                 console.error('Errore lettura giornata Firestore', e);
-                return { peso: null, orariPasti: {} };
+                return { peso: null, orariPasti: {}, grasso: null, muscoli: null, viscerale: null };
             }
         }
 
@@ -1211,17 +1219,20 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
             const pannello = document.getElementById('pannello-composizione');
             const dati = document.getElementById('dati-composizione');
             if (!pannello || !dati) return;
-            if (!ultimaPesataData || ultimaPesataData.peso == null) {
+            const source = (composizioneGiornoCorrente && (composizioneGiornoCorrente.peso != null || composizioneGiornoCorrente.grasso != null)) ? composizioneGiornoCorrente : ultimaPesataData;
+            const isUltimoNoto = source === ultimaPesataData;
+            if (!source || source.peso == null) {
                 pannello.style.display = 'none';
                 return;
             }
             pannello.style.display = 'block';
+            const label = isUltimoNoto ? ' <span style="color:#666; font-size:0.85em;">(Ultimo noto)</span>' : '';
             const frag = [];
-            if (ultimaPesataData.peso != null) frag.push('<span>Peso: ' + ultimaPesataData.peso + ' kg</span>');
-            if (ultimaPesataData.grasso != null) frag.push('<span>Grasso: ' + ultimaPesataData.grasso + '%</span>');
-            if (ultimaPesataData.muscoli != null) frag.push('<span>Muscoli: ' + ultimaPesataData.muscoli + '%</span>');
-            if (ultimaPesataData.bmi != null) frag.push('<span>BMI: ' + ultimaPesataData.bmi + '</span>');
-            if (ultimaPesataData.viscerale != null) frag.push('<span>Viscerale: ' + ultimaPesataData.viscerale + '</span>');
+            if (source.peso != null) frag.push('<span>Peso: ' + source.peso + ' kg' + label + '</span>');
+            if (source.grasso != null) frag.push('<span>Grasso: ' + source.grasso + '%</span>');
+            if (source.muscoli != null) frag.push('<span>Muscoli: ' + source.muscoli + '%</span>');
+            if (source.bmi != null) frag.push('<span>BMI: ' + source.bmi + '</span>');
+            if (source.viscerale != null) frag.push('<span>Viscerale: ' + source.viscerale + '</span>');
             dati.innerHTML = frag.join('');
         }
 
@@ -1264,20 +1275,34 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
             try {
                 const giornata = await getGiornataFirestore(dateStr);
                 orariPastiCorrente = giornata.orariPasti || {};
+                if (giornata.peso != null || giornata.grasso != null || giornata.muscoli != null || giornata.viscerale != null) {
+                    composizioneGiornoCorrente = {
+                        peso: giornata.peso,
+                        grasso: giornata.grasso,
+                        muscoli: giornata.muscoli,
+                        bmi: null,
+                        viscerale: giornata.viscerale
+                    };
+                } else {
+                    composizioneGiornoCorrente = null;
+                }
                 if (giornata.peso != null && !isNaN(giornata.peso)) {
                     datiGiornalieri.peso = giornata.peso;
                     if (pesoEl) pesoEl.textContent = 'Peso del giorno: ' + giornata.peso + ' kg';
                 } else {
                     datiGiornalieri.peso = undefined;
                     if (pesoEl) {
-                        if (lastKnownWeight != null) pesoEl.textContent = 'Peso attuale: ' + lastKnownWeight + ' kg (Ultima pesata)';
+                        if (lastKnownWeight != null) pesoEl.textContent = 'Peso attuale: ' + lastKnownWeight + ' kg (Ultimo noto)';
                         else pesoEl.textContent = 'Peso: -- kg';
                     }
                 }
+                aggiornaPannelloComposizione();
                 aggiornaUI();
             } catch (e) {
                 orariPastiCorrente = {};
-                if (pesoEl) pesoEl.textContent = lastKnownWeight != null ? 'Peso attuale: ' + lastKnownWeight + ' kg (Ultima pesata)' : 'Peso: -- kg';
+                composizioneGiornoCorrente = null;
+                if (pesoEl) pesoEl.textContent = lastKnownWeight != null ? 'Peso attuale: ' + lastKnownWeight + ' kg (Ultimo noto)' : 'Peso: -- kg';
+                aggiornaPannelloComposizione();
             }
         }
         
@@ -1405,6 +1430,9 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
             });
             renderMealBuilder();
             caricaGiorno(getTodayString());
+            
+            const orarioCostruttoreEl = document.getElementById('orario-costruttore');
+            if (orarioCostruttoreEl) orarioCostruttoreEl.value = new Date().toTimeString().slice(0, 5);
             
             if (mealTypeSelector) { 
                 const lastMealTypeSelected = localStorage.getItem('lastMealTypeSelected_' + getTodayString());
@@ -1906,6 +1934,17 @@ window.renderMealBuilder = renderMealBuilder;
                     salvaPastoInCostruzione();
                     renderMealBuilder();
                     mealBuilderSezione.scrollIntoView({ behavior: 'smooth' });
+                    const orarioInput = document.getElementById('orario-costruttore');
+                    const orarioVal = (orarioInput && orarioInput.value) ? orarioInput.value.trim() : '';
+                    if (orarioVal && firestore && currentUserUID && giornoVisualizzato && mealTypeSelector) {
+                        const orariKeyMap = { merenda1: 'colazione', pranzo: 'pranzo', merenda2: 'spuntini', cena: 'cena' };
+                        const orariKey = orariKeyMap[mealTypeSelector.value] || mealTypeSelector.value;
+                        orariPastiCorrente[orariKey] = orarioVal;
+                        try {
+                            const docRef = doc(firestore, 'users', currentUserUID, 'giornate', giornoVisualizzato);
+                            await setDoc(docRef, { orariPasti: { ...orariPastiCorrente } }, { merge: true });
+                        } catch (err) { console.error('Errore salvataggio orario pasto', err); }
+                    }
                 } else {
                     if (!datiGiornalieri.log) datiGiornalieri.log = [];
                     datiGiornalieri.log.push(item);
@@ -2483,7 +2522,9 @@ Regole:
                             const lines = text.split(/\r\n|\r|\n/).filter(l => l.trim().length > 0);
                             if (lines.length < 2) { alert('File CSV vuoto o senza dati.'); if (inputEl) inputEl.value = ''; resolve(); return; }
                             const pesoPerData = {};
+                            const composizionePerData = {};
                             const parseCsvLine = (line) => line.split(',').map(f => (f || '').replace(/^"\s*|\s*"$/g, '').replace(/^"|"$/g, '').trim());
+                            const parseNumFromFields = (fields, idx) => { const v = (fields[idx] || '').replace(/%|kg/gi, '').trim(); const n = parseFloat(v); return isFinite(n) ? n : null; };
                             for (let i = 1; i < lines.length; i++) {
                                 const fields = parseCsvLine(lines[i]);
                                 if (fields.length < 2) continue;
@@ -2494,18 +2535,27 @@ Regole:
                                 const mm = parts[0], dd = parts[1], yyyy = parts[2];
                                 if (!/^\d{1,4}$/.test(yyyy) || !/^\d{1,2}$/.test(mm) || !/^\d{1,2}$/.test(dd)) continue;
                                 const dateStr = yyyy + '-' + String(mm).padStart(2, '0') + '-' + String(dd).padStart(2, '0');
-                                const weightStr = (fields[1] || '').replace(/kg/gi, '').trim();
-                                const weight = parseFloat(weightStr);
-                                if (!isFinite(weight)) continue;
+                                const weight = parseNumFromFields(fields, 1);
+                                if (weight == null) continue;
                                 pesoPerData[dateStr] = weight;
+                                composizionePerData[dateStr] = {
+                                    peso: weight,
+                                    grasso: parseNumFromFields(fields, 2),
+                                    muscoli: parseNumFromFields(fields, 3),
+                                    viscerale: fields.length > 13 ? parseNumFromFields(fields, 13) : null
+                                };
                             }
                             console.log('CSV bilancia – date e pesi parsati:', pesoPerData);
                             const count = Object.keys(pesoPerData).length;
                             if (count === 0) { alert('Nessuna pesata valida trovata nel CSV.'); if (inputEl) inputEl.value = ''; resolve(); return; }
                             const batch = writeBatch(firestore);
-                            for (const [dateStr, weight] of Object.entries(pesoPerData)) {
+                            for (const [dateStr, comp] of Object.entries(composizionePerData)) {
                                 const docRef = doc(firestore, 'users', currentUserUID, 'giornate', dateStr);
-                                batch.set(docRef, { peso: weight }, { merge: true });
+                                const payload = { peso: comp.peso };
+                                if (comp.grasso != null) payload.grasso = comp.grasso;
+                                if (comp.muscoli != null) payload.muscoli = comp.muscoli;
+                                if (comp.viscerale != null) payload.viscerale = comp.viscerale;
+                                batch.set(docRef, payload, { merge: true });
                             }
                             const firstDataRow = parseCsvLine(lines[1]);
                             const parseNum = (idx) => { const v = (firstDataRow[idx] || '').replace(/%|kg/gi, '').trim(); const n = parseFloat(v); return isFinite(n) ? n : null; };
@@ -2524,13 +2574,15 @@ Regole:
                                 viscerale: ultimaViscerale,
                                 lastUpdate: serverTimestamp()
                             }, { merge: true });
-                            if (ultimaPeso != null) { lastKnownWeight = ultimaPeso; ultimaPesataData = { peso: ultimaPeso, grasso: ultimaGrasso, muscoli: ultimaMuscoli, bmi: ultimaBmi, viscerale: ultimaViscerale }; aggiornaPannelloComposizione(); }
-                            if (pesoPerData[giornoVisualizzato] != null) {
-                                datiGiornalieri.peso = pesoPerData[giornoVisualizzato];
+                            if (ultimaPeso != null) { lastKnownWeight = ultimaPeso; ultimaPesataData = { peso: ultimaPeso, grasso: ultimaGrasso, muscoli: ultimaMuscoli, bmi: ultimaBmi, viscerale: ultimaViscerale }; }
+                            if (composizionePerData[giornoVisualizzato]) {
+                                composizioneGiornoCorrente = composizionePerData[giornoVisualizzato];
+                                datiGiornalieri.peso = composizionePerData[giornoVisualizzato].peso;
                                 const pesoEl = document.getElementById('peso-giornata');
                                 if (pesoEl) pesoEl.textContent = 'Peso del giorno: ' + datiGiornalieri.peso + ' kg';
                                 salvaGiorno(giornoVisualizzato, datiGiornalieri);
-                            } else if (typeof aggiornaPesoGiornataUI === 'function') aggiornaPesoGiornataUI(giornoVisualizzato);
+                                aggiornaPannelloComposizione();
+                            } else if (typeof aggiornaPesoGiornataUI === 'function') await aggiornaPesoGiornataUI(giornoVisualizzato);
                             if (inputEl) inputEl.value = '';
                             alert('Importazione completata con successo! Pesi aggiornati.');
                         } catch (err) {
@@ -3000,6 +3052,7 @@ if (button.dataset.type === 'builder') {
                         lastKnownWeight = null;
                         ultimaPesataData = null;
                         orariPastiCorrente = {};
+                        composizioneGiornoCorrente = null;
                         const p = document.getElementById('pannello-composizione');
                         if (p) p.style.display = 'none';
                     }
