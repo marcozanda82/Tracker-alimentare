@@ -1423,22 +1423,23 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
                         if (pesoEl) pesoEl.textContent = 'Peso del giorno: ' + giornata.peso + ' kg (Pesata del giorno)';
                     } else {
                         datiGiornalieri.peso = undefined;
-                        const utentiRef = doc(firestore, 'utenti', currentUserUID);
-                        const utentiSnap = await getDoc(utentiRef);
-                        if (utentiSnap.exists() && utentiSnap.data().ultima_pesata) {
-                            const up = utentiSnap.data().ultima_pesata;
-                            if (up.peso != null) lastKnownWeight = Number(up.peso);
-                            ultimaPesataData = {
-                                peso: up.peso != null ? Number(up.peso) : null,
-                                grasso: up.grasso != null ? Number(up.grasso) : null,
-                                muscoli: up.muscoli != null ? Number(up.muscoli) : null,
-                                bmi: up.bmi != null ? Number(up.bmi) : null,
-                                viscerale: up.viscerale != null ? Number(up.viscerale) : null
-                            };
-                            if (pesoEl) pesoEl.textContent = lastKnownWeight != null ? 'Peso attuale: ' + lastKnownWeight + ' kg (Ultimo noto)' : 'Peso: -- kg';
-                        } else {
-                            if (pesoEl) pesoEl.textContent = lastKnownWeight != null ? 'Peso attuale: ' + lastKnownWeight + ' kg (Ultimo noto)' : 'Peso: -- kg';
+                        // Usa i dati in memoria se non dobbiamo per forza fare la query
+                        if (lastKnownWeight == null) {
+                            const utentiRef = doc(firestore, 'utenti', currentUserUID);
+                            const utentiSnap = await getDoc(utentiRef);
+                            if (utentiSnap.exists() && utentiSnap.data().ultima_pesata) {
+                                const up = utentiSnap.data().ultima_pesata;
+                                if (up.peso != null) lastKnownWeight = Number(up.peso);
+                                ultimaPesataData = {
+                                    peso: up.peso != null ? Number(up.peso) : null,
+                                    grasso: up.grasso != null ? Number(up.grasso) : null,
+                                    muscoli: up.muscoli != null ? Number(up.muscoli) : null,
+                                    bmi: up.bmi != null ? Number(up.bmi) : null,
+                                    viscerale: up.viscerale != null ? Number(up.viscerale) : null
+                                };
+                            }
                         }
+                        if (pesoEl) pesoEl.textContent = lastKnownWeight != null ? 'Peso attuale: ' + lastKnownWeight + ' kg (Ultimo noto)' : 'Peso: -- kg';
                     }
                     aggiornaUI();
                     aggiornaPannelloComposizione();
@@ -3147,6 +3148,7 @@ if (button.dataset.type === 'builder') {
                     
                     if (isLoggedIn) {
                         await caricaUltimaPesata();
+                        caricaGiorno(giornoVisualizzato);
                         const lastLocalUpdate = parseInt(localStorage.getItem(LOCAL_LAST_UPDATE_KEY) || 0);
                         const cloudTimestampSnapshot = await get(ref(db, `users/${currentUserUID}/${CLOUD_LAST_UPDATE_PATH}`));
                         const lastCloudUpdate = cloudTimestampSnapshot.exists() ? cloudTimestampSnapshot.val() : 0;
@@ -4464,22 +4466,3 @@ if (aiSendBtn) {
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
