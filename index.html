@@ -859,10 +859,13 @@
                 </div>
                 <div id="caricamento-manuale" class="sezione" style="padding:15px; margin-top:20px; border-width:1px;">
                     <h3 style="margin:0 0 10px 0; font-size:1em;">Visualizza un Altro Giorno</h3>
-                    <div>
+                    <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px;">
                         <input type="date" id="data-caricamento">
                         <button id="btn-vai-a-oggi">Oggi</button>
+                        <span id="peso-giornata" style="font-size:0.9em; color:#555; margin-left:8px;">Peso: -- kg</span>
+                        <button type="button" id="btn-import-csv" style="padding:8px 12px; font-size:0.85em; background-color:#607d8b;"><i class="fas fa-file-csv"></i> Importa Bilancia</button>
                     </div>
+                    <input type="file" id="input-csv-bilancia" accept=".csv" style="display:none">
                 </div>
             </div>
 
@@ -890,14 +893,16 @@
 
    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js" type="module"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js" type="module"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js" type="module"></script> 
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-functions.js" type="module"></script> 
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js" type="module"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js" type="module"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-functions.js" type="module"></script>
     <script type="module">
         import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-functions.js"
         window.httpsCallable = httpsCallable; // Esporta per la chat AI;
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
         import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, writeBatch } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
         
         let functions;
         const firebaseConfig = {
@@ -920,6 +925,7 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
         let db; 
         let auth; 
         let firebaseApp; 
+        let firestore = null; 
         let currentUserUID = null; 
 
         const PIANO_SETTIMANALE = {
@@ -1163,6 +1169,20 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
                 console.error(`Errore salvataggio su cloud per ${path}:`, err);
             }
         }
+
+        /** Legge il peso della giornata da Firestore (path users/{uid}/giornate/{dateStr}). */
+        async function getPesoGiorno(dateStr) {
+            if (!firestore || !currentUserUID || !dateStr) return null;
+            try {
+                const docRef = doc(firestore, 'users', currentUserUID, 'giornate', dateStr);
+                const snap = await getDoc(docRef);
+                if (snap.exists() && snap.data().peso != null) return Number(snap.data().peso);
+                return null;
+            } catch (e) {
+                console.error('Errore lettura peso giornata', e);
+                return null;
+            }
+        }
         
         function salvaFoodDatabase() { 
             localStorage.setItem('trackerFoodDatabase', JSON.stringify(foodDatabase)); 
@@ -1232,7 +1252,18 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
             }
             
             aggiornaUI();
-            console.log(`Caricato il giorno: ${giornoVisualizzato} da localStorage`); 
+            console.log(`Caricato il giorno: ${giornoVisualizzato} da localStorage`);
+            /* Aggiorna #peso-giornata leggendo il peso da Firestore (users/{uid}/giornate/{data}) */
+            (async () => {
+                const pesoEl = document.getElementById('peso-giornata');
+                if (!pesoEl) return;
+                if (!firestore || !currentUserUID) { pesoEl.textContent = 'Peso: -- kg'; return; }
+                try {
+                    const peso = await getPesoGiorno(data);
+                    if (peso != null && !isNaN(peso)) { datiGiornalieri.peso = peso; pesoEl.textContent = 'Peso: ' + peso + ' kg'; }
+                    else { datiGiornalieri.peso = undefined; pesoEl.textContent = 'Peso: -- kg'; }
+                } catch (e) { pesoEl.textContent = 'Peso: -- kg'; }
+            })();
         }
 
         function calcolaObiettiviPasto(mealType, giornoCorrenteString) {
@@ -2345,6 +2376,65 @@ Regole:
                 }
             });
 
+            /* Import CSV bilancia Senssun: apre il file input */
+            document.getElementById('btn-import-csv').addEventListener('click', () => document.getElementById('input-csv-bilancia').click());
+
+            document.getElementById('input-csv-bilancia').addEventListener('change', async (e) => {
+                const file = e.target.files && e.target.files[0];
+                e.target.value = '';
+                if (!file || !file.name.toLowerCase().endsWith('.csv')) return;
+                if (!currentUserUID || !firestore) {
+                    alert('Devi essere autenticato per importare le pesate.');
+                    return;
+                }
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = async (ev) => {
+                        try {
+                            const text = (ev.target && ev.target.result) || '';
+                            const lines = text.split(/\n/).filter(l => l.trim());
+                            if (lines.length < 2) { alert('File CSV vuoto o senza dati.'); resolve(); return; }
+                            const pesoPerData = {};
+                            for (let i = 1; i < lines.length; i++) {
+                                const line = lines[i];
+                                const fields = line.split(',').map(f => (f || '').replace(/^"|"$/g, '').trim());
+                                if (fields.length < 2) continue;
+                                const datePart = (fields[0] || '').split(/\s+/)[0];
+                                const match = datePart.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+                                if (!match) continue;
+                                const [, mm, dd, yyyy] = match;
+                                const dateStr = yyyy + '-' + mm.padStart(2, '0') + '-' + dd.padStart(2, '0');
+                                const weightStr = (fields[1] || '').replace(/kg/gi, '').trim();
+                                const weight = parseFloat(weightStr);
+                                if (!isFinite(weight)) continue;
+                                pesoPerData[dateStr] = weight;
+                            }
+                            const count = Object.keys(pesoPerData).length;
+                            if (count === 0) { alert('Nessuna pesata valida trovata nel CSV.'); resolve(); return; }
+                            const batch = writeBatch(firestore);
+                            for (const [dateStr, weight] of Object.entries(pesoPerData)) {
+                                const docRef = doc(firestore, 'users', currentUserUID, 'giornate', dateStr);
+                                batch.set(docRef, { peso: weight }, { merge: true });
+                            }
+                            await batch.commit();
+                            if (pesoPerData[giornoVisualizzato] != null) {
+                                datiGiornalieri.peso = pesoPerData[giornoVisualizzato];
+                                const pesoEl = document.getElementById('peso-giornata');
+                                if (pesoEl) pesoEl.textContent = 'Peso: ' + datiGiornalieri.peso + ' kg';
+                                salvaGiorno(giornoVisualizzato, datiGiornalieri);
+                            }
+                            alert('Importate ' + count + ' pesate correttamente.');
+                        } catch (err) {
+                            console.error('Errore import CSV bilancia', err);
+                            alert('Errore durante l\'importazione: ' + (err.message || err));
+                        }
+                        resolve();
+                    };
+                    reader.onerror = () => { reject(reader.error); alert('Errore lettura file.'); };
+                    reader.readAsText(file, 'UTF-8');
+                });
+            });
+
             ['progress-proteine', 'progress-calorie', 'progress-carboidrati', 'progress-zuccheri', 
              'progress-fibre-totali', 'progress-fibre-solubili', 'progress-fibre-insolubili',
              'progress-fats-total', 'progress-fat-sat', 
@@ -2773,6 +2863,7 @@ if (button.dataset.type === 'builder') {
                 if (!getApps().some(app => app.name === "globalTrackerApp")) { firebaseApp = initializeApp(firebaseConfig, "globalTrackerApp"); } else { firebaseApp = getApp("globalTrackerApp"); }
                 db = getDatabase(firebaseApp);
                 auth = getAuth(firebaseApp);
+                firestore = getFirestore(firebaseApp);
                 functions = getFunctions(firebaseApp, 'europe-west1');
                 window.functions = functions; // Esporta per la chat AI
                 console.log("Firebase inizializzato.");
