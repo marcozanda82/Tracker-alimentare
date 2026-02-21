@@ -710,6 +710,7 @@
                         <div id="custom-suggestions"></div>
                     </div>
                     <div><label>Quantità (g)</label><input type="text" id="builder-qta"></div>
+                    <div><label>Orario</label><input type="time" id="food-time"></div>
                     <div><label>Proteine/100g</label><input type="number" id="builder-prot" step="0.1"></div>
                     <div><label>Kcal/100g</label><input type="number" id="builder-kcal" min="0"></div>
                     <div><label>Carboidrati/100g</label><input type="number" id="builder-carb" step="0.1"></div>
@@ -1319,6 +1320,12 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
             renderMealBuilder();
             caricaGiorno(getTodayString());
             
+            const foodTimeInput = document.getElementById('food-time');
+            if (foodTimeInput) {
+                const d = new Date();
+                foodTimeInput.value = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+            }
+            
             if (mealTypeSelector) { 
                 const lastMealTypeSelected = localStorage.getItem('lastMealTypeSelected_' + getTodayString());
                 mealTypeSelector.value = (lastMealTypeSelected && MEAL_TYPE_SEQUENCE.includes(lastMealTypeSelected)) ? lastMealTypeSelected : MEAL_TYPE_SEQUENCE[0];
@@ -1449,6 +1456,9 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
             
             const createDescriptionCellHTML = (item) => {
                 let html = '';
+                if (item.orario) {
+                    html += `<span style="color:#666; font-size:0.9em;">[${item.orario}]</span> `;
+                }
                 if (item.ingredienti && item.ingredienti.trim() !== '') {
                     html += `<span class="ingredient-icon" title="Visualizza ingredienti" data-food-name="${item.desc}">📜</span>`;
                 }
@@ -1724,10 +1734,13 @@ window.renderMealBuilder = renderMealBuilder;
             foodData.lastQta = qta;
             foodData.desc = desc; 
             
+            const foodTimeEl = document.getElementById('food-time');
+            const orario = (foodTimeEl && foodTimeEl.value) ? foodTimeEl.value : (() => { const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); })();
             const foodItem = { 
                 desc: desc.charAt(0).toUpperCase() + desc.slice(1), 
                 qta, 
-                ingredienti: foodData.ingredienti || null 
+                ingredienti: foodData.ingredienti || null,
+                orario: orario
             };
             
             for (const key in inputFields) {
@@ -1832,7 +1845,11 @@ window.renderMealBuilder = renderMealBuilder;
             builderDesc.value = '';
             builderQta.value = '';
             Object.values(inputFields).forEach(field => field.el.value = ''); 
-            
+            const foodTimeInput = document.getElementById('food-time');
+            if (foodTimeInput) {
+                const d = new Date();
+                foodTimeInput.value = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+            }
             builderDesc.readOnly = false; // Rende il campo sempre editabile al reset
             btnEditName.style.display = 'none'; // Nasconde la matita
             
@@ -2741,7 +2758,11 @@ if (button.dataset.type === 'builder') {
                 aggiornaColoreNutrienti();
             });
 
-            builderDesc.addEventListener('focus', renderSuggestions);
+            builderDesc.addEventListener('focus', () => {
+                renderSuggestions();
+                const ft = document.getElementById('food-time');
+                if (ft) { const d = new Date(); ft.value = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+            });
 
             builderDesc.addEventListener('blur', () => {
                 setTimeout(() => {
@@ -3991,7 +4012,9 @@ Solo JSON, senza testo.`;
             window.pastoInCostruzione = currentData;
         }
         
-        let item = { desc: data.desc, qta: qta, selezionato: true };
+        const now = new Date();
+        const orario = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+        let item = { desc: data.desc, qta: qta, selezionato: true, orario: orario };
         for (const k in data) { 
             if (!['desc', 'lastQta', 'ingredienti'].includes(k)) {
                 const val100g = parseFloat(data[k]) || 0;
