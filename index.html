@@ -880,6 +880,10 @@
                     Una volta autenticato, puoi sincronizzare i dati. Lo scaricamento manuale sovrascrive i dati locali.
                 </p>
             </div>
+            <div id="pannello-composizione" style="margin-top: 30px; padding: 15px; background: #e3f2fd; border-radius: 8px; display: none;">
+                <h3 style="margin-top: 0; color: #0d47a1;"><i class="fas fa-weight"></i> Composizione Corporea Attuale</h3>
+                <div id="dati-composizione" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; font-weight: 500;"></div>
+            </div>
         </div>
     </div>
     
@@ -903,7 +907,7 @@
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
         import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, writeBatch } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
         
         let functions;
         const firebaseConfig = {
@@ -927,7 +931,9 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
         let auth; 
         let firebaseApp; 
         let firestore = null; 
-        let currentUserUID = null; 
+        let currentUserUID = null;
+        let lastKnownWeight = null;
+        let ultimaPesataData = null; 
 
         const PIANO_SETTIMANALE = {
             0: { tipo: '💧 Riposo (Deficit)', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
@@ -1184,6 +1190,75 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
                 return null;
             }
         }
+
+        function aggiornaPannelloComposizione() {
+            const pannello = document.getElementById('pannello-composizione');
+            const dati = document.getElementById('dati-composizione');
+            if (!pannello || !dati) return;
+            if (!ultimaPesataData || ultimaPesataData.peso == null) {
+                pannello.style.display = 'none';
+                return;
+            }
+            pannello.style.display = 'block';
+            const frag = [];
+            if (ultimaPesataData.peso != null) frag.push('<span>Peso: ' + ultimaPesataData.peso + ' kg</span>');
+            if (ultimaPesataData.grasso != null) frag.push('<span>Grasso: ' + ultimaPesataData.grasso + '%</span>');
+            if (ultimaPesataData.muscoli != null) frag.push('<span>Muscoli: ' + ultimaPesataData.muscoli + '%</span>');
+            if (ultimaPesataData.bmi != null) frag.push('<span>BMI: ' + ultimaPesataData.bmi + '</span>');
+            if (ultimaPesataData.viscerale != null) frag.push('<span>Viscerale: ' + ultimaPesataData.viscerale + '</span>');
+            dati.innerHTML = frag.join('');
+        }
+
+        async function caricaUltimaPesata() {
+            if (!firestore || !currentUserUID) return;
+            try {
+                const docRef = doc(firestore, 'users', currentUserUID, 'body', 'ultima_pesata');
+                const snap = await getDoc(docRef);
+                if (snap.exists()) {
+                    const d = snap.data();
+                    if (d.peso != null) lastKnownWeight = Number(d.peso);
+                    ultimaPesataData = {
+                        peso: d.peso != null ? Number(d.peso) : null,
+                        grasso: d.grasso != null ? Number(d.grasso) : null,
+                        muscoli: d.muscoli != null ? Number(d.muscoli) : null,
+                        bmi: d.bmi != null ? Number(d.bmi) : null,
+                        viscerale: d.viscerale != null ? Number(d.viscerale) : null
+                    };
+                    aggiornaPannelloComposizione();
+                } else {
+                    lastKnownWeight = null;
+                    ultimaPesataData = null;
+                    const pannello = document.getElementById('pannello-composizione');
+                    if (pannello) pannello.style.display = 'none';
+                }
+            } catch (e) {
+                console.error('Errore caricamento ultima pesata', e);
+                lastKnownWeight = null;
+                ultimaPesataData = null;
+            }
+        }
+
+        async function aggiornaPesoGiornataUI(dateStr) {
+            const pesoEl = document.getElementById('peso-giornata');
+            if (!pesoEl) return;
+            if (!firestore || !currentUserUID) {
+                pesoEl.textContent = lastKnownWeight != null ? 'Peso attuale: ' + lastKnownWeight + ' kg (Ultima pesata)' : 'Peso: -- kg';
+                return;
+            }
+            try {
+                const pesoGiorno = await getPesoGiorno(dateStr);
+                if (pesoGiorno != null && !isNaN(pesoGiorno)) {
+                    datiGiornalieri.peso = pesoGiorno;
+                    pesoEl.textContent = 'Peso del giorno: ' + pesoGiorno + ' kg';
+                } else {
+                    datiGiornalieri.peso = undefined;
+                    if (lastKnownWeight != null) pesoEl.textContent = 'Peso attuale: ' + lastKnownWeight + ' kg (Ultima pesata)';
+                    else pesoEl.textContent = 'Peso: -- kg';
+                }
+            } catch (e) {
+                pesoEl.textContent = lastKnownWeight != null ? 'Peso attuale: ' + lastKnownWeight + ' kg (Ultima pesata)' : 'Peso: -- kg';
+            }
+        }
         
         function salvaFoodDatabase() { 
             localStorage.setItem('trackerFoodDatabase', JSON.stringify(foodDatabase)); 
@@ -1254,17 +1329,7 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
             
             aggiornaUI();
             console.log(`Caricato il giorno: ${giornoVisualizzato} da localStorage`);
-            /* Aggiorna #peso-giornata leggendo il peso da Firestore (users/{uid}/giornate/{data}) */
-            (async () => {
-                const pesoEl = document.getElementById('peso-giornata');
-                if (!pesoEl) return;
-                if (!firestore || !currentUserUID) { pesoEl.textContent = 'Peso: -- kg'; return; }
-                try {
-                    const peso = await getPesoGiorno(data);
-                    if (peso != null && !isNaN(peso)) { datiGiornalieri.peso = peso; pesoEl.textContent = 'Peso: ' + peso + ' kg'; }
-                    else { datiGiornalieri.peso = undefined; pesoEl.textContent = 'Peso: -- kg'; }
-                } catch (e) { pesoEl.textContent = 'Peso: -- kg'; }
-            })();
+            aggiornaPesoGiornataUI(data);
         }
 
         function calcolaObiettiviPasto(mealType, giornoCorrenteString) {
@@ -2398,7 +2463,6 @@ Regole:
 
             document.getElementById('input-csv-bilancia').addEventListener('change', async (e) => {
                 const file = e.target.files && e.target.files[0];
-                e.target.value = '';
                 if (!file || !file.name.toLowerCase().endsWith('.csv')) return;
                 if (!currentUserUID || !firestore) {
                     alert('Devi essere autenticato per importare le pesate.');
@@ -2407,47 +2471,70 @@ Regole:
                 return new Promise((resolve, reject) => {
                     const reader = new FileReader();
                     reader.onload = async (ev) => {
+                        const inputEl = document.getElementById('input-csv-bilancia');
                         try {
                             const text = (ev.target && ev.target.result) || '';
-                            const lines = text.split(/\n/).filter(l => l.trim());
-                            if (lines.length < 2) { alert('File CSV vuoto o senza dati.'); resolve(); return; }
+                            const lines = text.split(/\r\n|\r|\n/).filter(l => l.trim().length > 0);
+                            if (lines.length < 2) { alert('File CSV vuoto o senza dati.'); if (inputEl) inputEl.value = ''; resolve(); return; }
                             const pesoPerData = {};
+                            const parseCsvLine = (line) => line.split(',').map(f => (f || '').replace(/^"\s*|\s*"$/g, '').replace(/^"|"$/g, '').trim());
                             for (let i = 1; i < lines.length; i++) {
-                                const line = lines[i];
-                                const fields = line.split(',').map(f => (f || '').replace(/^"|"$/g, '').trim());
+                                const fields = parseCsvLine(lines[i]);
                                 if (fields.length < 2) continue;
-                                const datePart = (fields[0] || '').split(/\s+/)[0];
-                                const match = datePart.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
-                                if (!match) continue;
-                                const [, mm, dd, yyyy] = match;
-                                const dateStr = yyyy + '-' + mm.padStart(2, '0') + '-' + dd.padStart(2, '0');
+                                const rawDate = (fields[0] || '').trim();
+                                const datePart = rawDate.split(/\s+/)[0];
+                                const parts = datePart.split('-');
+                                if (parts.length !== 3) continue;
+                                const mm = parts[0], dd = parts[1], yyyy = parts[2];
+                                if (!/^\d{1,4}$/.test(yyyy) || !/^\d{1,2}$/.test(mm) || !/^\d{1,2}$/.test(dd)) continue;
+                                const dateStr = yyyy + '-' + String(mm).padStart(2, '0') + '-' + String(dd).padStart(2, '0');
                                 const weightStr = (fields[1] || '').replace(/kg/gi, '').trim();
                                 const weight = parseFloat(weightStr);
                                 if (!isFinite(weight)) continue;
                                 pesoPerData[dateStr] = weight;
                             }
+                            console.log('CSV bilancia – date e pesi parsati:', pesoPerData);
                             const count = Object.keys(pesoPerData).length;
-                            if (count === 0) { alert('Nessuna pesata valida trovata nel CSV.'); resolve(); return; }
+                            if (count === 0) { alert('Nessuna pesata valida trovata nel CSV.'); if (inputEl) inputEl.value = ''; resolve(); return; }
                             const batch = writeBatch(firestore);
                             for (const [dateStr, weight] of Object.entries(pesoPerData)) {
                                 const docRef = doc(firestore, 'users', currentUserUID, 'giornate', dateStr);
                                 batch.set(docRef, { peso: weight }, { merge: true });
                             }
+                            const firstDataRow = parseCsvLine(lines[1]);
+                            const parseNum = (idx) => { const v = (firstDataRow[idx] || '').replace(/%|kg/gi, '').trim(); const n = parseFloat(v); return isFinite(n) ? n : null; };
+                            const ultimaPeso = parseNum(1);
+                            const ultimaGrasso = firstDataRow[2] != null ? parseNum(2) : null;
+                            const ultimaMuscoli = firstDataRow[3] != null ? parseNum(3) : null;
+                            const ultimaBmi = firstDataRow[6] != null ? parseNum(6) : null;
+                            const ultimaViscerale = firstDataRow[13] != null ? parseNum(13) : null;
                             await batch.commit();
+                            const ultimaRef = doc(firestore, 'users', currentUserUID, 'body', 'ultima_pesata');
+                            await setDoc(ultimaRef, {
+                                peso: ultimaPeso,
+                                grasso: ultimaGrasso,
+                                muscoli: ultimaMuscoli,
+                                bmi: ultimaBmi,
+                                viscerale: ultimaViscerale,
+                                lastUpdate: serverTimestamp()
+                            }, { merge: true });
+                            if (ultimaPeso != null) { lastKnownWeight = ultimaPeso; ultimaPesataData = { peso: ultimaPeso, grasso: ultimaGrasso, muscoli: ultimaMuscoli, bmi: ultimaBmi, viscerale: ultimaViscerale }; aggiornaPannelloComposizione(); }
                             if (pesoPerData[giornoVisualizzato] != null) {
                                 datiGiornalieri.peso = pesoPerData[giornoVisualizzato];
                                 const pesoEl = document.getElementById('peso-giornata');
-                                if (pesoEl) pesoEl.textContent = 'Peso: ' + datiGiornalieri.peso + ' kg';
+                                if (pesoEl) pesoEl.textContent = 'Peso del giorno: ' + datiGiornalieri.peso + ' kg';
                                 salvaGiorno(giornoVisualizzato, datiGiornalieri);
-                            }
-                            alert('Importate ' + count + ' pesate correttamente.');
+                            } else if (typeof aggiornaPesoGiornataUI === 'function') aggiornaPesoGiornataUI(giornoVisualizzato);
+                            if (inputEl) inputEl.value = '';
+                            alert('Importazione completata con successo! Pesi aggiornati.');
                         } catch (err) {
                             console.error('Errore import CSV bilancia', err);
                             alert('Errore durante l\'importazione: ' + (err.message || err));
+                            if (inputEl) inputEl.value = '';
                         }
                         resolve();
                     };
-                    reader.onerror = () => { reject(reader.error); alert('Errore lettura file.'); };
+                    reader.onerror = () => { reject(reader.error); alert('Errore lettura file.'); document.getElementById('input-csv-bilancia').value = ''; };
                     reader.readAsText(file, 'UTF-8');
                 });
             });
@@ -2892,6 +2979,12 @@ if (button.dataset.type === 'builder') {
                 onAuthStateChanged(auth, async (user) => {
                     const isLoggedIn = !!user;
                     currentUserUID = user?.uid;
+                    if (!isLoggedIn) {
+                        lastKnownWeight = null;
+                        ultimaPesataData = null;
+                        const p = document.getElementById('pannello-composizione');
+                        if (p) p.style.display = 'none';
+                    }
                     authFormFields.style.display = isLoggedIn ? 'none' : 'block';
                     document.getElementById('auth-header').style.display = isLoggedIn ? 'none' : 'block';
                     welcomeMessage.style.display = isLoggedIn ? 'block' : 'none';
@@ -2905,6 +2998,7 @@ if (button.dataset.type === 'builder') {
                     cloudSyncSection.querySelectorAll('button').forEach(button => button.disabled = !isLoggedIn);
                     
                     if (isLoggedIn) {
+                        await caricaUltimaPesata();
                         const lastLocalUpdate = parseInt(localStorage.getItem(LOCAL_LAST_UPDATE_KEY) || 0);
                         const cloudTimestampSnapshot = await get(ref(db, `users/${currentUserUID}/${CLOUD_LAST_UPDATE_PATH}`));
                         const lastCloudUpdate = cloudTimestampSnapshot.exists() ? cloudTimestampSnapshot.val() : 0;
@@ -4224,3 +4318,8 @@ if (aiSendBtn) {
 </script>
 </body>
 </html>
+
+
+
+
+
