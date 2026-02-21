@@ -710,7 +710,6 @@
                         <div id="custom-suggestions"></div>
                     </div>
                     <div><label>Quantità (g)</label><input type="text" id="builder-qta"></div>
-                    <div><label>Orario</label><input type="time" id="food-time"></div>
                     <div><label>Proteine/100g</label><input type="number" id="builder-prot" step="0.1"></div>
                     <div><label>Kcal/100g</label><input type="number" id="builder-kcal" min="0"></div>
                     <div><label>Carboidrati/100g</label><input type="number" id="builder-carb" step="0.1"></div>
@@ -933,7 +932,8 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
         let firestore = null; 
         let currentUserUID = null;
         let lastKnownWeight = null;
-        let ultimaPesataData = null; 
+        let ultimaPesataData = null;
+        let orariPastiCorrente = {}; 
 
         const PIANO_SETTIMANALE = {
             0: { tipo: '💧 Riposo (Deficit)', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
@@ -1191,6 +1191,22 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
             }
         }
 
+        /** Legge il documento giornata da Firestore (peso + orariPasti). */
+        async function getGiornataFirestore(dateStr) {
+            if (!firestore || !currentUserUID || !dateStr) return { peso: null, orariPasti: {} };
+            try {
+                const docRef = doc(firestore, 'users', currentUserUID, 'giornate', dateStr);
+                const snap = await getDoc(docRef);
+                if (!snap.exists()) return { peso: null, orariPasti: {} };
+                const d = snap.data();
+                const orari = (d.orariPasti && typeof d.orariPasti === 'object') ? { ...d.orariPasti } : {};
+                return { peso: d.peso != null ? Number(d.peso) : null, orariPasti: orari };
+            } catch (e) {
+                console.error('Errore lettura giornata Firestore', e);
+                return { peso: null, orariPasti: {} };
+            }
+        }
+
         function aggiornaPannelloComposizione() {
             const pannello = document.getElementById('pannello-composizione');
             const dati = document.getElementById('dati-composizione');
@@ -1240,23 +1256,28 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
 
         async function aggiornaPesoGiornataUI(dateStr) {
             const pesoEl = document.getElementById('peso-giornata');
-            if (!pesoEl) return;
             if (!firestore || !currentUserUID) {
-                pesoEl.textContent = lastKnownWeight != null ? 'Peso attuale: ' + lastKnownWeight + ' kg (Ultima pesata)' : 'Peso: -- kg';
+                orariPastiCorrente = {};
+                if (pesoEl) pesoEl.textContent = lastKnownWeight != null ? 'Peso attuale: ' + lastKnownWeight + ' kg (Ultima pesata)' : 'Peso: -- kg';
                 return;
             }
             try {
-                const pesoGiorno = await getPesoGiorno(dateStr);
-                if (pesoGiorno != null && !isNaN(pesoGiorno)) {
-                    datiGiornalieri.peso = pesoGiorno;
-                    pesoEl.textContent = 'Peso del giorno: ' + pesoGiorno + ' kg';
+                const giornata = await getGiornataFirestore(dateStr);
+                orariPastiCorrente = giornata.orariPasti || {};
+                if (giornata.peso != null && !isNaN(giornata.peso)) {
+                    datiGiornalieri.peso = giornata.peso;
+                    if (pesoEl) pesoEl.textContent = 'Peso del giorno: ' + giornata.peso + ' kg';
                 } else {
                     datiGiornalieri.peso = undefined;
-                    if (lastKnownWeight != null) pesoEl.textContent = 'Peso attuale: ' + lastKnownWeight + ' kg (Ultima pesata)';
-                    else pesoEl.textContent = 'Peso: -- kg';
+                    if (pesoEl) {
+                        if (lastKnownWeight != null) pesoEl.textContent = 'Peso attuale: ' + lastKnownWeight + ' kg (Ultima pesata)';
+                        else pesoEl.textContent = 'Peso: -- kg';
+                    }
                 }
+                aggiornaUI();
             } catch (e) {
-                pesoEl.textContent = lastKnownWeight != null ? 'Peso attuale: ' + lastKnownWeight + ' kg (Ultima pesata)' : 'Peso: -- kg';
+                orariPastiCorrente = {};
+                if (pesoEl) pesoEl.textContent = lastKnownWeight != null ? 'Peso attuale: ' + lastKnownWeight + ' kg (Ultima pesata)' : 'Peso: -- kg';
             }
         }
         
@@ -1384,12 +1405,6 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
             });
             renderMealBuilder();
             caricaGiorno(getTodayString());
-            
-            const foodTimeInput = document.getElementById('food-time');
-            if (foodTimeInput) {
-                const d = new Date();
-                foodTimeInput.value = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
-            }
             
             if (mealTypeSelector) { 
                 const lastMealTypeSelected = localStorage.getItem('lastMealTypeSelected_' + getTodayString());
@@ -1521,9 +1536,6 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
             
             const createDescriptionCellHTML = (item) => {
                 let html = '';
-                if (item.orario) {
-                    html += `<span style="color:#666; font-size:0.9em;">[${item.orario}]</span> `;
-                }
                 if (item.ingredienti && item.ingredienti.trim() !== '') {
                     html += `<span class="ingredient-icon" title="Visualizza ingredienti" data-food-name="${item.desc}">📜</span>`;
                 }
@@ -1543,9 +1555,11 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
                     const qualitaPasto = calcolaQualitaProteine(totaliPasto);
                     const scoreClass = qualitaPasto.score < 70 ? 'low' : qualitaPasto.score < 90 ? 'medium' : 'high';
                     const qualitaCellHtml = `<div class="protein-score ${scoreClass}" title="Limitante: ${qualitaPasto.limiting}">${qualitaPasto.score}%</div>`;
-                    
+                    const orariKeyMap = { merenda1: 'colazione', pranzo: 'pranzo', merenda2: 'spuntini', cena: 'cena' };
+                    const orariKey = orariKeyMap[entry.mealId] || entry.mealId || 'colazione';
+                    const orarioValue = (orariPastiCorrente[orariKey] || '').substring(0, 5);
                     rigaPasto.innerHTML = `
-                        <td><span class="expand-arrow" data-index="${index}">${entry.isExpanded ? '▼' : '▶'}</span> ${entry.desc}</td>
+                        <td><span class="expand-arrow" data-index="${index}">${entry.isExpanded ? '▼' : '▶'}</span> ${entry.desc} <input type="time" class="orario-pasto" data-pasto="${orariKey}" value="${orarioValue}" style="margin-left:10px; font-size:14px; padding:2px; border:1px solid #ccc; border-radius:4px;"></td>
                         <td>${entry.items.reduce((sum, item) => sum + item.qta, 0).toFixed(0)}</td>
                         <td>${(totaliPasto.prot || 0).toFixed(1)}</td>
                         <td>${qualitaCellHtml}</td>
@@ -1799,13 +1813,10 @@ window.renderMealBuilder = renderMealBuilder;
             foodData.lastQta = qta;
             foodData.desc = desc; 
             
-            const foodTimeEl = document.getElementById('food-time');
-            const orario = (foodTimeEl && foodTimeEl.value) ? foodTimeEl.value : (() => { const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); })();
             const foodItem = { 
                 desc: desc.charAt(0).toUpperCase() + desc.slice(1), 
                 qta, 
-                ingredienti: foodData.ingredienti || null,
-                orario: orario
+                ingredienti: foodData.ingredienti || null
             };
             
             for (const key in inputFields) {
@@ -1910,11 +1921,6 @@ window.renderMealBuilder = renderMealBuilder;
             builderDesc.value = '';
             builderQta.value = '';
             Object.values(inputFields).forEach(field => field.el.value = ''); 
-            const foodTimeInput = document.getElementById('food-time');
-            if (foodTimeInput) {
-                const d = new Date();
-                foodTimeInput.value = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
-            }
             builderDesc.readOnly = false; // Rende il campo sempre editabile al reset
             btnEditName.style.display = 'none'; // Nasconde la matita
             
@@ -2829,6 +2835,21 @@ if (button.dataset.type === 'builder') {
                     }
                 }
             });
+
+            document.body.addEventListener('change', async (e) => {
+                const input = e.target;
+                if (!input.classList || !input.classList.contains('orario-pasto')) return;
+                const pasto = input.getAttribute('data-pasto');
+                const value = (input.value || '').trim();
+                if (!pasto || !firestore || !currentUserUID || !giornoVisualizzato) return;
+                orariPastiCorrente[pasto] = value;
+                try {
+                    const docRef = doc(firestore, 'users', currentUserUID, 'giornate', giornoVisualizzato);
+                    await setDoc(docRef, { orariPasti: { ...orariPastiCorrente } }, { merge: true });
+                } catch (err) {
+                    console.error('Errore salvataggio orario pasto', err);
+                }
+            });
             
             builderDesc.addEventListener('input', (e) => {
                 renderSuggestions();
@@ -2845,11 +2866,7 @@ if (button.dataset.type === 'builder') {
                 aggiornaColoreNutrienti();
             });
 
-            builderDesc.addEventListener('focus', () => {
-                renderSuggestions();
-                const ft = document.getElementById('food-time');
-                if (ft) { const d = new Date(); ft.value = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
-            });
+            builderDesc.addEventListener('focus', renderSuggestions);
 
             builderDesc.addEventListener('blur', () => {
                 setTimeout(() => {
@@ -2982,6 +2999,7 @@ if (button.dataset.type === 'builder') {
                     if (!isLoggedIn) {
                         lastKnownWeight = null;
                         ultimaPesataData = null;
+                        orariPastiCorrente = {};
                         const p = document.getElementById('pannello-composizione');
                         if (p) p.style.display = 'none';
                     }
@@ -4106,9 +4124,7 @@ Solo JSON, senza testo.`;
             window.pastoInCostruzione = currentData;
         }
         
-        const now = new Date();
-        const orario = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-        let item = { desc: data.desc, qta: qta, selezionato: true, orario: orario };
+        let item = { desc: data.desc, qta: qta, selezionato: true };
         for (const k in data) { 
             if (!['desc', 'lastQta', 'ingredienti'].includes(k)) {
                 const val100g = parseFloat(data[k]) || 0;
@@ -4318,8 +4334,3 @@ if (aiSendBtn) {
 </script>
 </body>
 </html>
-
-
-
-
-
