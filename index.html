@@ -497,6 +497,7 @@
                     <button id="btn-register">Registrati</button>
                     <button id="btn-login">Accedi</button>
                 </div>
+                <button id="btn-google-login" type="button" style="margin-top: 15px; background-color: #4285F4; color: white; padding: 12px; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; box-sizing: border-box;"><i class="fab fa-google"></i> Accedi con Google</button>
             </div>
             <button id="btn-sign-out">Esci</button>
             <p id="auth-status"></p>
@@ -906,7 +907,7 @@
         window.httpsCallable = httpsCallable; // Esporta per la chat AI;
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
         import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
         
         let functions;
@@ -1658,11 +1659,8 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
                     const qualitaPasto = calcolaQualitaProteine(totaliPasto);
                     const scoreClass = qualitaPasto.score < 70 ? 'low' : qualitaPasto.score < 90 ? 'medium' : 'high';
                     const qualitaCellHtml = `<div class="protein-score ${scoreClass}" title="Limitante: ${qualitaPasto.limiting}">${qualitaPasto.score}%</div>`;
-                    const orariKeyMap = { merenda1: 'colazione', pranzo: 'pranzo', merenda2: 'spuntini', cena: 'cena' };
-                    const orariKey = orariKeyMap[entry.mealId] || entry.mealId || 'colazione';
-                    const orarioValue = String(orariPastiCorrente[orariKey] || '').substring(0, 5);
                     rigaPasto.innerHTML = `
-                        <td><span class="expand-arrow" data-index="${index}">${entry.isExpanded ? '▼' : '▶'}</span> ${entry.desc} <input type="time" class="orario-pasto" data-pasto="${orariKey}" value="${orarioValue}" style="margin-left:10px; font-size:14px; padding:2px; border:1px solid #ccc; border-radius:4px;"></td>
+                        <td><span class="expand-arrow" data-index="${index}">${entry.isExpanded ? '▼' : '▶'}</span> ${entry.desc}</td>
                         <td>${entry.items.reduce((sum, item) => sum + item.qta, 0).toFixed(0)}</td>
                         <td>${(totaliPasto.prot || 0).toFixed(1)}</td>
                         <td>${qualitaCellHtml}</td>
@@ -1677,7 +1675,7 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
                              const subScoreClass = qualitaSubItem.score < 70 ? 'low' : qualitaSubItem.score < 90 ? 'medium' : 'high';
                              const subQualitaCellHtml = `<div class="protein-score ${subScoreClass}" title="Limitante: ${qualitaSubItem.limiting}">${qualitaSubItem.score}%</div>`;
                             rigaSubItem.innerHTML = `
-                                <td>${createDescriptionCellHTML(subItem)}</td><td>${(subItem.qta || 0).toFixed(0)}</td>
+                                <td><span style="color: #555; font-size: 0.9em; margin-right: 5px;">[${subItem.orario || '--:--'}]</span> ${createDescriptionCellHTML(subItem)}</td><td>${(subItem.qta || 0).toFixed(0)}</td>
                                 <td>${(subItem.prot || 0).toFixed(1)}</td>
                                 <td>${subQualitaCellHtml}</td>
                                 ${nutrientKeys.map(k => `<td>${formatNumber(k, subItem[k])}</td>`).join('')}
@@ -1693,7 +1691,7 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
                     const scoreClass = qualitaSingola.score < 70 ? 'low' : qualitaSingola.score < 90 ? 'medium' : 'high';
                     const qualitaCellHtml = `<div class="protein-score ${scoreClass}" title="Limitante: ${qualitaSingola.limiting}">${qualitaSingola.score}%</div>`;
                     riga.innerHTML = `
-                        <td>${createDescriptionCellHTML(entry)}</td><td>${(entry.qta || 0).toFixed(0)}</td>
+                        <td><span style="color: #555; font-size: 0.9em; margin-right: 5px;">[${entry.orario || '--:--'}]</span> ${createDescriptionCellHTML(entry)}</td><td>${(entry.qta || 0).toFixed(0)}</td>
                         <td>${(entry.prot || 0).toFixed(1)}</td>
                         <td>${qualitaCellHtml}</td>
                         ${nutrientKeys.map(k => `<td>${formatNumber(k, entry[k])}</td>`).join('')}
@@ -2003,23 +2001,15 @@ window.renderMealBuilder = renderMealBuilder;
             
             const item = creaAlimentoDaInput(!isForMealBuilder);
             if (item) {
+                const orarioInput = document.getElementById('orario-costruttore');
+                const orarioValue = (orarioInput && orarioInput.value) ? orarioInput.value.trim().substring(0, 5) : '';
+                if (orarioValue) item.orario = orarioValue;
                 if (isForMealBuilder) {
                     pastoInCostruzione.push(item);
                     window.pastoInCostruzione = pastoInCostruzione;
                     salvaPastoInCostruzione();
                     renderMealBuilder();
                     mealBuilderSezione.scrollIntoView({ behavior: 'smooth' });
-                    const orarioInput = document.getElementById('orario-costruttore');
-                    const orarioVal = (orarioInput && orarioInput.value) ? orarioInput.value.trim() : '';
-                    if (orarioVal && firestore && currentUserUID && giornoVisualizzato && mealTypeSelector) {
-                        const orariKeyMap = { merenda1: 'colazione', pranzo: 'pranzo', merenda2: 'spuntini', cena: 'cena' };
-                        const orariKey = orariKeyMap[mealTypeSelector.value] || mealTypeSelector.value;
-                        orariPastiCorrente[orariKey] = orarioVal;
-                        try {
-                            const docRef = doc(firestore, 'users', currentUserUID, 'giornate', giornoVisualizzato);
-                            await setDoc(docRef, { orariPasti: { ...orariPastiCorrente } }, { merge: true });
-                        } catch (err) { console.error('Errore salvataggio orario pasto', err); }
-                    }
                 } else {
                     if (!datiGiornalieri.log) datiGiornalieri.log = [];
                     datiGiornalieri.log.push(item);
@@ -2966,21 +2956,6 @@ if (button.dataset.type === 'builder') {
                 }
             });
 
-            document.body.addEventListener('change', async (e) => {
-                const input = e.target;
-                if (!input.classList || !input.classList.contains('orario-pasto')) return;
-                const pasto = input.getAttribute('data-pasto');
-                const value = (input.value || '').trim();
-                if (!pasto || !firestore || !currentUserUID || !giornoVisualizzato) return;
-                orariPastiCorrente[pasto] = value;
-                try {
-                    const docRef = doc(firestore, 'users', currentUserUID, 'giornate', giornoVisualizzato);
-                    await setDoc(docRef, { orariPasti: { ...orariPastiCorrente } }, { merge: true });
-                } catch (err) {
-                    console.error('Errore salvataggio orario pasto', err);
-                }
-            });
-            
             builderDesc.addEventListener('input', (e) => {
                 renderSuggestions();
                 const sanitizedKey = sanitizeFirebaseKey(e.target.value.trim().toLowerCase());
@@ -3172,7 +3147,18 @@ if (button.dataset.type === 'builder') {
             btnRegister.addEventListener('click', async () => { try { await authHandlers.register(); alert("Registrazione completata!"); } catch (e) { alert(e.message); } });
             btnLogin.addEventListener('click', async () => { try { await authHandlers.login(); alert("Accesso effettuato!"); } catch (e) { alert(e.message); } });
             btnSignOut.addEventListener('click', async () => { try { await authHandlers.signOut(); alert("Disconnessione avvenuta."); } catch (e) { alert(e.message); } });
-            
+            const btnGoogleLogin = document.getElementById('btn-google-login');
+            if (btnGoogleLogin) {
+                btnGoogleLogin.addEventListener('click', () => {
+                    const provider = new GoogleAuthProvider();
+                    signInWithPopup(auth, provider).then((result) => {
+                        console.log("Accesso Google riuscito per:", result.user.email);
+                    }).catch((error) => {
+                        alert("Errore accesso Google: " + error.message);
+                    });
+                });
+            }
+
             async function loadAllTrackerDataFromCloud(skipConfirm = false) {
                 const dataRef = (db && currentUserUID) ? ref(db, `users/${currentUserUID}/tracker_data/`) : null;
                 if (!dataRef) { alert("Devi essere autenticato."); return; }
@@ -4466,4 +4452,3 @@ if (aiSendBtn) {
 </script>
 </body>
 </html>
-
