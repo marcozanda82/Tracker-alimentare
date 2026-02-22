@@ -497,7 +497,6 @@
                     <button id="btn-register">Registrati</button>
                     <button id="btn-login">Accedi</button>
                 </div>
-                <button id="btn-google-login" type="button" style="margin-top: 15px; background-color: #4285F4; color: white; padding: 12px; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; box-sizing: border-box;"><i class="fab fa-google"></i> Accedi con Google</button>
             </div>
             <button id="btn-sign-out">Esci</button>
             <p id="auth-status"></p>
@@ -802,7 +801,6 @@
                     <option value="merenda2">Merenda PM</option>
                     <option value="cena">Cena</option>
                 </select>
-                <input type="time" id="orario-costruttore" style="padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
                 <table id="log-pasto-builder">
                     <thead><tr><th>Sel.</th><th>Descrizione</th><th>(g)</th><th>Prot</th><th>Kcal</th><th>Azione</th></tr></thead>
                     <tbody id="log-pasto-builder-body"></tbody>
@@ -861,13 +859,10 @@
                 </div>
                 <div id="caricamento-manuale" class="sezione" style="padding:15px; margin-top:20px; border-width:1px;">
                     <h3 style="margin:0 0 10px 0; font-size:1em;">Visualizza un Altro Giorno</h3>
-                    <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px;">
+                    <div>
                         <input type="date" id="data-caricamento">
                         <button id="btn-vai-a-oggi">Oggi</button>
-                        <span id="peso-giornata" style="font-size:0.9em; color:#555; margin-left:8px;">Peso: -- kg</span>
-                        <button type="button" id="btn-import-csv" style="padding:8px 12px; font-size:0.85em; background-color:#607d8b;"><i class="fas fa-file-csv"></i> Importa Bilancia</button>
                     </div>
-                    <input type="file" id="input-csv-bilancia" accept=".csv" style="display:none">
                 </div>
             </div>
 
@@ -880,10 +875,6 @@
                 <p style="font-size: 0.85em; color: #777; margin-top: 10px;">
                     Una volta autenticato, puoi sincronizzare i dati. Lo scaricamento manuale sovrascrive i dati locali.
                 </p>
-            </div>
-            <div id="pannello-composizione" style="margin-top: 30px; padding: 15px; background: #f0f4f8; border-radius: 8px; border-left: 4px solid #0d47a1; display: none;">
-                <h3 style="margin-top: 0; color: #0d47a1; font-size: 1.1em;"><i class="fas fa-chart-pie"></i> Composizione Corporea</h3>
-                <div id="dati-composizione" style="display: flex; flex-wrap: wrap; gap: 15px; font-weight: 500; font-size: 0.95em;"></div>
             </div>
         </div>
     </div>
@@ -899,16 +890,14 @@
 
    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js" type="module"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js" type="module"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js" type="module"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js" type="module"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-functions.js" type="module"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js" type="module"></script> 
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-functions.js" type="module"></script> 
     <script type="module">
         import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-functions.js"
         window.httpsCallable = httpsCallable; // Esporta per la chat AI;
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
         import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
         
         let functions;
         const firebaseConfig = {
@@ -931,12 +920,7 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
         let db; 
         let auth; 
         let firebaseApp; 
-        let firestore = null; 
-        let currentUserUID = null;
-        let lastKnownWeight = null;
-        let ultimaPesataData = null;
-        let orariPastiCorrente = {};
-        let composizioneGiornoCorrente = null; 
+        let currentUserUID = null; 
 
         const PIANO_SETTIMANALE = {
             0: { tipo: '💧 Riposo (Deficit)', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
@@ -1179,153 +1163,6 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
                 console.error(`Errore salvataggio su cloud per ${path}:`, err);
             }
         }
-
-        /** Legge il peso della giornata da Firestore (path users/{uid}/giornate/{dateStr}). */
-        async function getPesoGiorno(dateStr) {
-            if (!firestore || !currentUserUID || !dateStr) return null;
-            try {
-                const docRef = doc(firestore, 'users', currentUserUID, 'giornate', dateStr);
-                const snap = await getDoc(docRef);
-                if (snap.exists() && snap.data().peso != null) return Number(snap.data().peso);
-                return null;
-            } catch (e) {
-                console.error('Errore lettura peso giornata', e);
-                return null;
-            }
-        }
-
-        /** Legge il documento giornata da Firestore (peso, orariPasti, grasso, muscoli, viscerale). */
-        async function getGiornataFirestore(dateStr) {
-            if (!firestore || !currentUserUID || !dateStr) return { peso: null, orariPasti: {}, grasso: null, muscoli: null, viscerale: null };
-            try {
-                const docRef = doc(firestore, 'users', currentUserUID, 'giornate', dateStr);
-                const snap = await getDoc(docRef);
-                if (!snap.exists()) return { peso: null, orariPasti: {}, grasso: null, muscoli: null, viscerale: null };
-                const d = snap.data();
-                const orari = (d.orariPasti && typeof d.orariPasti === 'object') ? { ...d.orariPasti } : {};
-                return {
-                    peso: d.peso != null ? Number(d.peso) : null,
-                    orariPasti: orari,
-                    grasso: d.grasso != null ? Number(d.grasso) : null,
-                    muscoli: d.muscoli != null ? Number(d.muscoli) : null,
-                    viscerale: d.viscerale != null ? Number(d.viscerale) : null
-                };
-            } catch (e) {
-                console.error('Errore lettura giornata Firestore', e);
-                return { peso: null, orariPasti: {}, grasso: null, muscoli: null, viscerale: null };
-            }
-        }
-
-        function aggiornaPannelloComposizione() {
-            const pannello = document.getElementById('pannello-composizione');
-            const dati = document.getElementById('dati-composizione');
-            if (!pannello || !dati) return;
-            const source = (composizioneGiornoCorrente && (composizioneGiornoCorrente.peso != null || composizioneGiornoCorrente.grasso != null)) ? composizioneGiornoCorrente : ultimaPesataData;
-            const isUltimoNoto = source === ultimaPesataData;
-            if (!source || source.peso == null) {
-                pannello.style.display = 'none';
-                return;
-            }
-            pannello.style.display = 'block';
-            const label = isUltimoNoto ? ' <span style="color:#666; font-size:0.85em;">(Ultimo noto)</span>' : '';
-            const frag = [];
-            if (source.peso != null) frag.push('<span>Peso: ' + source.peso + ' kg' + label + '</span>');
-            if (source.grasso != null) frag.push('<span>Grasso: ' + source.grasso + '%</span>');
-            if (source.muscoli != null) frag.push('<span>Muscoli: ' + source.muscoli + '%</span>');
-            if (source.bmi != null) frag.push('<span>BMI: ' + source.bmi + '</span>');
-            if (source.viscerale != null) frag.push('<span>Viscerale: ' + source.viscerale + '</span>');
-            dati.innerHTML = frag.join('');
-        }
-
-        async function caricaUltimaPesata() {
-            if (!firestore || !currentUserUID) return;
-            try {
-                const docRef = doc(firestore, 'utenti', currentUserUID);
-                const snap = await getDoc(docRef);
-                if (snap.exists()) {
-                    const d = snap.data().ultima_pesata;
-                    if (d && typeof d === 'object') {
-                        if (d.peso != null) lastKnownWeight = Number(d.peso);
-                        ultimaPesataData = {
-                            peso: d.peso != null ? Number(d.peso) : null,
-                            grasso: d.grasso != null ? Number(d.grasso) : null,
-                            muscoli: d.muscoli != null ? Number(d.muscoli) : null,
-                            bmi: d.bmi != null ? Number(d.bmi) : null,
-                            viscerale: d.viscerale != null ? Number(d.viscerale) : null
-                        };
-                        aggiornaPannelloComposizione();
-                    } else {
-                        lastKnownWeight = null;
-                        ultimaPesataData = null;
-                        const p = document.getElementById('pannello-composizione');
-                        if (p) p.style.display = 'none';
-                    }
-                } else {
-                    lastKnownWeight = null;
-                    ultimaPesataData = null;
-                    const pannello = document.getElementById('pannello-composizione');
-                    if (pannello) pannello.style.display = 'none';
-                }
-            } catch (e) {
-                console.error('Errore caricamento ultima pesata', e);
-                lastKnownWeight = null;
-                ultimaPesataData = null;
-            }
-        }
-
-        async function aggiornaPesoGiornataUI(dateStr) {
-            const pesoEl = document.getElementById('peso-giornata');
-            if (!firestore || !currentUserUID) {
-                orariPastiCorrente = {};
-                if (pesoEl) pesoEl.textContent = lastKnownWeight != null ? 'Peso attuale: ' + lastKnownWeight + ' kg (Ultimo noto)' : 'Peso: -- kg';
-                aggiornaUI();
-                aggiornaPannelloComposizione();
-                return;
-            }
-            try {
-                const giornata = await getGiornataFirestore(dateStr);
-                orariPastiCorrente = (giornata.orariPasti && typeof giornata.orariPasti === 'object') ? { ...giornata.orariPasti } : {};
-                if (giornata.peso != null || giornata.grasso != null || giornata.muscoli != null || giornata.viscerale != null) {
-                    composizioneGiornoCorrente = {
-                        peso: giornata.peso,
-                        grasso: giornata.grasso,
-                        muscoli: giornata.muscoli,
-                        bmi: null,
-                        viscerale: giornata.viscerale
-                    };
-                } else {
-                    composizioneGiornoCorrente = null;
-                }
-                if (giornata.peso != null && !isNaN(giornata.peso)) {
-                    datiGiornalieri.peso = giornata.peso;
-                    if (pesoEl) pesoEl.textContent = 'Peso del giorno: ' + giornata.peso + ' kg (Pesata del giorno)';
-                } else {
-                    datiGiornalieri.peso = undefined;
-                    const utentiRef = doc(firestore, 'utenti', currentUserUID);
-                    const utentiSnap = await getDoc(utentiRef);
-                    if (utentiSnap.exists() && utentiSnap.data().ultima_pesata) {
-                        const up = utentiSnap.data().ultima_pesata;
-                        if (up.peso != null) lastKnownWeight = Number(up.peso);
-                        ultimaPesataData = {
-                            peso: up.peso != null ? Number(up.peso) : null,
-                            grasso: up.grasso != null ? Number(up.grasso) : null,
-                            muscoli: up.muscoli != null ? Number(up.muscoli) : null,
-                            bmi: up.bmi != null ? Number(up.bmi) : null,
-                            viscerale: up.viscerale != null ? Number(up.viscerale) : null
-                        };
-                    }
-                    if (pesoEl) pesoEl.textContent = lastKnownWeight != null ? 'Peso attuale: ' + lastKnownWeight + ' kg (Ultimo noto)' : 'Peso: -- kg';
-                }
-                aggiornaUI();
-                aggiornaPannelloComposizione();
-            } catch (e) {
-                orariPastiCorrente = {};
-                composizioneGiornoCorrente = null;
-                if (pesoEl) pesoEl.textContent = lastKnownWeight != null ? 'Peso attuale: ' + lastKnownWeight + ' kg (Ultimo noto)' : 'Peso: -- kg';
-                aggiornaUI();
-                aggiornaPannelloComposizione();
-            }
-        }
         
         function salvaFoodDatabase() { 
             localStorage.setItem('trackerFoodDatabase', JSON.stringify(foodDatabase)); 
@@ -1394,64 +1231,8 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
                 datiGiornalieri.calorieAdjustment = valorePreimpostatoPerGiorno;
             }
             
-            console.log(`Caricato il giorno: ${giornoVisualizzato} da localStorage`);
-            (async () => {
-                const pesoEl = document.getElementById('peso-giornata');
-                if (!firestore || !currentUserUID) {
-                    orariPastiCorrente = {};
-                    composizioneGiornoCorrente = null;
-                    if (pesoEl) pesoEl.textContent = lastKnownWeight != null ? 'Peso attuale: ' + lastKnownWeight + ' kg (Ultimo noto)' : 'Peso: -- kg';
-                    aggiornaUI();
-                    aggiornaPannelloComposizione();
-                    return;
-                }
-                try {
-                    const giornata = await getGiornataFirestore(data);
-                    orariPastiCorrente = (giornata.orariPasti && typeof giornata.orariPasti === 'object') ? { ...giornata.orariPasti } : {};
-                    if (giornata.peso != null || giornata.grasso != null || giornata.muscoli != null || giornata.viscerale != null) {
-                        composizioneGiornoCorrente = {
-                            peso: giornata.peso,
-                            grasso: giornata.grasso,
-                            muscoli: giornata.muscoli,
-                            bmi: null,
-                            viscerale: giornata.viscerale
-                        };
-                    } else {
-                        composizioneGiornoCorrente = null;
-                    }
-                    if (giornata.peso != null && !isNaN(giornata.peso)) {
-                        datiGiornalieri.peso = giornata.peso;
-                        if (pesoEl) pesoEl.textContent = 'Peso del giorno: ' + giornata.peso + ' kg (Pesata del giorno)';
-                    } else {
-                        datiGiornalieri.peso = undefined;
-                        // Usa i dati in memoria se non dobbiamo per forza fare la query
-                        if (lastKnownWeight == null) {
-                            const utentiRef = doc(firestore, 'utenti', currentUserUID);
-                            const utentiSnap = await getDoc(utentiRef);
-                            if (utentiSnap.exists() && utentiSnap.data().ultima_pesata) {
-                                const up = utentiSnap.data().ultima_pesata;
-                                if (up.peso != null) lastKnownWeight = Number(up.peso);
-                                ultimaPesataData = {
-                                    peso: up.peso != null ? Number(up.peso) : null,
-                                    grasso: up.grasso != null ? Number(up.grasso) : null,
-                                    muscoli: up.muscoli != null ? Number(up.muscoli) : null,
-                                    bmi: up.bmi != null ? Number(up.bmi) : null,
-                                    viscerale: up.viscerale != null ? Number(up.viscerale) : null
-                                };
-                            }
-                        }
-                        if (pesoEl) pesoEl.textContent = lastKnownWeight != null ? 'Peso attuale: ' + lastKnownWeight + ' kg (Ultimo noto)' : 'Peso: -- kg';
-                    }
-                    aggiornaUI();
-                    aggiornaPannelloComposizione();
-                } catch (e) {
-                    orariPastiCorrente = {};
-                    composizioneGiornoCorrente = null;
-                    if (pesoEl) pesoEl.textContent = lastKnownWeight != null ? 'Peso attuale: ' + lastKnownWeight + ' kg (Ultimo noto)' : 'Peso: -- kg';
-                    aggiornaUI();
-                    aggiornaPannelloComposizione();
-                }
-            })();
+            aggiornaUI();
+            console.log(`Caricato il giorno: ${giornoVisualizzato} da localStorage`); 
         }
 
         function calcolaObiettiviPasto(mealType, giornoCorrenteString) {
@@ -1506,9 +1287,6 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
             });
             renderMealBuilder();
             caricaGiorno(getTodayString());
-            
-            const orarioCostruttoreEl = document.getElementById('orario-costruttore');
-            if (orarioCostruttoreEl) orarioCostruttoreEl.value = new Date().toTimeString().slice(0, 5);
             
             if (mealTypeSelector) { 
                 const lastMealTypeSelected = localStorage.getItem('lastMealTypeSelected_' + getTodayString());
@@ -1659,6 +1437,7 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
                     const qualitaPasto = calcolaQualitaProteine(totaliPasto);
                     const scoreClass = qualitaPasto.score < 70 ? 'low' : qualitaPasto.score < 90 ? 'medium' : 'high';
                     const qualitaCellHtml = `<div class="protein-score ${scoreClass}" title="Limitante: ${qualitaPasto.limiting}">${qualitaPasto.score}%</div>`;
+                    
                     rigaPasto.innerHTML = `
                         <td><span class="expand-arrow" data-index="${index}">${entry.isExpanded ? '▼' : '▶'}</span> ${entry.desc}</td>
                         <td>${entry.items.reduce((sum, item) => sum + item.qta, 0).toFixed(0)}</td>
@@ -1675,7 +1454,7 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
                              const subScoreClass = qualitaSubItem.score < 70 ? 'low' : qualitaSubItem.score < 90 ? 'medium' : 'high';
                              const subQualitaCellHtml = `<div class="protein-score ${subScoreClass}" title="Limitante: ${qualitaSubItem.limiting}">${qualitaSubItem.score}%</div>`;
                             rigaSubItem.innerHTML = `
-                                <td><span style="color: #555; font-size: 0.9em; margin-right: 5px;">[${subItem.orario || '--:--'}]</span> ${createDescriptionCellHTML(subItem)}</td><td>${(subItem.qta || 0).toFixed(0)}</td>
+                                <td>${createDescriptionCellHTML(subItem)}</td><td>${(subItem.qta || 0).toFixed(0)}</td>
                                 <td>${(subItem.prot || 0).toFixed(1)}</td>
                                 <td>${subQualitaCellHtml}</td>
                                 ${nutrientKeys.map(k => `<td>${formatNumber(k, subItem[k])}</td>`).join('')}
@@ -1691,7 +1470,7 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
                     const scoreClass = qualitaSingola.score < 70 ? 'low' : qualitaSingola.score < 90 ? 'medium' : 'high';
                     const qualitaCellHtml = `<div class="protein-score ${scoreClass}" title="Limitante: ${qualitaSingola.limiting}">${qualitaSingola.score}%</div>`;
                     riga.innerHTML = `
-                        <td><span style="color: #555; font-size: 0.9em; margin-right: 5px;">[${entry.orario || '--:--'}]</span> ${createDescriptionCellHTML(entry)}</td><td>${(entry.qta || 0).toFixed(0)}</td>
+                        <td>${createDescriptionCellHTML(entry)}</td><td>${(entry.qta || 0).toFixed(0)}</td>
                         <td>${(entry.prot || 0).toFixed(1)}</td>
                         <td>${qualitaCellHtml}</td>
                         ${nutrientKeys.map(k => `<td>${formatNumber(k, entry[k])}</td>`).join('')}
@@ -1917,7 +1696,7 @@ window.renderMealBuilder = renderMealBuilder;
             const foodItem = { 
                 desc: desc.charAt(0).toUpperCase() + desc.slice(1), 
                 qta, 
-                ingredienti: foodData.ingredienti || null
+                ingredienti: foodData.ingredienti || null 
             };
             
             for (const key in inputFields) {
@@ -2001,9 +1780,6 @@ window.renderMealBuilder = renderMealBuilder;
             
             const item = creaAlimentoDaInput(!isForMealBuilder);
             if (item) {
-                const orarioInput = document.getElementById('orario-costruttore');
-                const orarioValue = (orarioInput && orarioInput.value) ? orarioInput.value.trim().substring(0, 5) : '';
-                if (orarioValue) item.orario = orarioValue;
                 if (isForMealBuilder) {
                     pastoInCostruzione.push(item);
                     window.pastoInCostruzione = pastoInCostruzione;
@@ -2025,6 +1801,7 @@ window.renderMealBuilder = renderMealBuilder;
             builderDesc.value = '';
             builderQta.value = '';
             Object.values(inputFields).forEach(field => field.el.value = ''); 
+            
             builderDesc.readOnly = false; // Rende il campo sempre editabile al reset
             btnEditName.style.display = 'none'; // Nasconde la matita
             
@@ -2568,103 +2345,6 @@ Regole:
                 }
             });
 
-            /* Import CSV bilancia Senssun: apre il file input */
-            document.getElementById('btn-import-csv').addEventListener('click', () => document.getElementById('input-csv-bilancia').click());
-
-            document.getElementById('input-csv-bilancia').addEventListener('change', async (e) => {
-                const file = e.target.files && e.target.files[0];
-                if (!file || !file.name.toLowerCase().endsWith('.csv')) return;
-                if (!currentUserUID || !firestore) {
-                    alert('Devi essere autenticato per importare le pesate.');
-                    return;
-                }
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = async (ev) => {
-                        const inputEl = document.getElementById('input-csv-bilancia');
-                        try {
-                            const text = (ev.target && ev.target.result) || '';
-                            const lines = text.split(/\r\n|\r|\n/).filter(l => l.trim().length > 0);
-                            if (lines.length < 2) { alert('File CSV vuoto o senza dati.'); if (inputEl) inputEl.value = ''; resolve(); return; }
-                            const pesoPerData = {};
-                            const composizionePerData = {};
-                            const parseCsvLine = (line) => line.split(',').map(f => (f || '').replace(/^"\s*|\s*"$/g, '').replace(/^"|"$/g, '').trim());
-                            const parseNumFromFields = (fields, idx) => { const v = (fields[idx] || '').replace(/%|kg/gi, '').trim(); const n = parseFloat(v); return isFinite(n) ? n : null; };
-                            for (let i = 1; i < lines.length; i++) {
-                                const fields = parseCsvLine(lines[i]);
-                                if (fields.length < 2) continue;
-                                const rawDate = (fields[0] || '').trim();
-                                const datePart = rawDate.split(/\s+/)[0];
-                                const parts = datePart.split('-');
-                                if (parts.length !== 3) continue;
-                                const mm = parts[0], dd = parts[1], yyyy = parts[2];
-                                if (!/^\d{1,4}$/.test(yyyy) || !/^\d{1,2}$/.test(mm) || !/^\d{1,2}$/.test(dd)) continue;
-                                const dateStr = yyyy + '-' + String(mm).padStart(2, '0') + '-' + String(dd).padStart(2, '0');
-                                const weight = parseNumFromFields(fields, 1);
-                                if (weight == null) continue;
-                                pesoPerData[dateStr] = weight;
-                                composizionePerData[dateStr] = {
-                                    peso: weight,
-                                    grasso: parseNumFromFields(fields, 2),
-                                    muscoli: parseNumFromFields(fields, 3),
-                                    viscerale: fields.length > 13 ? parseNumFromFields(fields, 13) : null
-                                };
-                            }
-                            console.log('CSV bilancia – date e pesi parsati:', pesoPerData);
-                            const count = Object.keys(pesoPerData).length;
-                            if (count === 0) { alert('Nessuna pesata valida trovata nel CSV.'); if (inputEl) inputEl.value = ''; resolve(); return; }
-                            const batch = writeBatch(firestore);
-                            for (const [dateStr, comp] of Object.entries(composizionePerData)) {
-                                const docRef = doc(firestore, 'users', currentUserUID, 'giornate', dateStr);
-                                const payload = { peso: comp.peso };
-                                if (comp.grasso != null) payload.grasso = comp.grasso;
-                                if (comp.muscoli != null) payload.muscoli = comp.muscoli;
-                                if (comp.viscerale != null) payload.viscerale = comp.viscerale;
-                                batch.set(docRef, payload, { merge: true });
-                            }
-                            const firstDataRow = parseCsvLine(lines[1]);
-                            const parseNum = (idx) => { const v = (firstDataRow[idx] || '').replace(/%|kg/gi, '').trim(); const n = parseFloat(v); return isFinite(n) ? n : null; };
-                            const ultimaPeso = parseNum(1);
-                            const ultimaGrasso = firstDataRow[2] != null ? parseNum(2) : null;
-                            const ultimaMuscoli = firstDataRow[3] != null ? parseNum(3) : null;
-                            const ultimaBmi = firstDataRow[6] != null ? parseNum(6) : null;
-                            const ultimaViscerale = firstDataRow[13] != null ? parseNum(13) : null;
-                            await batch.commit();
-                            const utentiRef = doc(firestore, 'utenti', currentUserUID);
-                            await setDoc(utentiRef, {
-                                ultima_pesata: {
-                                    peso: ultimaPeso,
-                                    grasso: ultimaGrasso,
-                                    muscoli: ultimaMuscoli,
-                                    bmi: ultimaBmi,
-                                    viscerale: ultimaViscerale
-                                },
-                                lastUpdate: serverTimestamp()
-                            }, { merge: true });
-                            if (ultimaPeso != null) { lastKnownWeight = ultimaPeso; ultimaPesataData = { peso: ultimaPeso, grasso: ultimaGrasso, muscoli: ultimaMuscoli, bmi: ultimaBmi, viscerale: ultimaViscerale }; }
-                            if (composizionePerData[giornoVisualizzato]) {
-                                composizioneGiornoCorrente = composizionePerData[giornoVisualizzato];
-                                datiGiornalieri.peso = composizionePerData[giornoVisualizzato].peso;
-                                const pesoEl = document.getElementById('peso-giornata');
-                                if (pesoEl) pesoEl.textContent = 'Peso del giorno: ' + datiGiornalieri.peso + ' kg (Pesata del giorno)';
-                                salvaGiorno(giornoVisualizzato, datiGiornalieri);
-                                aggiornaPannelloComposizione();
-                                aggiornaUI();
-                            } else if (typeof aggiornaPesoGiornataUI === 'function') await aggiornaPesoGiornataUI(giornoVisualizzato);
-                            if (inputEl) inputEl.value = '';
-                            alert('Importazione completata con successo! Pesi aggiornati.');
-                        } catch (err) {
-                            console.error('Errore import CSV bilancia', err);
-                            alert('Errore durante l\'importazione: ' + (err.message || err));
-                            if (inputEl) inputEl.value = '';
-                        }
-                        resolve();
-                    };
-                    reader.onerror = () => { reject(reader.error); alert('Errore lettura file.'); document.getElementById('input-csv-bilancia').value = ''; };
-                    reader.readAsText(file, 'UTF-8');
-                });
-            });
-
             ['progress-proteine', 'progress-calorie', 'progress-carboidrati', 'progress-zuccheri', 
              'progress-fibre-totali', 'progress-fibre-solubili', 'progress-fibre-insolubili',
              'progress-fats-total', 'progress-fat-sat', 
@@ -2955,7 +2635,7 @@ if (button.dataset.type === 'builder') {
                     }
                 }
             });
-
+            
             builderDesc.addEventListener('input', (e) => {
                 renderSuggestions();
                 const sanitizedKey = sanitizeFirebaseKey(e.target.value.trim().toLowerCase());
@@ -3093,7 +2773,6 @@ if (button.dataset.type === 'builder') {
                 if (!getApps().some(app => app.name === "globalTrackerApp")) { firebaseApp = initializeApp(firebaseConfig, "globalTrackerApp"); } else { firebaseApp = getApp("globalTrackerApp"); }
                 db = getDatabase(firebaseApp);
                 auth = getAuth(firebaseApp);
-                firestore = getFirestore(firebaseApp);
                 functions = getFunctions(firebaseApp, 'europe-west1');
                 window.functions = functions; // Esporta per la chat AI
                 console.log("Firebase inizializzato.");
@@ -3101,14 +2780,6 @@ if (button.dataset.type === 'builder') {
                 onAuthStateChanged(auth, async (user) => {
                     const isLoggedIn = !!user;
                     currentUserUID = user?.uid;
-                    if (!isLoggedIn) {
-                        lastKnownWeight = null;
-                        ultimaPesataData = null;
-                        orariPastiCorrente = {};
-                        composizioneGiornoCorrente = null;
-                        const p = document.getElementById('pannello-composizione');
-                        if (p) p.style.display = 'none';
-                    }
                     authFormFields.style.display = isLoggedIn ? 'none' : 'block';
                     document.getElementById('auth-header').style.display = isLoggedIn ? 'none' : 'block';
                     welcomeMessage.style.display = isLoggedIn ? 'block' : 'none';
@@ -3122,8 +2793,6 @@ if (button.dataset.type === 'builder') {
                     cloudSyncSection.querySelectorAll('button').forEach(button => button.disabled = !isLoggedIn);
                     
                     if (isLoggedIn) {
-                        await caricaUltimaPesata();
-                        caricaGiorno(giornoVisualizzato);
                         const lastLocalUpdate = parseInt(localStorage.getItem(LOCAL_LAST_UPDATE_KEY) || 0);
                         const cloudTimestampSnapshot = await get(ref(db, `users/${currentUserUID}/${CLOUD_LAST_UPDATE_PATH}`));
                         const lastCloudUpdate = cloudTimestampSnapshot.exists() ? cloudTimestampSnapshot.val() : 0;
@@ -3147,18 +2816,7 @@ if (button.dataset.type === 'builder') {
             btnRegister.addEventListener('click', async () => { try { await authHandlers.register(); alert("Registrazione completata!"); } catch (e) { alert(e.message); } });
             btnLogin.addEventListener('click', async () => { try { await authHandlers.login(); alert("Accesso effettuato!"); } catch (e) { alert(e.message); } });
             btnSignOut.addEventListener('click', async () => { try { await authHandlers.signOut(); alert("Disconnessione avvenuta."); } catch (e) { alert(e.message); } });
-            const btnGoogleLogin = document.getElementById('btn-google-login');
-            if (btnGoogleLogin) {
-                btnGoogleLogin.addEventListener('click', () => {
-                    const provider = new GoogleAuthProvider();
-                    signInWithPopup(auth, provider).then((result) => {
-                        console.log("Accesso Google riuscito per:", result.user.email);
-                    }).catch((error) => {
-                        alert("Errore accesso Google: " + error.message);
-                    });
-                });
-            }
-
+            
             async function loadAllTrackerDataFromCloud(skipConfirm = false) {
                 const dataRef = (db && currentUserUID) ? ref(db, `users/${currentUserUID}/tracker_data/`) : null;
                 if (!dataRef) { alert("Devi essere autenticato."); return; }
