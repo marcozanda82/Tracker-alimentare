@@ -595,7 +595,7 @@
                 <progress id="progress-proteine" class="macro-progress" value="0"></progress>
                 <p>Calorie: <span id="totale-calorie">0</span> / <span id="obiettivo-calorie"></span> kcal</p>
                 <progress id="progress-calorie" class="macro-progress" value="0"></progress>
-                <p>Workout: <span id="workout-calories-totali">0</span> kcal</p>
+                <p>Workout: <span id="workout-calories-totali">0</span><span id="workout-teorico-suffix"></span> kcal</p>
                 <hr>
 
                 <h3 class="collapsible-header" id="carbs-header">
@@ -754,6 +754,13 @@
                     <input type="text" id="workout-desc" placeholder="es. Corsa 30 min, Pesistica">
                     <label for="workout-calories">Calorie Bruciate (kcal)</label>
                     <input type="number" id="workout-calories" min="0">
+                    <label for="workout-dopo-meal">Quando (impatto sui pasti successivi)</label>
+                    <select id="workout-dopo-meal">
+                        <option value="merenda1">Dopo Merenda AM</option>
+                        <option value="pranzo">Dopo Pranzo</option>
+                        <option value="merenda2">Dopo Merenda PM</option>
+                        <option value="cena">Fine giornata (solo Cena)</option>
+                    </select>
                     <button id="btn-add-workout">Aggiungi Allenamento</button>
                 </div>
             </div>
@@ -1075,9 +1082,11 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
 "carb": { "merenda1": 20, "pranzo": 35, "merenda2": 15, "cena": 30 },
 "fatTotal": { "merenda1": 20, "pranzo": 35, "merenda2": 15, "cena": 30 },
 "fibreTotali": { "merenda1": 20, "pranzo": 35, "merenda2": 15, "cena": 30 }
+},
+"workout_pianificato": { "desc": "Gambe", "kcal": 180 }
 }
-}
-Puoi variare le percentuali (es. più fibre al mattino, più carboidrati a pranzo), ma il totale per ogni riga deve essere SEMPRE 100.`;
+Puoi variare le percentuali (es. più fibre al mattino, più carboidrati a pranzo), ma il totale per ogni riga deve essere SEMPRE 100.
+Includi nel JSON la chiave 'workout_pianificato' con 'desc' e 'kcal' stimate in base al tipo di allenamento indicato dall'utente (es. oggi Gambe = 180 kcal). La strategia nutrizionale deve già includere queste calorie nel target giornaliero.`;
         const LOCAL_STORAGE_SYNC_KEYS = ['trackerFoodDatabase', 'trackerPesate', 'trackerMealType', 'trackerPastoInCostruzione'];
         const LOCAL_LAST_UPDATE_KEY = 'lastLocalUpdateTimestamp';
         const CLOUD_LAST_UPDATE_PATH = 'lastCloudUpdateTimestamp';
@@ -1421,6 +1430,7 @@ Puoi variare le percentuali (es. più fibre al mattino, più carboidrati a pranz
             dailyNotesTextarea.value = datiGiornalieri.note || '';
             if (!datiGiornalieri.log) datiGiornalieri.log = [];
             if (typeof datiGiornalieri.workoutCalorie === 'undefined') datiGiornalieri.workoutCalorie = 0;
+            if (typeof datiGiornalieri.workoutTeorico === 'undefined') datiGiornalieri.workoutTeorico = null;
 
             try {
                 const rawTargets = localStorage.getItem('trackerCustomTargets_' + data);
@@ -1503,11 +1513,35 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
             console.log("Interfaccia app avviata con successo con dati locali.");
         }
 
-        /** Restituisce i target giornalieri effettivi: default da piano + workout + adjustment, sovrascritti da window.customDailyTargets. */
-        function getEffectiveDailyTargets() {
+        /** Calorie workout da usare per il target: effettivo (se presente nel log) altrimenti teorico. */
+        function getWorkoutKcalForTarget() {
+            const effettivo = datiGiornalieri.workoutCalorie || 0;
+            if (effettivo > 0) return effettivo;
+            const teorico = datiGiornalieri.workoutTeorico && typeof datiGiornalieri.workoutTeorico.kcal === 'number' ? datiGiornalieri.workoutTeorico.kcal : 0;
+            return teorico;
+        }
+
+        /** Per il ricalcolo a cascata: restituisce le kcal workout da usare per il pasto mealType (effettivo solo per pasti dopo l'allenamento). */
+        function getWorkoutKcalForMeal(mealType) {
+            const MEAL_ORDER = ['merenda1', 'pranzo', 'merenda2', 'cena'];
+            const log = datiGiornalieri.log || [];
+            const workoutEntries = log.filter(e => e.type === 'workout');
+            const effettivo = workoutEntries.reduce((s, e) => s + (e.kcal || e.cal || 0), 0);
+            const teorico = (datiGiornalieri.workoutTeorico && typeof datiGiornalieri.workoutTeorico.kcal === 'number') ? datiGiornalieri.workoutTeorico.kcal : 0;
+            if (effettivo <= 0) return teorico;
+            const dopoMeal = workoutEntries[0] && workoutEntries[0].dopoMeal != null ? workoutEntries[0].dopoMeal : 'cena';
+            const currentIdx = MEAL_ORDER.indexOf(mealType);
+            const dopoIdx = MEAL_ORDER.indexOf(dopoMeal);
+            if (currentIdx > dopoIdx) return effettivo;
+            return teorico;
+        }
+
+        /** Restituisce i target giornalieri effettivi: default da piano + workout (effettivo o teorico) + adjustment, sovrascritti da window.customDailyTargets. */
+        function getEffectiveDailyTargets(mealTypeForKcal) {
             const dataVisualizzata = new Date(giornoVisualizzato);
             const pianoDelGiorno = PIANO_SETTIMANALE[dataVisualizzata.getDay()] || PIANO_SETTIMANALE[1];
-            let obiettivoCalorieTotale = pianoDelGiorno.cal_base + (datiGiornalieri.workoutCalorie || 0) + (datiGiornalieri.calorieAdjustment || 0);
+            const workoutKcal = mealTypeForKcal != null ? getWorkoutKcalForMeal(mealTypeForKcal) : getWorkoutKcalForTarget();
+            let obiettivoCalorieTotale = pianoDelGiorno.cal_base + workoutKcal + (datiGiornalieri.calorieAdjustment || 0);
             const base = {
                 prot: pianoDelGiorno.prot, kcal: obiettivoCalorieTotale, carb: pianoDelGiorno.carb, zuccheri: pianoDelGiorno.zuccheri,
                 ...OBIETTIVI_MICRO, ...OBIETTIVI_FAT, ...OBIETTIVI_VIT, ...OBIETTIVI_AMINO, ...OBIETTIVI_FIBRE
@@ -1579,7 +1613,11 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
             spanObiettivoCalorie.textContent = OBIETTIVI.kcal; spanTotaleCalorie.textContent = totali.kcal.toFixed(0); progressCalorie.max = OBIETTIVI.kcal; progressCalorie.value = totali.kcal;
             spanObiettivoCarboidrati.textContent = OBIETTIVI.carb; spanTotaleCarboidrati.textContent = totali.carb.toFixed(1); progressCarboidrati.max = OBIETTIVI.carb; progressCarboidrati.value = totali.carb;
             spanObiettivoZuccheri.textContent = OBIETTIVI.zuccheri; spanTotaleZuccheri.textContent = totali.zuccheri.toFixed(1); progressZuccheri.max = OBIETTIVI.zuccheri; progressZuccheri.value = totali.zuccheri;
-            spanWorkoutCalories.textContent = datiGiornalieri.workoutCalorie ? datiGiornalieri.workoutCalorie.toFixed(0) : 0; 
+            const workoutEff = datiGiornalieri.workoutCalorie ? datiGiornalieri.workoutCalorie.toFixed(0) : 0;
+            const workoutTeo = (datiGiornalieri.workoutTeorico && datiGiornalieri.workoutTeorico.kcal != null) ? datiGiornalieri.workoutTeorico.kcal.toFixed(0) : '';
+            spanWorkoutCalories.textContent = workoutEff;
+            const suffixEl = document.getElementById('workout-teorico-suffix');
+            if (suffixEl) suffixEl.textContent = workoutTeo ? ' / ' + workoutTeo : '';
             spanObiettivoFibreTotali.textContent = OBIETTIVI.fibreTotali; spanTotaleFibreTotali.textContent = totali.fibreTotali.toFixed(1); progressFibreTotali.max = OBIETTIVI.fibreTotali; progressFibreTotali.value = totali.fibreTotali;
             spanObiettivoFibreSolubili.textContent = OBIETTIVI.fibreSolubili; spanTotaleFibreSolubili.textContent = totali.fibreSolubili.toFixed(1); progressFibreSolubili.max = OBIETTIVI.fibreSolubili; progressFibreSolubili.value = totali.fibreSolubili;
             spanObiettivoFibreInsolubili.textContent = OBIETTIVI.fibreInsolubili; spanTotaleFibreInsolubili.textContent = totali.fibreInsolubili.toFixed(1); progressFibreInsolubili.max = OBIETTIVI.fibreInsolubili; progressFibreInsolubili.value = totali.fibreInsolubili;
@@ -1711,7 +1749,7 @@ function calcolaObiettiviPastoConArray(mealType, giornoCorrenteString, pastoArra
     const dataVisualizzata = new Date(giornoCorrenteString);
     const giornoSettimana = dataVisualizzata.getDay();
     const pianoDelGiorno = PIANO_SETTIMANALE[giornoSettimana] || PIANO_SETTIMANALE[1];
-    const effective = getEffectiveDailyTargets();
+    const effective = getEffectiveDailyTargets(mealType);
 
     const targetGiorno = {
         prot: effective.prot,
@@ -2897,6 +2935,14 @@ Regole:
                                 }
                             }
                         }
+                        if (parsed.workout_pianificato && typeof parsed.workout_pianificato === 'object') {
+                            const wp = parsed.workout_pianificato;
+                            const kcal = typeof wp.kcal === 'number' ? wp.kcal : (parseFloat(wp.kcal) || 0);
+                            if (kcal >= 0) {
+                                datiGiornalieri.workoutTeorico = { desc: (wp.desc && String(wp.desc)) || 'Allenamento', kcal: kcal };
+                                salvaGiorno(giornoVisualizzato, datiGiornalieri);
+                            }
+                        }
                         aggiornaUI();
                         if (editModeActive) injectTargetButtons();
                         if (typeof renderMealBuilder === 'function') renderMealBuilder();
@@ -3006,10 +3052,12 @@ Regole:
                     if (!confirm('Sei sicuro di voler ripristinare i target nutrizionali di base? Perderai tutte le modifiche manuali e l\'eventuale strategia AI applicata a questa giornata.')) return;
                     window.customDailyTargets = {};
                     window.customRipartizionePasti = {};
+                    datiGiornalieri.workoutTeorico = null;
                     localStorage.removeItem('trackerCustomTargets_' + giornoVisualizzato);
                     localStorage.removeItem('trackerRipartizionePasti_' + giornoVisualizzato);
                     saveSingleItemToCloud('trackerCustomTargets_' + giornoVisualizzato, null);
                     saveSingleItemToCloud('trackerRipartizionePasti_' + giornoVisualizzato, null);
+                    salvaGiorno(giornoVisualizzato, datiGiornalieri);
                     aggiornaUI();
                     if (typeof renderMealBuilder === 'function') renderMealBuilder();
                     setEditMode(false);
@@ -3126,16 +3174,18 @@ Regole:
                 }
             });
 
+            const workoutDopoMealSelect = document.getElementById('workout-dopo-meal');
             btnAddWorkout.addEventListener('click', () => {
                 const desc = workoutDescInput.value.trim(), calories = parseFloat(workoutCaloriesInput.value);
                 if (!desc || isNaN(calories) || calories <= 0) { alert('Dati allenamento non validi.'); return; }
                 if (!datiGiornalieri.log) datiGiornalieri.log = [];
-                datiGiornalieri.log.push({ type: 'workout', desc: desc, kcal: calories });
+                const dopoMeal = (workoutDopoMealSelect && workoutDopoMealSelect.value) || 'cena';
+                datiGiornalieri.log.push({ type: 'workout', desc: desc, kcal: calories, dopoMeal: dopoMeal });
                 datiGiornalieri.workoutCalorie = (datiGiornalieri.workoutCalorie || 0) + calories;
                 aggiornaUI();
-                salvaGiorno(giornoVisualizzato, datiGiornalieri); 
+                salvaGiorno(giornoVisualizzato, datiGiornalieri);
                 workoutDescInput.value = ''; workoutCaloriesInput.value = '';
-                renderMealBuilder(); 
+                renderMealBuilder();
             });
 
            btnAggiungiSingolo.addEventListener('click', () => handleAlimentoAddition(false));
