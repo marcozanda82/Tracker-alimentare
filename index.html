@@ -3845,7 +3845,8 @@ if (button.dataset.type === 'builder') {
                 btnExportAi.addEventListener('click', async () => {
                     const dataRef = new Date(giornoVisualizzato);
                     const piano = PIANO_SETTIMANALE[dataRef.getDay()] || PIANO_SETTIMANALE[1];
-                    const targetKcal = piano.cal_base + (datiGiornalieri.workoutCalorie || 0) + (datiGiornalieri.calorieAdjustment || 0);
+                    const targetGiornalieri = getEffectiveDailyTargets();
+                    const targetKcal = targetGiornalieri.kcal;
                     
                     const allNutrientKeys = [
                         'prot', 'kcal', 'carb', 'zuccheri', 'fatTotal', 'fatSat', 'fatTrans', 
@@ -3885,7 +3886,42 @@ if (button.dataset.type === 'builder') {
 
                         logDettagliato.push({
                             tipo: entry.type === 'meal' ? `Pasto: ${entry.desc}` : 'Alimento Singolo',
+                            mealId: entry.type === 'meal' ? entry.mealId : null,
                             dettagli: itemsExport
+                        });
+                    });
+
+                    const strategyKeys = ['kcal', 'prot', 'carb', 'fatTotal', 'fibreTotali'];
+                    const confronto_strategia_pasti = [];
+                    (datiGiornalieri.log || []).forEach(entry => {
+                        if (entry.type !== 'meal' || !entry.mealId) return;
+                        const items = entry.items || [];
+                        const effettivi = { kcal: 0, prot: 0, carb: 0, fatTotal: 0, fibreTotali: 0 };
+                        items.forEach(item => {
+                            effettivi.kcal += (item.kcal || item.cal) || 0;
+                            effettivi.prot += item.prot || 0;
+                            effettivi.carb += item.carb || 0;
+                            effettivi.fatTotal += item.fatTotal || 0;
+                            effettivi.fibreTotali += item.fibreTotali || 0;
+                        });
+                        const strategia = {};
+                        const scostamento_perc = {};
+                        strategyKeys.forEach(key => {
+                            const targetMeal = (getRipartizioneRatio(key, entry.mealId) || 0) * (targetGiornalieri[key] != null ? targetGiornalieri[key] : 0);
+                            strategia[key] = Math.round(targetMeal * 10) / 10;
+                            if (targetMeal > 0) {
+                                const diff = effettivi[key] - targetMeal;
+                                scostamento_perc[key] = Math.round((diff / targetMeal) * 1000) / 10;
+                            } else {
+                                scostamento_perc[key] = effettivi[key] > 0 ? 100 : 0;
+                            }
+                        });
+                        confronto_strategia_pasti.push({
+                            pasto: entry.desc || entry.mealId,
+                            pasto_id: entry.mealId,
+                            strategia: strategia,
+                            effettivi: { kcal: Math.round(effettivi.kcal), prot: Math.round(effettivi.prot * 10) / 10, carb: Math.round(effettivi.carb * 10) / 10, fatTotal: Math.round(effettivi.fatTotal * 10) / 10, fibreTotali: Math.round(effettivi.fibreTotali * 10) / 10 },
+                            scostamento_perc: scostamento_perc
                         });
                     });
 
@@ -3895,6 +3931,9 @@ if (button.dataset.type === 'builder') {
                             giorno_tipo: piano.tipo,
                             note_utente: datiGiornalieri.note || "Nessuna nota"
                         },
+                        target_giornalieri: targetGiornalieri,
+                        strategia_ripartizione_pasti: (typeof window !== 'undefined' && window.customRipartizionePasti) ? window.customRipartizionePasti : {},
+                        confronto_strategia_pasti: confronto_strategia_pasti,
                         cruscotto_totali: {
                             MACROS: {
                                 Kcal: { consumate: dailyTotals.kcal.toFixed(0), target: targetKcal },
@@ -3922,7 +3961,7 @@ if (button.dataset.type === 'builder') {
                     try {
                         const jsonString = JSON.stringify(fullExportData, null, 2);
                         await navigator.clipboard.writeText(jsonString);
-                        alert("✅ Dati COMPLETI copiati (Nutrienti, Micros, Log)!\n\nIncolla su ChatGPT/Gemini e chiedi:\n'Analizza questo JSON. Cerca anomalie nei dati (es. cibi con calorie a zero) e dammi un parere nutrizionale.'");
+                        alert("✅ Dati Completi AI copiati!\n\nInclusi: target_giornalieri, strategia_ripartizione_pasti, confronto_strategia_pasti (scostamento % per pasto).\nIncolla in chat e chiedi: 'Ho rispettato la strategia oggi?' o 'Analizza anomalie e dammi un parere nutrizionale.'");
                     } catch (err) {
                         console.error("Errore copia:", err);
                         alert("Errore nella copia automatica. Controlla la console.");
@@ -4318,27 +4357,28 @@ if (button.dataset.type === 'builder') {
     function cercaInDatabase(query) {
         if (!query) return [];
         const db = window.foodDatabase || {};
-        const q = query.toLowerCase();
+        const q = query.toLowerCase().trim().replace(/\s+/g, ' ');
         const results = [];
-        
         const exactKey = window.sanitizeFirebaseKey ? window.sanitizeFirebaseKey(q) : q.replace(/[.#$[\]\/]/g, '_');
         if (db[exactKey]) {
             return [{ key: exactKey, data: db[exactKey], exact: true }];
         }
-        
+        const queryWords = q.split(/\s+/).filter(Boolean);
         for (const key in db) {
             const item = db[key];
             if (!item || !item.desc) continue;
             const descLower = item.desc.toLowerCase();
-            if (descLower.includes(q) || q.includes(descLower) || key.includes(q)) {
-                results.push({ key, data: item, exact: false });
+            const keyLower = key.toLowerCase();
+            const exactMatch = descLower === q || keyLower === q || descLower.includes(q) || q.includes(descLower) || keyLower.includes(q);
+            const allWordsMatch = queryWords.length > 0 && queryWords.every(w => descLower.includes(w) || keyLower.includes(w));
+            if (exactMatch || allWordsMatch) {
+                results.push({ key, data: item, exact: exactMatch });
             }
         }
-        
         return results.sort((a, b) => {
-            if (a.exact) return -1;
-            if (b.exact) return 1;
-            return a.data.desc.localeCompare(b.data.desc);
+            if (a.exact && !b.exact) return -1;
+            if (!a.exact && b.exact) return 1;
+            return (a.data.desc || '').localeCompare(b.data.desc || '');
         });
     }
 
@@ -4352,28 +4392,21 @@ function gestisciQuantitaEInserimento(data, qtaUtente, pasto) {
         
         // CASO 2: L'utente NON ha messo i grammi, ma c'è uno storico (lastQta)
         if (data.lastQta && data.lastQta > 0) {
-            // Creiamo un elemento visivo in chat per chiedere conferma
             const div = document.createElement('div');
-            div.style.cssText = 'background:#e8f5e9; border:1px solid #4caf50; padding:10px; border-radius:8px; margin:5px 0; animation: fadeIn 0.3s;';
-            
-            div.innerHTML = `<p style="margin:0 0 10px 0; color:#2e7d32; font-weight:600;">
-                Trovato storico per <u>${data.desc}</u>.<br>
-                Usare l'ultimo valore (<strong>${data.lastQta}g</strong>)?</p>`;
-            
-            // Bottone SÌ (Usa storico)
+            div.style.cssText = 'background:#f1f8e9; border:1px solid #aed581; padding:12px; border-radius:10px; margin:8px 0;';
+            div.innerHTML = `<p style="margin:0 0 10px 0; color:#33691e; font-weight:600;">Trovato <strong>${data.desc}</strong> nel tuo database.</p><p style="margin:0 0 10px 0; color:#558b2f;">Usare l'ultima quantità (<strong>${data.lastQta}g</strong>)?</p>`;
             const btnSi = document.createElement('button');
-            btnSi.textContent = "✅ Sì, usa";
-            btnSi.style.cssText = 'margin-right:8px; padding:8px 15px; background:#4caf50; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold;';
+            btnSi.textContent = "Sì, usa";
+            btnSi.style.cssText = 'margin-right:8px; padding:8px 14px; background:#689f38; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600;';
             btnSi.onclick = () => {
                 div.remove(); // Toglie la domanda
                 addMessage(`Ok, uso ${data.lastQta}g`, 'assistant');
                 procediInserimentoFinale(data, data.lastQta, pasto);
             };
             
-            // Bottone NO (Inserisci manualmente)
             const btnNo = document.createElement('button');
-            btnNo.textContent = "✏️ No, cambia";
-            btnNo.style.cssText = 'padding:8px 15px; background:#fff; border:1px solid #ccc; color:#333; border-radius:5px; cursor:pointer;';
+            btnNo.textContent = "No, inserisci grammi";
+            btnNo.style.cssText = 'padding:8px 14px; background:#fff; border:1px solid #c5e1a5; color:#33691e; border-radius:6px; cursor:pointer;';
             btnNo.onclick = () => {
                 div.remove(); // Toglie la domanda
                 chiediQuantitaManuale(data, pasto); // Passa alla funzione di input manuale
@@ -4421,8 +4454,8 @@ function gestisciQuantitaEInserimento(data, qtaUtente, pasto) {
 
     function mostraSelezioneMultipla(nomeOriginale, results, qtaUtente, pasto) {
         const div = document.createElement('div');
-        div.style.cssText = 'background:#e3f2fd; border:1px solid #90caf9; padding:15px; border-radius:8px; margin:10px 0; max-width:90%;';
-        div.innerHTML = `<p style="margin:0 0 10px 0; font-weight:600; color:#1565c0;">Scegli quale "${nomeOriginale}":</p>`;
+        div.style.cssText = 'background:#f8f9fa; border:1px solid #dee2e6; padding:14px; border-radius:10px; margin:10px 0; max-width:90%;';
+        div.innerHTML = `<p style="margin:0 0 10px 0; font-weight:600; color:#495057;">Ho trovato più tipi di <strong>${nomeOriginale}</strong>. Quale intendi?</p>`;
         
         results.forEach(r => {
             const btn = document.createElement('button');
@@ -4443,25 +4476,24 @@ function gestisciQuantitaEInserimento(data, qtaUtente, pasto) {
 
     function mostraDialogoNuovoAlimento(nome, qtaUtente, pasto) {
         const div = document.createElement('div');
-        div.style.cssText = 'background:#fff3e0; border:2px solid #ff9800; padding:15px; border-radius:8px; margin:10px 0; max-width:90%;';
-        div.innerHTML = `<p style="margin:0 0 15px 0; font-weight:600; color:#e65100;">"${nome}" non trovato</p>`;
+        div.style.cssText = 'background:#f5f5f5; border:1px solid #e0e0e0; padding:16px; border-radius:10px; margin:10px 0; max-width:90%; box-shadow:0 1px 3px rgba(0,0,0,0.08);';
+        div.innerHTML = `<p style="margin:0 0 12px 0; font-weight:600; color:#333;">Non ho trovato <strong>${nome}</strong> nel tuo database.</p><p style="margin:0 0 14px 0; color:#555; font-size:0.95em;">Vuoi che lo crei io come nutrizionista esperto?</p>`;
         
+        const btnAI = document.createElement('button');
+        btnAI.textContent = '✅ Sì, crealo con AI';
+        btnAI.style.cssText = 'display:block; width:100%; margin:8px 0; padding:12px; border:1px solid #667eea; background:#e8eaf6; color:#3f51b5; border-radius:6px; cursor:pointer; font-weight:600;';
         const btnManual = document.createElement('button');
-        btnManual.textContent = '✏️ Compila manualmente nel form';
-        btnManual.style.cssText = 'display:block; width:100%; margin:8px 0; padding:12px; border:1px solid #4caf50; background:#e8f5e9; color:#2e7d32; border-radius:6px; cursor:pointer; font-weight:600;';
+        btnManual.textContent = '✏️ No, compila manualmente';
+        btnManual.style.cssText = 'display:block; width:100%; margin:8px 0; padding:12px; border:1px solid #9e9e9e; background:#fafafa; color:#424242; border-radius:6px; cursor:pointer; font-weight:600;';
         btnManual.onclick = () => {
             div.remove();
             document.getElementById('builder-desc').value = nome;
             if (qtaUtente > 0) document.getElementById('builder-qta').value = qtaUtente;
-            document.getElementById('builder-desc').focus();
+            const el = document.getElementById('builder-desc');
+            if (el) { el.focus(); }
             document.getElementById('food-adder').scrollIntoView({ behavior: 'smooth' });
-            addMessage(`Compila i dati per <strong>${nome}</strong> nel form sopra`, 'assistant');
+            addMessage(`Compila i dati per <strong>${nome}</strong> nel form sopra.`, 'assistant');
         };
-        div.appendChild(btnManual);
-        
-        const btnAI = document.createElement('button');
-        btnAI.textContent = '🤖 Genera con AI e salva';
-        btnAI.style.cssText = 'display:block; width:100%; margin:8px 0; padding:12px; border:1px solid #667eea; background:#e8eaf6; color:#3f51b5; border-radius:6px; cursor:pointer; font-weight:600;';
         btnAI.onclick = async () => {
             btnAI.disabled = true;
             btnManual.disabled = true;
@@ -4514,17 +4546,17 @@ Solo JSON, senza testo.`;
             }
         };
         div.appendChild(btnAI);
-        
+        div.appendChild(btnManual);
         addMessageElement(div);
     }
 
     function chiediQuantitaManuale(data, pasto) {
         const div = document.createElement('div');
-        div.style.cssText = 'background:#f5f5f5; padding:15px; border-radius:8px; margin:10px 0; border:1px solid #ddd;';
+        div.style.cssText = 'background:#fafafa; padding:14px; border-radius:10px; margin:10px 0; border:1px solid #e0e0e0;';
         div.innerHTML = `
-            <p style="margin:0 0 10px 0;">Quanti grammi di <strong>${data.desc}</strong>?</p>
-            <input type="number" id="temp-qta-input" placeholder="es. 150" style="width:100px; padding:8px; border:1px solid #ddd; border-radius:4px; margin-right:10px;">
-            <button id="temp-qta-btn" style="padding:8px 16px; background:#1976d2; color:white; border:none; border-radius:4px; cursor:pointer;">Conferma</button>
+            <p style="margin:0 0 10px 0; color:#424242;">Quanti grammi di <strong>${data.desc}</strong>?</p>
+            <input type="number" id="temp-qta-input" placeholder="es. 150" style="width:100px; padding:8px; border:1px solid #e0e0e0; border-radius:6px; margin-right:8px;">
+            <button id="temp-qta-btn" style="padding:8px 16px; background:#5c6bc0; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:500;">Conferma</button>
         `;
         
         addMessageElement(div);
@@ -4736,7 +4768,7 @@ if (aiSendBtn) {
 
                 let foundAny = false;
 
-                // 1. Cerca comandi CIBO
+                // 1. Cerca comandi CIBO: ricerca in DB → univoco/multiplo/nuovo (con conferma creazione AI)
                 const regexFood = /\[AGGIUNGI:\s*([^|\]]+?)\s*\|\s*([0-9.,]+)\s*\|\s*([^\]]+?)\]/gi;
                 let matchFood;
                 while ((matchFood = regexFood.exec(resp)) !== null) {
@@ -4744,7 +4776,7 @@ if (aiSendBtn) {
                     const nome = matchFood[1].trim();
                     const qta = parseFloat(matchFood[2].replace(',', '.')) || 0;
                     const pasto = matchFood[3].trim().toLowerCase();
-                    await gestisciQuantitaEInserimento({ desc: nome }, qta, pasto); // Usa la tua funzione smart
+                    await addFoodDirectly(nome, qta, pasto);
                 }
 
                 // 2. Cerca comandi ALLENAMENTO
