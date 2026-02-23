@@ -1534,7 +1534,7 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
             const currentIdx = MEAL_ORDER.indexOf(mealType);
             const dopoIdx = MEAL_ORDER.indexOf(dopoMeal);
 
-            if (currentIdx <= dopoIdx) return kcalTeoriche;
+            if (currentIdx < dopoIdx) return kcalTeoriche;
             return kcalEffettive;
         }
 
@@ -1542,7 +1542,12 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
         function getEffectiveDailyTargets(mealTypeForKcal) {
             const dataVisualizzata = new Date(giornoVisualizzato);
             const pianoDelGiorno = PIANO_SETTIMANALE[dataVisualizzata.getDay()] || PIANO_SETTIMANALE[1];
-            const workoutKcal = mealTypeForKcal != null ? getWorkoutKcalForMeal(mealTypeForKcal) : getWorkoutKcalForTarget();
+
+            const workoutEntries = (datiGiornalieri.log || []).filter(e => e.type === 'workout');
+            const kcalEffettive = workoutEntries.reduce((s, e) => s + (e.kcal || 0), 0);
+            const kcalTeoriche = (datiGiornalieri.workoutTeorico && datiGiornalieri.workoutTeorico.kcal) || 0;
+            const workoutKcal = mealTypeForKcal != null ? getWorkoutKcalForMeal(mealTypeForKcal) : (workoutEntries.length > 0 ? kcalEffettive : kcalTeoriche);
+
             let obiettivoCalorieTotale = pianoDelGiorno.cal_base + workoutKcal + (datiGiornalieri.calorieAdjustment || 0);
             const base = {
                 prot: pianoDelGiorno.prot, kcal: obiettivoCalorieTotale, carb: pianoDelGiorno.carb, zuccheri: pianoDelGiorno.zuccheri,
@@ -3189,10 +3194,10 @@ Regole:
                 const dopoMeal = (workoutDopoMealSelect && workoutDopoMealSelect.value) || 'cena';
                 datiGiornalieri.log.push({ type: 'workout', desc: desc, kcal: calories, dopoMeal: dopoMeal });
                 datiGiornalieri.workoutCalorie = (datiGiornalieri.workoutCalorie || 0) + calories;
-                aggiornaUI();
                 salvaGiorno(giornoVisualizzato, datiGiornalieri);
+                aggiornaUI();
+                if (typeof renderMealBuilder === 'function') renderMealBuilder();
                 workoutDescInput.value = ''; workoutCaloriesInput.value = '';
-                renderMealBuilder();
             });
 
            btnAggiungiSingolo.addEventListener('click', () => handleAlimentoAddition(false));
@@ -4382,22 +4387,20 @@ function gestisciQuantitaEInserimento(data, qtaUtente, pasto) {
         // Inizializza l'array log se non esiste
         if (!window.datiGiornalieri.log) window.datiGiornalieri.log = [];
 
-        // Crea l'oggetto allenamento
-        const newWorkout = { 
-            type: 'workout', 
-            desc: desc.charAt(0).toUpperCase() + desc.slice(1), 
-            kcal: kcal 
+        // Crea l'oggetto allenamento (dopoMeal default 'cena' = impatto solo su cena)
+        const newWorkout = {
+            type: 'workout',
+            desc: desc.charAt(0).toUpperCase() + desc.slice(1),
+            kcal: kcal,
+            dopoMeal: 'cena'
         };
 
-        // Aggiunge al log
         window.datiGiornalieri.log.push(newWorkout);
-
-        // Aggiorna il totale calorie bruciate
         window.datiGiornalieri.workoutCalorie = (window.datiGiornalieri.workoutCalorie || 0) + kcal;
 
-        // Salva e aggiorna l'interfaccia
         window.salvaGiorno(window.giornoVisualizzato, window.datiGiornalieri);
         window.aggiornaUI();
+        if (typeof window.renderMealBuilder === 'function') window.renderMealBuilder();
 
         // Conferma in chat
         addMessage(`💪 Allenamento registrato: <strong>${newWorkout.desc}</strong> (-${kcal} kcal)`, 'assistant');
