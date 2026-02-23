@@ -16,7 +16,25 @@
         h2 { font-size: 1.4em; margin-top: 30px; }
         h3 { font-size: 1.1em; color: #333; border-bottom: 1px solid #eee; margin-top: 20px; }
         h4 { font-size: 1em; color: #1565c0; margin-top: 20px; margin-bottom: 10px; font-weight: 600; }
-        #titolo-giornata { text-align: center; color: #d84315; font-weight: 600; margin-bottom: 20px; padding: 10px; background-color: #fff3e0; border-radius: 8px; border: 1px solid #ffe0b2;}
+        /* EPIC 2: Header dinamico (titolo + badge strategia + cacciavite) */
+        #header-giornata-wrap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 20px; padding: 12px 14px; background-color: #fff3e0; border-radius: 8px; border: 1px solid #ffe0b2; }
+        #titolo-giornata { color: #d84315; font-weight: 600; margin: 0; font-size: 1.2em; flex: 1 1 auto; }
+        #header-strategy-badge { font-size: 0.8em; padding: 4px 10px; border-radius: 20px; background: #e0e0e0; color: #555; font-weight: 600; }
+        #header-strategy-badge.strategy-custom { background: #e3f2fd; color: #1565c0; }
+        #btn-edit-targets { padding: 8px 14px; border-radius: 8px; border: 1px solid #ffb74d; background: #fff8e1; color: #e65100; cursor: pointer; font-size: 1em; transition: background 0.2s, color 0.2s; }
+        #btn-edit-targets:hover { background: #ffe0b2; }
+        #btn-edit-targets.edit-save-mode { background: #2e7d32; color: #fff; border-color: #1b5e20; }
+        #btn-edit-targets.edit-save-mode:hover { background: #1b5e20; }
+        .header-edit-actions { display: none; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .edit-mode-active .header-edit-actions { display: flex; }
+        /* EPIC 3: Modalità edit – contorno tratteggiato e bottoni +/- */
+        .edit-mode-active .sezione, .edit-mode-active #meal-builder-summary { outline: 2px dashed rgba(245, 124, 0, 0.5); outline-offset: 2px; }
+        .target-actions-edit { display: none; margin-left: 6px; vertical-align: middle; }
+        .edit-mode-active .target-actions-edit { display: inline-flex; align-items: center; gap: 2px; }
+        .target-actions-edit button { width: 26px; height: 26px; border-radius: 50%; border: 1px solid #90a4ae; background: #fff; color: #455a64; font-size: 1.1em; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: background 0.2s, color 0.2s; }
+        .target-actions-edit button:hover { background: #eceff1; color: #1976d2; }
+        .target-actions-edit button.target-plus:hover { color: #2e7d32; }
+        .target-actions-edit button.target-minus:hover { color: #c62828; }
         .sezione { margin-bottom: 25px; padding: 20px; background-color: #fafafa; border: 1px solid #e0e0e0; border-radius: 8px; border-left-width: 5px; }
         label { display: block; margin-bottom: 8px; font-weight: 600; color: #555; }
         input[type="text"], input[type="number"], input[type="date"], select, input[type="email"], input[type="password"], textarea {
@@ -62,6 +80,12 @@
         #meal-builder-summary .progress-item { flex: 1; }
         #meal-builder-summary .progress-item p { font-size: 0.9em; margin-bottom: 5px; color: #3f51b5; }
         #meal-builder-summary .progress-item progress { height: 18px; border-radius: 4px; }
+        /* EPIC 1: Costruttore pasto minimalista – Carb/Grassi/Fibre nascosti di default, svelati al click */
+        #meal-builder-summary .progress-item.meal-macro-extra { max-height: 0; overflow: hidden; opacity: 0; transition: max-height 0.35s ease-out, opacity 0.25s ease; }
+        #meal-builder-summary .progress-container.macro-expanded .progress-item.meal-macro-extra { max-height: 120px; opacity: 1; }
+        #meal-builder-summary .btn-expandi-macro { margin-top: 8px; padding: 6px 12px; font-size: 0.85em; background: #e3f2fd; color: #1565c0; border: 1px solid #90caf9; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+        #meal-builder-summary .btn-expandi-macro:hover { background: #bbdefb; }
+        #meal-builder-summary .progress-container.macro-expanded .btn-expandi-macro .arrow-icon { transform: rotate(180deg); }
         /* EPIC 4: Riepilogo pasto mobile – colonna unica, niente sbavature */
         @media (max-width: 600px) {
             #meal-builder-summary .progress-container { flex-direction: column; gap: 14px; margin-top: 12px; }
@@ -202,17 +226,6 @@
         .modal-content video {
             background-color: #000;
         }
-        /* EPIC 1: Strategia AI */
-        #strategia-ai-sezione .strategia-ai-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
-        #strategia-ai-sezione .strategia-ai-label { font-weight: 600; color: #333; }
-        .strategia-ai-toggle-wrap { display: flex; border: 1px solid #ccc; border-radius: 6px; overflow: hidden; }
-        .strategia-toggle-btn { padding: 8px 16px; border: none; background: #f5f5f5; cursor: pointer; font-size: 0.95em; transition: background 0.2s, color 0.2s; }
-        .strategia-toggle-btn:hover { background: #eee; }
-        .strategia-toggle-btn.active { background: #1976d2; color: #fff; }
-        #strategia-ai-sezione .strategia-ai-actions { margin-bottom: 12px; }
-        .strategia-ai-json-wrap { margin-top: 12px; }
-        .strategia-ai-json-wrap label { display: block; margin-bottom: 6px; font-weight: 600; color: #333; }
-        .strategia-ai-textarea { width: 100%; box-sizing: border-box; padding: 10px; font-family: monospace; font-size: 0.9em; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 10px; }
         /* EPIC 3: Test Pasto – pulsante smart (default / success / warning) */
         .test-pasto-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
         .test-pasto-status { font-size: 1.5em; }
@@ -541,7 +554,14 @@
             <p id="auth-status"></p>
         </div>
         <div id="main-tracker-content">
-            <h2 id="titolo-giornata"></h2>
+            <div id="header-giornata-wrap">
+                <h2 id="titolo-giornata"></h2>
+                <span id="header-strategy-badge">Strategia: Default</span>
+                <button type="button" id="btn-edit-targets" title="Modifica target giornalieri">🔧</button>
+                <div class="header-edit-actions">
+                    <button type="button" id="btn-incolla-json-ai" title="Incolla JSON con target da AI">🪄 Incolla JSON AI</button>
+                </div>
+            </div>
 <div class="nav-links">
     <a href="storico.html">📊 Storico</a>
     
@@ -820,7 +840,7 @@
                 <h2>Costruttore Pasto</h2>
                 <div id="meal-builder-summary">
                     <p>Pasto Selezionato: <span id="current-meal-type-display"></span></p>
-                    <div class="progress-container">
+                    <div class="progress-container" id="meal-builder-progress-wrap">
                         <div class="progress-item">
                             <p style="display: flex; align-items: center; gap: 10px;">
                                 <span>Proteine: <span id="meal-prot-current">0</span> / <span id="meal-prot-target"></span> g (<span id="meal-prot-remaining"></span>)</span>
@@ -832,17 +852,22 @@
                             <p>Calorie: <span id="meal-cal-current">0</span> / <span id="meal-cal-target"></span> kcal (<span id="meal-cal-remaining"></span>)</p>
                             <progress id="meal-progress-cal" value="0"></progress>
                         </div>
-                        <div class="progress-item">
+                        <div class="progress-item meal-macro-extra">
                             <p>Carboidrati: <span id="meal-carb-current">0</span> / <span id="meal-carb-target"></span> g (<span id="meal-carb-remaining"></span>)</p>
                             <progress id="meal-progress-carb" value="0"></progress>
                         </div>
-                        <div class="progress-item">
+                        <div class="progress-item meal-macro-extra">
                             <p>Grassi tot.: <span id="meal-fat-current">0</span> / <span id="meal-fat-target"></span> g (<span id="meal-fat-remaining"></span>)</p>
                             <progress id="meal-progress-fat" value="0"></progress>
                         </div>
-                        <div class="progress-item">
+                        <div class="progress-item meal-macro-extra">
                             <p>Fibre: <span id="meal-fibre-current">0</span> / <span id="meal-fibre-target"></span> g (<span id="meal-fibre-remaining"></span>)</p>
                             <progress id="meal-progress-fibre" value="0"></progress>
+                        </div>
+                        <div class="progress-item" style="flex-basis: 100%; margin-top: 4px;">
+                            <button type="button" class="btn-expandi-macro" id="btn-expandi-macro" aria-expanded="false">
+                                <span class="arrow-icon">🔽</span> <span class="btn-expandi-text">Espandi Macro</span>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -932,25 +957,6 @@
                 </p>
             </div>
 
-            <!-- EPIC 1: Gestione Strategia Nutrizionale AI -->
-            <div id="strategia-ai-sezione" class="sezione">
-                <h2>Gestione Strategia Nutrizionale AI</h2>
-                <div class="strategia-ai-row">
-                    <span class="strategia-ai-label">Strategia:</span>
-                    <div class="strategia-ai-toggle-wrap">
-                        <button type="button" id="strategia-toggle-default" class="strategia-toggle-btn active" aria-pressed="true">Strategia di Default</button>
-                        <button type="button" id="strategia-toggle-ai" class="strategia-toggle-btn" aria-pressed="false">Strategia AI Personalizzata</button>
-                    </div>
-                </div>
-                <div class="strategia-ai-actions">
-                    <button type="button" id="btn-copia-richiesta-ai" class="action-button">Copia Richiesta AI</button>
-                </div>
-                <div id="strategia-ai-json-wrap" class="strategia-ai-json-wrap" style="display: none;">
-                    <label for="strategia-ai-json-input">Incolla qui la risposta JSON del chatbot:</label>
-                    <textarea id="strategia-ai-json-input" class="strategia-ai-textarea" rows="8" placeholder='{"nome_strategia": "...", "target_giornalieri": {...}, "ripartizione_pasti": {...}}'></textarea>
-                    <button type="button" id="btn-applica-strategia" class="action-button" style="background-color: #2e7d32;">Applica Strategia</button>
-                </div>
-            </div>
         </div>
     </div>
     
@@ -989,6 +995,8 @@
         let giornoVisualizzato = getTodayString('ymd');
         let datiGiornalieri = {};
         let foodDatabase = {};
+        /** EPIC 3/5: Target giornalieri personalizzati (per giorno). Se presente, aggiornaUI e simulatore pasto li usano al posto dei default. */
+        if (typeof window.customDailyTargets === 'undefined') window.customDailyTargets = {};
         // Inizializza pastoInCostruzione leggendo da window (se già creato dalla Chat AI) o da localStorage
         let pastoInCostruzione = JSON.parse(localStorage.getItem('trackerPastoInCostruzione')) || [];
 window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
@@ -1043,33 +1051,7 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
             OBIETTIVI_MACRO_PASTO_BASE_FORZA[mealType].prot_perc = OBIETTIVI_MACRO_PASTO_BASE_FORZA[mealType].prot / totalProtForza;
         }
 
-        /** Restituisce la strategia AI da localStorage o null se Default / assente. */
-        function getAiStrategy() {
-            try {
-                const raw = localStorage.getItem(TRACKER_AI_STRATEGY_KEY);
-                return raw ? JSON.parse(raw) : null;
-            } catch (e) { return null; }
-        }
-        /** True se l'utente ha scelto "Strategia AI Personalizzata" e ha una strategia valida applicata. */
-        function isAiStrategyActive() {
-            const wrap = document.getElementById('strategia-ai-json-wrap');
-            const btnAi = document.getElementById('strategia-toggle-ai');
-            return wrap && btnAi && btnAi.classList.contains('active') && getAiStrategy() != null;
-        }
-
         const MEAL_TYPE_SEQUENCE = ['merenda1', 'pranzo', 'merenda2', 'cena'];
-        const TRACKER_AI_STRATEGY_KEY = 'tracker_ai_strategy';
-        const PROMPT_STRATEGIA_AI = `Agisci come un nutrizionista esperto. Crea una strategia nutrizionale giornaliera ripartita per pasti (merenda1, pranzo, merenda2, cena). Restituisci ESCLUSIVAMENTE un oggetto JSON valido. Se un valore non è disponibile, stima la media. Usa rigorosamente questa struttura:
-{
-"nome_strategia": "Esempio",
-"target_giornalieri": { "kcal": 2000, "prot": 140, "carb": 200, "fatTotal": 60, "fibreTotali": 30 },
-"ripartizione_pasti": {
-"merenda1": { "kcal": 0.15, "prot": 0.20, "carb": 0.10, "fatTotal": 0.15 },
-"pranzo": { "kcal": 0.35, "prot": 0.30, "carb": 0.40, "fatTotal": 0.35 },
-"merenda2": { "kcal": 0.15, "prot": 0.20, "carb": 0.10, "fatTotal": 0.15 },
-"cena": { "kcal": 0.35, "prot": 0.30, "carb": 0.40, "fatTotal": 0.35 }
-}
-}`;
         const LOCAL_STORAGE_SYNC_KEYS = ['trackerFoodDatabase', 'trackerPesate', 'trackerMealType', 'trackerPastoInCostruzione'];
         const LOCAL_LAST_UPDATE_KEY = 'lastLocalUpdateTimestamp';
         const CLOUD_LAST_UPDATE_PATH = 'lastCloudUpdateTimestamp';
@@ -1251,7 +1233,91 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
         const workoutDescInput = document.getElementById('workout-desc');
         const workoutCaloriesInput = document.getElementById('workout-calories');
         const btnAddWorkout = document.getElementById('btn-add-workout');
-        
+
+        /** EPIC 3: Mappa span obiettivo → chiave per customDailyTargets e step per +/- (kcal ±50, macro ±5, micro ±1). */
+        const TARGET_EDIT_MAP = [
+            { id: 'obiettivo-proteine', key: 'prot', step: 5 },
+            { id: 'obiettivo-calorie', key: 'kcal', step: 50 },
+            { id: 'obiettivo-carboidrati', key: 'carb', step: 5 },
+            { id: 'obiettivo-zuccheri', key: 'zuccheri', step: 5 },
+            { id: 'obiettivo-fibre-totali', key: 'fibreTotali', step: 1 },
+            { id: 'obiettivo-fibre-solubili', key: 'fibreSolubili', step: 1 },
+            { id: 'obiettivo-fibre-insolubili', key: 'fibreInsolubili', step: 1 },
+            { id: 'obiettivo-fats-total', key: 'fatTotal', step: 5 },
+            { id: 'obiettivo-fat-sat', key: 'fatSat', step: 1 },
+            { id: 'obiettivo-fat-trans', key: 'fatTrans', step: 1 },
+            { id: 'obiettivo-fat-unsat', key: 'fatUnsat', step: 5 },
+            { id: 'obiettivo-fat-mono', key: 'fatMono', step: 1 },
+            { id: 'obiettivo-fat-poly', key: 'fatPoly', step: 1 },
+            { id: 'obiettivo-omega3', key: 'omega3', step: 1 },
+            { id: 'obiettivo-omega6', key: 'omega6', step: 1 }
+        ];
+        let editModeActive = false;
+        const TARGET_ACTIONS_MARKER = 'data-target-actions-injected';
+
+        function injectTargetButtons() {
+            const OBIETTIVI = getEffectiveDailyTargets();
+            TARGET_EDIT_MAP.forEach(({ id, key, step }) => {
+                const el = document.getElementById(id);
+                if (!el || el.getAttribute(TARGET_ACTIONS_MARKER)) return;
+                el.setAttribute(TARGET_ACTIONS_MARKER, '1');
+                const wrap = document.createElement('span');
+                wrap.className = 'target-actions-edit';
+                const minusBtn = document.createElement('button');
+                minusBtn.type = 'button';
+                minusBtn.className = 'target-minus';
+                minusBtn.setAttribute('aria-label', 'Diminuisci');
+                minusBtn.textContent = '−';
+                const plusBtn = document.createElement('button');
+                plusBtn.type = 'button';
+                plusBtn.className = 'target-plus';
+                plusBtn.setAttribute('aria-label', 'Aumenta');
+                plusBtn.textContent = '+';
+                minusBtn.addEventListener('click', () => {
+                    const v = (window.customDailyTargets[key] != null ? Number(window.customDailyTargets[key]) : OBIETTIVI[key]) - step;
+                    window.customDailyTargets[key] = Math.max(0, v);
+                    aggiornaUI();
+                    injectTargetButtons();
+                });
+                plusBtn.addEventListener('click', () => {
+                    const base = getEffectiveDailyTargets();
+                    const currentVal = base[key] != null ? Number(base[key]) : 0;
+                    window.customDailyTargets[key] = currentVal + step;
+                    aggiornaUI();
+                    injectTargetButtons();
+                });
+                wrap.appendChild(minusBtn);
+                wrap.appendChild(plusBtn);
+                el.parentNode.insertBefore(wrap, el.nextSibling);
+            });
+        }
+
+        function removeTargetButtons() {
+            document.querySelectorAll('.target-actions-edit').forEach(w => w.remove());
+            TARGET_EDIT_MAP.forEach(({ id }) => {
+                const el = document.getElementById(id);
+                if (el) el.removeAttribute(TARGET_ACTIONS_MARKER);
+            });
+        }
+
+        function setEditMode(active) {
+            editModeActive = active;
+            const main = document.getElementById('main-tracker-content');
+            const btn = document.getElementById('btn-edit-targets');
+            if (main) main.classList.toggle('edit-mode-active', active);
+            if (btn) {
+                if (active) {
+                    btn.textContent = '💾 Salva Modifiche';
+                    btn.classList.add('edit-save-mode');
+                    injectTargetButtons();
+                } else {
+                    btn.textContent = '🔧';
+                    btn.classList.remove('edit-save-mode');
+                    removeTargetButtons();
+                }
+            }
+        }
+
         function getTodayString(format = 'ymd') { return new Date().toISOString().split('T')[0]; }
 
         function sanitizeFirebaseKey(str) {
@@ -1330,6 +1396,11 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
             if (!datiGiornalieri.log) datiGiornalieri.log = [];
             if (typeof datiGiornalieri.workoutCalorie === 'undefined') datiGiornalieri.workoutCalorie = 0;
 
+            try {
+                const rawTargets = localStorage.getItem('trackerCustomTargets_' + data);
+                window.customDailyTargets = rawTargets ? JSON.parse(rawTargets) : {};
+            } catch (e) { window.customDailyTargets = {}; }
+
             const dataCorrente = new Date(data);
             const giornoSettimana = dataCorrente.getDay(); 
             const valorePreimpostatoPerGiorno = DEFICIT_PREIMPOSTATO_SETTIMANALE[giornoSettimana] || 0;
@@ -1402,17 +1473,37 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
             console.log("Interfaccia app avviata con successo con dati locali.");
         }
 
+        /** Restituisce i target giornalieri effettivi: default da piano + workout + adjustment, sovrascritti da window.customDailyTargets. */
+        function getEffectiveDailyTargets() {
+            const dataVisualizzata = new Date(giornoVisualizzato);
+            const pianoDelGiorno = PIANO_SETTIMANALE[dataVisualizzata.getDay()] || PIANO_SETTIMANALE[1];
+            let obiettivoCalorieTotale = pianoDelGiorno.cal_base + (datiGiornalieri.workoutCalorie || 0) + (datiGiornalieri.calorieAdjustment || 0);
+            const base = {
+                prot: pianoDelGiorno.prot, kcal: obiettivoCalorieTotale, carb: pianoDelGiorno.carb, zuccheri: pianoDelGiorno.zuccheri,
+                ...OBIETTIVI_MICRO, ...OBIETTIVI_FAT, ...OBIETTIVI_VIT, ...OBIETTIVI_AMINO, ...OBIETTIVI_FIBRE
+            };
+            const custom = window.customDailyTargets || {};
+            const out = { ...base };
+            for (const key in custom) {
+                if (typeof custom[key] === 'number' && !isNaN(custom[key])) out[key] = custom[key];
+            }
+            if (custom.kcal != null && !isNaN(Number(custom.kcal))) out.kcal = Number(custom.kcal);
+            return out;
+        }
+
         function aggiornaUI() {
             const dataVisualizzata = new Date(giornoVisualizzato);
             const pianoDelGiorno = PIANO_SETTIMANALE[dataVisualizzata.getDay()] || PIANO_SETTIMANALE[1];
-            
-            const obiettivoCalorieTotale = pianoDelGiorno.cal_base + (datiGiornalieri.workoutCalorie || 0) + (datiGiornalieri.calorieAdjustment || 0);
-            const OBIETTIVI = { 
-                prot: pianoDelGiorno.prot, kcal: obiettivoCalorieTotale, carb: pianoDelGiorno.carb, zuccheri: pianoDelGiorno.zuccheri, 
-                ...OBIETTIVI_MICRO, ...OBIETTIVI_FAT, ...OBIETTIVI_VIT, ...OBIETTIVI_AMINO, ...OBIETTIVI_FIBRE
-            };
-            
+            const OBIETTIVI = getEffectiveDailyTargets();
+
             titoloGiornataEl.textContent = `${pianoDelGiorno.tipo} - ${dataVisualizzata.toLocaleDateString('it-IT', {day: 'numeric', month: 'long', year: 'numeric'})}`;
+
+            const badgeEl = document.getElementById('header-strategy-badge');
+            if (badgeEl) {
+                const hasCustom = window.customDailyTargets && Object.keys(window.customDailyTargets).length > 0;
+                badgeEl.textContent = hasCustom ? 'Strategia: Personalizzata' : 'Strategia: Default';
+                badgeEl.classList.toggle('strategy-custom', !!hasCustom);
+            }
             
             let totali = { 
                 prot: 0, kcal: 0, carb: 0, zuccheri: 0, fatTotal: 0, fatSat: 0, fatTrans: 0, fatMono: 0, fatPoly: 0, omega3: 0, omega6: 0, 
@@ -1459,17 +1550,17 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
             spanObiettivoCarboidrati.textContent = OBIETTIVI.carb; spanTotaleCarboidrati.textContent = totali.carb.toFixed(1); progressCarboidrati.max = OBIETTIVI.carb; progressCarboidrati.value = totali.carb;
             spanObiettivoZuccheri.textContent = OBIETTIVI.zuccheri; spanTotaleZuccheri.textContent = totali.zuccheri.toFixed(1); progressZuccheri.max = OBIETTIVI.zuccheri; progressZuccheri.value = totali.zuccheri;
             spanWorkoutCalories.textContent = datiGiornalieri.workoutCalorie ? datiGiornalieri.workoutCalorie.toFixed(0) : 0; 
-            spanObiettivoFibreTotali.textContent = OBIETTIVI_FIBRE.fibreTotali; spanTotaleFibreTotali.textContent = totali.fibreTotali.toFixed(1); progressFibreTotali.max = OBIETTIVI_FIBRE.fibreTotali; progressFibreTotali.value = totali.fibreTotali;
-            spanObiettivoFibreSolubili.textContent = OBIETTIVI_FIBRE.fibreSolubili; spanTotaleFibreSolubili.textContent = totali.fibreSolubili.toFixed(1); progressFibreSolubili.max = OBIETTIVI_FIBRE.fibreSolubili; progressFibreSolubili.value = totali.fibreSolubili;
-            spanObiettivoFibreInsolubili.textContent = OBIETTIVI_FIBRE.fibreInsolubili; spanTotaleFibreInsolubili.textContent = totali.fibreInsolubili.toFixed(1); progressFibreInsolubili.max = OBIETTIVI_FIBRE.fibreInsolubili; progressFibreInsolubili.value = totali.fibreInsolubili;
-            spanObiettivoFatsTotal.textContent = OBIETTIVI_FAT.fatTotal; spanTotaleFatsTotal.textContent = totali.fatTotal.toFixed(1); progressFatsTotal.max = OBIETTIVI_FAT.fatTotal; progressFatsTotal.value = totali.fatTotal;
-            spanObiettivoFatSat.textContent = OBIETTIVI_FAT.fatSat; spanTotaleFatSat.textContent = totali.fatSat.toFixed(1); progressFatSat.max = OBIETTIVI_FAT.fatSat; progressFatSat.value = totali.fatSat;
-            spanObiettivoFatTrans.textContent = OBIETTIVI_FAT.fatTrans; spanTotaleFatTrans.textContent = totali.fatTrans.toFixed(1); progressFatTrans.max = OBIETTIVI_FAT.fatTrans; progressFatTrans.value = totali.fatTrans;
-            spanObiettivoFatUnsat.textContent = OBIETTIVI_FAT.fatUnsat; spanTotaleFatUnsat.textContent = totali.fatUnsat.toFixed(1); progressFatUnsat.max = OBIETTIVI_FAT.fatUnsat; progressFatUnsat.value = totali.fatUnsat;
-            spanObiettivoFatMono.textContent = OBIETTIVI_FAT.fatMono; spanTotaleFatMono.textContent = totali.fatMono.toFixed(1); progressFatMono.max = OBIETTIVI_FAT.fatMono; progressFatMono.value = totali.fatMono;
-            spanObiettivoFatPoly.textContent = OBIETTIVI_FAT.fatPoly; spanTotaleFatPoly.textContent = totali.fatPoly.toFixed(1); progressFatPoly.max = OBIETTIVI_FAT.fatPoly; progressFatPoly.value = totali.fatPoly;
-            spanObiettivoOmega3.textContent = OBIETTIVI_FAT.omega3; spanTotaleOmega3.textContent = totali.omega3.toFixed(1); progressOmega3.max = OBIETTIVI_FAT.omega3; progressOmega3.value = totali.omega3;
-            spanObiettivoOmega6.textContent = OBIETTIVI_FAT.omega6; spanTotaleOmega6.textContent = totali.omega6.toFixed(1); progressOmega6.max = OBIETTIVI_FAT.omega6; progressOmega6.value = totali.omega6;
+            spanObiettivoFibreTotali.textContent = OBIETTIVI.fibreTotali; spanTotaleFibreTotali.textContent = totali.fibreTotali.toFixed(1); progressFibreTotali.max = OBIETTIVI.fibreTotali; progressFibreTotali.value = totali.fibreTotali;
+            spanObiettivoFibreSolubili.textContent = OBIETTIVI.fibreSolubili; spanTotaleFibreSolubili.textContent = totali.fibreSolubili.toFixed(1); progressFibreSolubili.max = OBIETTIVI.fibreSolubili; progressFibreSolubili.value = totali.fibreSolubili;
+            spanObiettivoFibreInsolubili.textContent = OBIETTIVI.fibreInsolubili; spanTotaleFibreInsolubili.textContent = totali.fibreInsolubili.toFixed(1); progressFibreInsolubili.max = OBIETTIVI.fibreInsolubili; progressFibreInsolubili.value = totali.fibreInsolubili;
+            spanObiettivoFatsTotal.textContent = OBIETTIVI.fatTotal; spanTotaleFatsTotal.textContent = totali.fatTotal.toFixed(1); progressFatsTotal.max = OBIETTIVI.fatTotal; progressFatsTotal.value = totali.fatTotal;
+            spanObiettivoFatSat.textContent = OBIETTIVI.fatSat; spanTotaleFatSat.textContent = totali.fatSat.toFixed(1); progressFatSat.max = OBIETTIVI.fatSat; progressFatSat.value = totali.fatSat;
+            spanObiettivoFatTrans.textContent = OBIETTIVI.fatTrans; spanTotaleFatTrans.textContent = totali.fatTrans.toFixed(1); progressFatTrans.max = OBIETTIVI.fatTrans; progressFatTrans.value = totali.fatTrans;
+            spanObiettivoFatUnsat.textContent = OBIETTIVI.fatUnsat; spanTotaleFatUnsat.textContent = totali.fatUnsat.toFixed(1); progressFatUnsat.max = OBIETTIVI.fatUnsat; progressFatUnsat.value = totali.fatUnsat;
+            spanObiettivoFatMono.textContent = OBIETTIVI.fatMono; spanTotaleFatMono.textContent = totali.fatMono.toFixed(1); progressFatMono.max = OBIETTIVI.fatMono; progressFatMono.value = totali.fatMono;
+            spanObiettivoFatPoly.textContent = OBIETTIVI.fatPoly; spanTotaleFatPoly.textContent = totali.fatPoly.toFixed(1); progressFatPoly.max = OBIETTIVI.fatPoly; progressFatPoly.value = totali.fatPoly;
+            spanObiettivoOmega3.textContent = OBIETTIVI.omega3; spanTotaleOmega3.textContent = totali.omega3.toFixed(1); progressOmega3.max = OBIETTIVI.omega3; progressOmega3.value = totali.omega3;
+            spanObiettivoOmega6.textContent = OBIETTIVI.omega6; spanTotaleOmega6.textContent = totali.omega6.toFixed(1); progressOmega6.max = OBIETTIVI.omega6; progressOmega6.value = totali.omega6;
             spanTotaleMg.textContent = totali.mg.toFixed(1); progressMg.max = OBIETTIVI.mg; progressMg.value = totali.mg;
             spanTotaleK.textContent = totali.k.toFixed(0); progressK.max = OBIETTIVI.k; progressK.value = totali.k;
             spanTotaleCa.textContent = totali.ca.toFixed(1); progressCa.max = OBIETTIVI.ca; progressCa.value = totali.ca;
@@ -1501,7 +1592,7 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
             }
             omegaRatioValueEl.textContent = ratioText;
 
-            const targetCaloriesForBalanceText = pianoDelGiorno.cal_base + (datiGiornalieri.workoutCalorie || 0);
+            const targetCaloriesForBalanceText = OBIETTIVI.kcal;
             const calorieDifference = totali.kcal - targetCaloriesForBalanceText;
             calorieBalanceText.className = '';
             const tolerance = 50;
@@ -1510,10 +1601,10 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
             } else { calorieBalanceText.textContent = `In Pari`; calorieBalanceText.classList.add('balance-even'); }
             calorieAdjustmentInput.value = datiGiornalieri.calorieAdjustment || 0;
             
-            document.getElementById('fats-header').classList.toggle('nutrients-warning', totali.fatSat > OBIETTIVI_FAT.fatSat || totali.fatTrans > OBIETTIVI_FAT.fatTrans || totali.fatTotal > OBIETTIVI_FAT.fatTotal);
-            document.getElementById('fibre-header').classList.toggle('nutrients-warning', totali.fibreTotali < OBIETTIVI_FIBRE.fibreTotali * 0.8);
-            document.getElementById('micro-header').classList.toggle('nutrients-warning', Object.keys(OBIETTIVI_MICRO).some(k => totali[k] < OBIETTIVI_MICRO[k] * 0.5));
-            document.getElementById('vit-header').classList.toggle('nutrients-warning', Object.keys(OBIETTIVI_VIT).some(k => totali[k] < OBIETTIVI_VIT[k] * 0.5));
+            document.getElementById('fats-header').classList.toggle('nutrients-warning', totali.fatSat > OBIETTIVI.fatSat || totali.fatTrans > OBIETTIVI.fatTrans || totali.fatTotal > OBIETTIVI.fatTotal);
+            document.getElementById('fibre-header').classList.toggle('nutrients-warning', totali.fibreTotali < OBIETTIVI.fibreTotali * 0.8);
+            document.getElementById('micro-header').classList.toggle('nutrients-warning', Object.keys(OBIETTIVI_MICRO).some(k => totali[k] < OBIETTIVI[k] * 0.5));
+            document.getElementById('vit-header').classList.toggle('nutrients-warning', Object.keys(OBIETTIVI_VIT).some(k => totali[k] < OBIETTIVI[k] * 0.5));
             
             logBody.innerHTML = ''; 
             const nutrientKeys = ['kcal', 'na', 'fibreTotali', 'fibreSolubili', 'fibreInsolubili', ...Object.keys(OBIETTIVI_AMINO), 'fatSat', 'fatTrans', 'fatMono', 'fatPoly', 'omega3', 'omega6', 'mg', 'k', 'vitc', 'ca', 'fe', 'zn', 'cu', 'vitA', 'vitB12', 'vitD', 'vitE', 'vitK', 'b9', 'b2', 'b6', 'p'];
@@ -1589,37 +1680,17 @@ function calcolaObiettiviPastoConArray(mealType, giornoCorrenteString, pastoArra
     const dataVisualizzata = new Date(giornoCorrenteString);
     const giornoSettimana = dataVisualizzata.getDay();
     const pianoDelGiorno = PIANO_SETTIMANALE[giornoSettimana] || PIANO_SETTIMANALE[1];
-    const strategy = getAiStrategy();
-
-    let obiettivoCalTotaleGiornaliero, obiettivoProtTotaleGiornaliero, obiettivoCarbTotale, obiettivoFatTotale, obiettivoFibreTotale;
-    let calRatio, protRatio, carbRatio, fatRatio, fibreRatio;
-
-    if (isAiStrategyActive() && strategy && strategy.target_giornalieri && strategy.ripartizione_pasti && strategy.ripartizione_pasti[mealType]) {
-        const tg = strategy.target_giornalieri;
-        obiettivoCalTotaleGiornaliero = Number(tg.kcal) || pianoDelGiorno.cal_base;
-        obiettivoProtTotaleGiornaliero = Number(tg.prot) || pianoDelGiorno.prot;
-        obiettivoCarbTotale = Number(tg.carb) || pianoDelGiorno.carb;
-        obiettivoFatTotale = Number(tg.fatTotal) != null ? Number(tg.fatTotal) : (pianoDelGiorno.fatTotal != null ? pianoDelGiorno.fatTotal : 85);
-        obiettivoFibreTotale = Number(tg.fibreTotali) != null ? Number(tg.fibreTotali) : (pianoDelGiorno.fibreTotali != null ? pianoDelGiorno.fibreTotali : 30);
-        const rp = strategy.ripartizione_pasti[mealType];
-        calRatio = Number(rp.kcal) != null ? Number(rp.kcal) : (OBIETTIVI_MACRO_PASTO_BASE_FORZA[mealType]?.cal_perc ?? 0);
-        protRatio = Number(rp.prot) != null ? Number(rp.prot) : (OBIETTIVI_MACRO_PASTO_BASE_FORZA[mealType]?.prot_perc ?? 0);
-        carbRatio = Number(rp.carb) != null ? Number(rp.carb) : (OBIETTIVI_MACRO_PASTO_BASE_FORZA[mealType]?.carb_perc ?? 0);
-        fatRatio = Number(rp.fatTotal) != null ? Number(rp.fatTotal) : (OBIETTIVI_MACRO_PASTO_BASE_FORZA[mealType]?.fatTotal_perc ?? 0);
-        fibreRatio = (OBIETTIVI_MACRO_PASTO_BASE_FORZA[mealType]?.fibreTotali_perc) ?? 0;
-        if (strategy.ripartizione_pasti[mealType].fibreTotali != null) fibreRatio = Number(strategy.ripartizione_pasti[mealType].fibreTotali);
-    } else {
-        obiettivoCalTotaleGiornaliero = pianoDelGiorno.cal_base + (datiGiornalieri.workoutCalorie || 0) + (datiGiornalieri.calorieAdjustment || 0);
-        obiettivoProtTotaleGiornaliero = pianoDelGiorno.prot;
-        obiettivoCarbTotale = pianoDelGiorno.carb;
-        obiettivoFatTotale = pianoDelGiorno.fatTotal != null ? pianoDelGiorno.fatTotal : 85;
-        obiettivoFibreTotale = pianoDelGiorno.fibreTotali != null ? pianoDelGiorno.fibreTotali : 30;
-        calRatio = OBIETTIVI_MACRO_PASTO_BASE_FORZA[mealType]?.cal_perc ?? 0;
-        protRatio = OBIETTIVI_MACRO_PASTO_BASE_FORZA[mealType]?.prot_perc ?? 0;
-        carbRatio = OBIETTIVI_MACRO_PASTO_BASE_FORZA[mealType]?.carb_perc ?? 0;
-        fatRatio = OBIETTIVI_MACRO_PASTO_BASE_FORZA[mealType]?.fatTotal_perc ?? 0;
-        fibreRatio = OBIETTIVI_MACRO_PASTO_BASE_FORZA[mealType]?.fibreTotali_perc ?? 0;
-    }
+    const effective = getEffectiveDailyTargets();
+    const obiettivoCalTotaleGiornaliero = effective.kcal;
+    const obiettivoProtTotaleGiornaliero = effective.prot;
+    const obiettivoCarbTotale = effective.carb;
+    const obiettivoFatTotale = effective.fatTotal != null ? effective.fatTotal : (pianoDelGiorno.fatTotal != null ? pianoDelGiorno.fatTotal : 85);
+    const obiettivoFibreTotale = effective.fibreTotali != null ? effective.fibreTotali : (pianoDelGiorno.fibreTotali != null ? pianoDelGiorno.fibreTotali : 30);
+    const calRatio = OBIETTIVI_MACRO_PASTO_BASE_FORZA[mealType]?.cal_perc ?? 0;
+    const protRatio = OBIETTIVI_MACRO_PASTO_BASE_FORZA[mealType]?.prot_perc ?? 0;
+    const carbRatio = OBIETTIVI_MACRO_PASTO_BASE_FORZA[mealType]?.carb_perc ?? 0;
+    const fatRatio = OBIETTIVI_MACRO_PASTO_BASE_FORZA[mealType]?.fatTotal_perc ?? 0;
+    const fibreRatio = OBIETTIVI_MACRO_PASTO_BASE_FORZA[mealType]?.fibreTotali_perc ?? 0;
 
     let obiettivoPastoProt = 0, obiettivoPastoCal = 0, obiettivoPastoCarb = 0, obiettivoPastoFat = 0, obiettivoPastoFibre = 0;
     const log = datiGiornalieri.log || [];
@@ -2712,62 +2783,6 @@ Regole:
             infoVitSettimanaliBtn.addEventListener('click', openWeeklyVitaminsModal);
             infoFatsSettimanaliBtn.addEventListener('click', openWeeklyFatsModal);
 
-            /* EPIC 1: Gestione Strategia AI */
-            const strategiaToggleDefault = document.getElementById('strategia-toggle-default');
-            const strategiaToggleAi = document.getElementById('strategia-toggle-ai');
-            const strategiaJsonWrap = document.getElementById('strategia-ai-json-wrap');
-            const strategiaJsonInput = document.getElementById('strategia-ai-json-input');
-            const btnCopiaRichiestaAi = document.getElementById('btn-copia-richiesta-ai');
-            const btnApplicaStrategia = document.getElementById('btn-applica-strategia');
-            if (strategiaToggleDefault) {
-                strategiaToggleDefault.addEventListener('click', () => {
-                    strategiaToggleDefault.classList.add('active');
-                    strategiaToggleDefault.setAttribute('aria-pressed', 'true');
-                    if (strategiaToggleAi) { strategiaToggleAi.classList.remove('active'); strategiaToggleAi.setAttribute('aria-pressed', 'false'); }
-                    if (strategiaJsonWrap) strategiaJsonWrap.style.display = 'none';
-                    if (typeof renderMealBuilder === 'function') renderMealBuilder();
-                });
-            }
-            if (strategiaToggleAi) {
-                strategiaToggleAi.addEventListener('click', () => {
-                    strategiaToggleAi.classList.add('active');
-                    strategiaToggleAi.setAttribute('aria-pressed', 'true');
-                    if (strategiaToggleDefault) { strategiaToggleDefault.classList.remove('active'); strategiaToggleDefault.setAttribute('aria-pressed', 'false'); }
-                    if (strategiaJsonWrap) strategiaJsonWrap.style.display = 'block';
-                });
-            }
-            if (btnCopiaRichiestaAi) {
-                btnCopiaRichiestaAi.addEventListener('click', () => {
-                    navigator.clipboard.writeText(PROMPT_STRATEGIA_AI).then(() => alert('Richiesta AI copiata negli appunti.')).catch(() => alert('Impossibile copiare negli appunti.'));
-                });
-            }
-            if (btnApplicaStrategia && strategiaJsonInput) {
-                btnApplicaStrategia.addEventListener('click', () => {
-                    const raw = strategiaJsonInput.value.trim();
-                    if (!raw) { alert('Incolla prima il JSON della strategia.'); return; }
-                    try {
-                        const parsed = JSON.parse(raw);
-                        if (!parsed.target_giornalieri || typeof parsed.target_giornalieri !== 'object') {
-                            alert('JSON non valido: manca "target_giornalieri".'); return;
-                        }
-                        if (!parsed.ripartizione_pasti || typeof parsed.ripartizione_pasti !== 'object') {
-                            alert('JSON non valido: manca "ripartizione_pasti".'); return;
-                        }
-                        const meals = ['merenda1', 'pranzo', 'merenda2', 'cena'];
-                        for (let i = 0; i < meals.length; i++) {
-                            if (!parsed.ripartizione_pasti[meals[i]]) {
-                                alert('JSON non valido: in "ripartizione_pasti" manca "' + meals[i] + '".'); return;
-                            }
-                        }
-                        localStorage.setItem(TRACKER_AI_STRATEGY_KEY, JSON.stringify(parsed));
-                        alert('Strategia applicata: ' + (parsed.nome_strategia || 'Strategia AI') + '. Seleziona "Strategia AI Personalizzata" per usarla.');
-                        if (typeof renderMealBuilder === 'function') renderMealBuilder();
-                    } catch (e) {
-                        alert('Errore nel parsing del JSON: ' + (e.message || 'JSON non valido') + '. Controlla la struttura.');
-                    }
-                });
-            }
-
             /* EPIC 3: Test Pasto Completo – pulsante smart: default/success = esegue test, warning = apre modal */
             const btnTestPasto = document.getElementById('btn-test-pasto');
             const testPastoStatusEl = document.getElementById('test-pasto-status');
@@ -2781,6 +2796,54 @@ Regole:
                 });
             }
             if (testPastoStatusEl) testPastoStatusEl.addEventListener('click', () => { if (lastTestPastoResult.outOfTarget && lastTestPastoResult.outOfTarget.length > 0) apriTestWarningModal(); });
+
+            const btnEditTargets = document.getElementById('btn-edit-targets');
+            const mainTrackerContent = document.getElementById('main-tracker-content');
+            if (btnEditTargets) {
+                btnEditTargets.addEventListener('click', () => {
+                    if (editModeActive) {
+                        if (!window.customDailyTargets) window.customDailyTargets = {};
+                        const data = giornoVisualizzato;
+                        const key = 'trackerCustomTargets_' + data;
+                        localStorage.setItem(key, JSON.stringify(window.customDailyTargets));
+                        saveSingleItemToCloud(key, window.customDailyTargets);
+                        setEditMode(false);
+                    } else {
+                        setEditMode(true);
+                    }
+                });
+            }
+            const btnIncollaJsonAi = document.getElementById('btn-incolla-json-ai');
+            if (btnIncollaJsonAi) {
+                btnIncollaJsonAi.addEventListener('click', () => {
+                    const raw = window.prompt('Incolla il JSON con i target (es. {"kcal":2100,"prot":150,"carb":200,"fatTotal":65,"fibreTotali":35})');
+                    if (raw == null || raw.trim() === '') return;
+                    try {
+                        const parsed = JSON.parse(raw);
+                        if (typeof parsed !== 'object' || parsed === null) throw new Error('JSON non valido');
+                        window.customDailyTargets = window.customDailyTargets || {};
+                        for (const k in parsed) {
+                            const v = Number(parsed[k]);
+                            if (!isNaN(v) && v >= 0) window.customDailyTargets[k] = v;
+                        }
+                        aggiornaUI();
+                        injectTargetButtons();
+                    } catch (e) {
+                        alert('JSON non valido: ' + (e.message || 'errore di parsing'));
+                    }
+                });
+            }
+
+            const btnExpandiMacro = document.getElementById('btn-expandi-macro');
+            const mealBuilderProgressWrap = document.getElementById('meal-builder-progress-wrap');
+            if (btnExpandiMacro && mealBuilderProgressWrap) {
+                btnExpandiMacro.addEventListener('click', () => {
+                    const expanded = mealBuilderProgressWrap.classList.toggle('macro-expanded');
+                    btnExpandiMacro.setAttribute('aria-expanded', expanded);
+                    const textEl = btnExpandiMacro.querySelector('.btn-expandi-text');
+                    if (textEl) textEl.textContent = expanded ? 'Comprimi Macro' : 'Espandi Macro';
+                });
+            }
 
             document.querySelectorAll('.modal-close').forEach(button => {
                 button.addEventListener('click', () => {
