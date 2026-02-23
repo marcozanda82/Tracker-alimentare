@@ -1565,10 +1565,10 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
             const custom = window.customDailyTargets || {};
             const out = { ...base };
             for (const key in custom) {
+                if (key === 'kcal') continue; // kcal sempre dinamiche (base + workout + adjustment)
                 if (typeof custom[key] === 'number' && !isNaN(custom[key])) out[key] = custom[key];
             }
-            // Forza sovrascrittura Kcal se l'utente ha messo un target manuale fisso
-            if (custom.kcal != null && !isNaN(Number(custom.kcal))) out.kcal = Number(custom.kcal);
+            // out.kcal resta base.kcal: mai override da custom, workout modifica sempre il target
 
             return out;
         }
