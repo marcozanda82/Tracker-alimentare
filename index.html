@@ -3846,41 +3846,29 @@ if (button.dataset.type === 'builder') {
                     const dataRef = new Date(giornoVisualizzato);
                     const piano = PIANO_SETTIMANALE[dataRef.getDay()] || PIANO_SETTIMANALE[1];
                     const targetGiornalieri = getEffectiveDailyTargets();
-                    const targetKcal = targetGiornalieri.kcal;
-                    
+
                     const allNutrientKeys = [
-                        'prot', 'kcal', 'carb', 'zuccheri', 'fatTotal', 'fatSat', 'fatTrans', 
+                        'prot', 'kcal', 'carb', 'zuccheri', 'fatTotal', 'fatSat', 'fatTrans',
                         'fatMono', 'fatPoly', 'omega3', 'omega6', 'fibreTotali', 'fibreSolubili', 'fibreInsolubili',
-                        'sale', 'na', 'mg', 'k', 'vitc', 'ca', 'fe', 'zn', 'cu', 'p', 
+                        'sale', 'na', 'mg', 'k', 'vitc', 'ca', 'fe', 'zn', 'cu', 'p',
                         'vitA', 'vitB12', 'vitD', 'vitE', 'vitK', 'b9', 'b2', 'b6',
                         'leu', 'iso', 'val', 'lys', 'met', 'phe', 'thr', 'trp', 'his'
                     ];
 
-                    let dailyTotals = {};
-                    allNutrientKeys.forEach(k => dailyTotals[k] = 0);
-
                     const logDettagliato = [];
-
                     (datiGiornalieri.log || []).forEach(entry => {
                         if (entry.type === 'workout') return;
 
                         const items = entry.type === 'meal' ? entry.items : [entry];
                         const itemsExport = items.map(item => {
-                            const cleanItem = {
-                                alimento: item.desc,
-                                qta_g: item.qta
-                            };
-                            
+                            const cleanItem = { alimento: item.desc, qta_g: item.qta };
                             allNutrientKeys.forEach(key => {
                                 const val = item[key];
                                 if (val !== undefined && val !== null && (val > 0 || key === 'kcal' || key === 'prot')) {
                                     cleanItem[key] = Number(val.toFixed(2));
-                                    dailyTotals[key] += val;
                                 }
                             });
-                            
                             if (!item.kcal && !item.cal) cleanItem._WARNING = "Kcal a 0 o mancanti";
-                            
                             return cleanItem;
                         });
 
@@ -3891,40 +3879,6 @@ if (button.dataset.type === 'builder') {
                         });
                     });
 
-                    const strategyKeys = ['kcal', 'prot', 'carb', 'fatTotal', 'fibreTotali'];
-                    const confronto_strategia_pasti = [];
-                    (datiGiornalieri.log || []).forEach(entry => {
-                        if (entry.type !== 'meal' || !entry.mealId) return;
-                        const items = entry.items || [];
-                        const effettivi = { kcal: 0, prot: 0, carb: 0, fatTotal: 0, fibreTotali: 0 };
-                        items.forEach(item => {
-                            effettivi.kcal += (item.kcal || item.cal) || 0;
-                            effettivi.prot += item.prot || 0;
-                            effettivi.carb += item.carb || 0;
-                            effettivi.fatTotal += item.fatTotal || 0;
-                            effettivi.fibreTotali += item.fibreTotali || 0;
-                        });
-                        const strategia = {};
-                        const scostamento_perc = {};
-                        strategyKeys.forEach(key => {
-                            const targetMeal = (getRipartizioneRatio(key, entry.mealId) || 0) * (targetGiornalieri[key] != null ? targetGiornalieri[key] : 0);
-                            strategia[key] = Math.round(targetMeal * 10) / 10;
-                            if (targetMeal > 0) {
-                                const diff = effettivi[key] - targetMeal;
-                                scostamento_perc[key] = Math.round((diff / targetMeal) * 1000) / 10;
-                            } else {
-                                scostamento_perc[key] = effettivi[key] > 0 ? 100 : 0;
-                            }
-                        });
-                        confronto_strategia_pasti.push({
-                            pasto: entry.desc || entry.mealId,
-                            pasto_id: entry.mealId,
-                            strategia: strategia,
-                            effettivi: { kcal: Math.round(effettivi.kcal), prot: Math.round(effettivi.prot * 10) / 10, carb: Math.round(effettivi.carb * 10) / 10, fatTotal: Math.round(effettivi.fatTotal * 10) / 10, fibreTotali: Math.round(effettivi.fibreTotali * 10) / 10 },
-                            scostamento_perc: scostamento_perc
-                        });
-                    });
-
                     const fullExportData = {
                         meta: {
                             data: giornoVisualizzato,
@@ -3932,25 +3886,6 @@ if (button.dataset.type === 'builder') {
                             note_utente: datiGiornalieri.note || "Nessuna nota"
                         },
                         target_giornalieri: targetGiornalieri,
-                        strategia_ripartizione_pasti: (typeof window !== 'undefined' && window.customRipartizionePasti) ? window.customRipartizionePasti : {},
-                        confronto_strategia_pasti: confronto_strategia_pasti,
-                        cruscotto_totali: {
-                            MACROS: {
-                                Kcal: { consumate: dailyTotals.kcal.toFixed(0), target: targetKcal },
-                                Proteine: { consumate: dailyTotals.prot.toFixed(1), target: piano.prot },
-                                Carboidrati: { consumate: dailyTotals.carb.toFixed(1), target: piano.carb },
-                                Grassi: { consumate: dailyTotals.fatTotal.toFixed(1), target: OBIETTIVI_FAT.fatTotal },
-                                Sale: { consumate: dailyTotals.sale.toFixed(1), target: "5g max" }
-                            },
-                            MICROS_CRITICI: {
-                                Fibre: dailyTotals.fibreTotali.toFixed(1),
-                                Zuccheri: dailyTotals.zuccheri.toFixed(1),
-                                Grassi_Saturi: dailyTotals.fatSat.toFixed(1),
-                                Sodio: dailyTotals.na.toFixed(0),
-                                Potassio: dailyTotals.k.toFixed(0)
-                            },
-                            OMEGA_RATIO: (dailyTotals.omega3 > 0) ? `1:${(dailyTotals.omega6/dailyTotals.omega3).toFixed(1)}` : "N/D"
-                        },
                         allenamento: {
                             descrizione: (datiGiornalieri.log || []).filter(e => e.type === 'workout').map(e => e.desc).join(", ") || "Riposo",
                             kcal_bruciate: datiGiornalieri.workoutCalorie || 0
@@ -3961,7 +3896,7 @@ if (button.dataset.type === 'builder') {
                     try {
                         const jsonString = JSON.stringify(fullExportData, null, 2);
                         await navigator.clipboard.writeText(jsonString);
-                        alert("✅ Dati Completi AI copiati!\n\nInclusi: target_giornalieri, strategia_ripartizione_pasti, confronto_strategia_pasti (scostamento % per pasto).\nIncolla in chat e chiedi: 'Ho rispettato la strategia oggi?' o 'Analizza anomalie e dammi un parere nutrizionale.'");
+                        alert("✅ Dati Completi AI copiati!\n\nJSON con: meta, target_giornalieri, allenamento, diario_alimentare_completo (dati grezzi).\nIncolla in chat e chiedi analisi o parere nutrizionale.");
                     } catch (err) {
                         console.error("Errore copia:", err);
                         alert("Errore nella copia automatica. Controlla la console.");
