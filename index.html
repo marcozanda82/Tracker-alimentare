@@ -27,6 +27,8 @@
         #btn-edit-targets.edit-save-mode:hover { background: #1b5e20; }
         .header-edit-actions { display: none; align-items: center; gap: 8px; flex-wrap: wrap; }
         .edit-mode-active .header-edit-actions { display: flex; }
+        #btn-reset-targets { background-color: #fafafa; color: #b71c1c; border: 1px solid #c62828; }
+        #btn-reset-targets:hover { background-color: #ffebee; }
         /* EPIC 3: Modalità edit – contorno tratteggiato e bottoni +/- */
         .edit-mode-active .sezione, .edit-mode-active #meal-builder-summary { outline: 2px dashed rgba(245, 124, 0, 0.5); outline-offset: 2px; }
         .target-actions-edit { display: none; margin-left: 6px; vertical-align: middle; }
@@ -560,6 +562,7 @@
                 <button type="button" id="btn-edit-targets" title="Modifica target giornalieri">🔧</button>
                 <div class="header-edit-actions">
                     <button type="button" id="btn-incolla-json-ai" title="Incolla JSON con target da AI">🪄 Incolla JSON AI</button>
+                    <button type="button" id="btn-reset-targets" title="Azzera tutte le modifiche manuali e torna ai target di default">🔄 Ripristina Default</button>
                 </div>
             </div>
 <div class="nav-links">
@@ -2831,6 +2834,18 @@ Regole:
                     } catch (e) {
                         alert('JSON non valido: ' + (e.message || 'errore di parsing'));
                     }
+                });
+            }
+            const btnResetTargets = document.getElementById('btn-reset-targets');
+            if (btnResetTargets) {
+                btnResetTargets.addEventListener('click', () => {
+                    if (!confirm('Sei sicuro di voler ripristinare i target nutrizionali di base? Perderai tutte le modifiche manuali e l\'eventuale strategia AI applicata a questa giornata.')) return;
+                    window.customDailyTargets = {};
+                    localStorage.removeItem('trackerCustomTargets_' + giornoVisualizzato);
+                    saveSingleItemToCloud('trackerCustomTargets_' + giornoVisualizzato, null);
+                    aggiornaUI();
+                    if (typeof renderMealBuilder === 'function') renderMealBuilder();
+                    setEditMode(false);
                 });
             }
 
