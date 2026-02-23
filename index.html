@@ -1712,47 +1712,66 @@ function calcolaObiettiviPastoConArray(mealType, giornoCorrenteString, pastoArra
     const giornoSettimana = dataVisualizzata.getDay();
     const pianoDelGiorno = PIANO_SETTIMANALE[giornoSettimana] || PIANO_SETTIMANALE[1];
     const effective = getEffectiveDailyTargets();
-    const obiettivoCalTotaleGiornaliero = effective.kcal;
-    const obiettivoProtTotaleGiornaliero = effective.prot;
-    const obiettivoCarbTotale = effective.carb;
-    const obiettivoFatTotale = effective.fatTotal != null ? effective.fatTotal : (pianoDelGiorno.fatTotal != null ? pianoDelGiorno.fatTotal : 85);
-    const obiettivoFibreTotale = effective.fibreTotali != null ? effective.fibreTotali : (pianoDelGiorno.fibreTotali != null ? pianoDelGiorno.fibreTotali : 30);
-    const calRatio = getRipartizioneRatio('kcal', mealType);
-    const protRatio = getRipartizioneRatio('prot', mealType);
-    const carbRatio = getRipartizioneRatio('carb', mealType);
-    const fatRatio = getRipartizioneRatio('fatTotal', mealType);
-    const fibreRatio = getRipartizioneRatio('fibreTotali', mealType);
 
-    let obiettivoPastoProt = 0, obiettivoPastoCal = 0, obiettivoPastoCarb = 0, obiettivoPastoFat = 0, obiettivoPastoFibre = 0;
+    const targetGiorno = {
+        prot: effective.prot,
+        kcal: effective.kcal,
+        carb: effective.carb,
+        fatTotal: effective.fatTotal != null ? effective.fatTotal : (pianoDelGiorno.fatTotal || 85),
+        fibreTotali: effective.fibreTotali != null ? effective.fibreTotali : (pianoDelGiorno.fibreTotali || 30)
+    };
+
+    const MEAL_ORDER = ['merenda1', 'pranzo', 'merenda2', 'cena'];
+    const currentIdx = MEAL_ORDER.indexOf(mealType);
+
+    // 1. Calcolo consumato nei pasti cronologicamente PRECEDENTI
+    const consumatoPassato = { prot: 0, kcal: 0, carb: 0, fatTotal: 0, fibreTotali: 0 };
     const log = datiGiornalieri.log || [];
-
-    if (mealType === 'cena') {
-        let consumatoProt = 0, consumatoCal = 0, consumatoCarb = 0, consumatoFat = 0, consumatoFibre = 0;
-        log.forEach(entry => {
-            if (entry.mealId && entry.mealId !== 'cena') {
-                const items = entry.type === 'meal' ? entry.items : [entry];
+    log.forEach(entry => {
+        if (entry.type === 'meal' && entry.mealId) {
+            const entryIdx = MEAL_ORDER.indexOf(entry.mealId);
+            // Considera solo i pasti salvati che vengono PRIMA di quello attualmente in costruzione
+            if (entryIdx !== -1 && entryIdx < currentIdx) {
+                const items = entry.items || [];
                 items.forEach(item => {
-                    consumatoProt += item.prot || 0;
-                    consumatoCal += (item.kcal || item.cal) || 0;
-                    consumatoCarb += item.carb || 0;
-                    consumatoFat += item.fatTotal || 0;
-                    consumatoFibre += item.fibreTotali || 0;
+                    consumatoPassato.prot += item.prot || 0;
+                    consumatoPassato.kcal += (item.kcal || item.cal) || 0;
+                    consumatoPassato.carb += item.carb || 0;
+                    consumatoPassato.fatTotal += item.fatTotal || 0;
+                    consumatoPassato.fibreTotali += item.fibreTotali || 0;
                 });
             }
-        });
-        obiettivoPastoProt = Math.max(0, Math.round(obiettivoProtTotaleGiornaliero - consumatoProt));
-        obiettivoPastoCal = Math.max(0, Math.round(obiettivoCalTotaleGiornaliero - consumatoCal));
-        obiettivoPastoCarb = Math.max(0, Math.round(obiettivoCarbTotale - consumatoCarb));
-        obiettivoPastoFat = Math.max(0, Math.round(obiettivoFatTotale - consumatoFat));
-        obiettivoPastoFibre = Math.max(0, Math.round(obiettivoFibreTotale - consumatoFibre));
-    } else {
-        obiettivoPastoProt = Math.round(obiettivoProtTotaleGiornaliero * protRatio);
-        obiettivoPastoCal = Math.round(obiettivoCalTotaleGiornaliero * calRatio);
-        obiettivoPastoCarb = Math.round(obiettivoCarbTotale * carbRatio);
-        obiettivoPastoFat = Math.round(obiettivoFatTotale * fatRatio);
-        obiettivoPastoFibre = Math.round(obiettivoFibreTotale * fibreRatio);
+        }
+    });
+
+    // 2. Calcolo somma percentuali per i pasti DA ORA a fine giornata
+    const sumRatios = { prot: 0, kcal: 0, carb: 0, fatTotal: 0, fibreTotali: 0 };
+    for (let i = currentIdx; i < MEAL_ORDER.length; i++) {
+        const m = MEAL_ORDER[i];
+        sumRatios.prot += getRipartizioneRatio('prot', m);
+        sumRatios.kcal += getRipartizioneRatio('kcal', m);
+        sumRatios.carb += getRipartizioneRatio('carb', m);
+        sumRatios.fatTotal += getRipartizioneRatio('fatTotal', m);
+        sumRatios.fibreTotali += getRipartizioneRatio('fibreTotali', m);
     }
 
+    // 3. Funzione per riproporzionare il target
+    const calcolaTargetProporzionale = (key) => {
+        const ratioCorrente = getRipartizioneRatio(key, mealType);
+        const rimanenteGiorno = Math.max(0, targetGiorno[key] - consumatoPassato[key]);
+        if (sumRatios[key] <= 0) return 0;
+        return Math.round(rimanenteGiorno * (ratioCorrente / sumRatios[key]));
+    };
+
+    const obiettivoPasto = {
+        prot: calcolaTargetProporzionale('prot'),
+        kcal: calcolaTargetProporzionale('kcal'),
+        carb: calcolaTargetProporzionale('carb'),
+        fatTotal: calcolaTargetProporzionale('fatTotal'),
+        fibreTotali: calcolaTargetProporzionale('fibreTotali')
+    };
+
+    // 4. Somma valori del pasto IN COSTRUZIONE
     const totaliPastoInCostruzione = pastoArray.reduce((acc, item) => {
         acc.prot += item.prot || 0;
         acc.kcal += (item.kcal || item.cal) || 0;
@@ -1764,20 +1783,20 @@ function calcolaObiettiviPastoConArray(mealType, giornoCorrenteString, pastoArra
 
     return {
         currentProt: totaliPastoInCostruzione.prot,
-        targetProt: obiettivoPastoProt,
-        remainingProt: obiettivoPastoProt - totaliPastoInCostruzione.prot,
+        targetProt: obiettivoPasto.prot,
+        remainingProt: obiettivoPasto.prot - totaliPastoInCostruzione.prot,
         currentCal: totaliPastoInCostruzione.kcal,
-        targetCal: obiettivoPastoCal,
-        remainingCal: obiettivoPastoCal - totaliPastoInCostruzione.kcal,
+        targetCal: obiettivoPasto.kcal,
+        remainingCal: obiettivoPasto.kcal - totaliPastoInCostruzione.kcal,
         currentCarb: totaliPastoInCostruzione.carb,
-        targetCarb: obiettivoPastoCarb,
-        remainingCarb: obiettivoPastoCarb - totaliPastoInCostruzione.carb,
+        targetCarb: obiettivoPasto.carb,
+        remainingCarb: obiettivoPasto.carb - totaliPastoInCostruzione.carb,
         currentFatTotal: totaliPastoInCostruzione.fatTotal,
-        targetFatTotal: obiettivoPastoFat,
-        remainingFatTotal: obiettivoPastoFat - totaliPastoInCostruzione.fatTotal,
+        targetFatTotal: obiettivoPasto.fatTotal,
+        remainingFatTotal: obiettivoPasto.fatTotal - totaliPastoInCostruzione.fatTotal,
         currentFibreTotali: totaliPastoInCostruzione.fibreTotali,
-        targetFibreTotali: obiettivoPastoFibre,
-        remainingFibreTotali: obiettivoPastoFibre - totaliPastoInCostruzione.fibreTotali
+        targetFibreTotali: obiettivoPasto.fibreTotali,
+        remainingFibreTotali: obiettivoPasto.fibreTotali - totaliPastoInCostruzione.fibreTotali
     };
 }
 function renderMealBuilder() {
