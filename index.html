@@ -29,6 +29,13 @@
         .edit-mode-active .header-edit-actions { display: flex; }
         #btn-reset-targets { background-color: #fafafa; color: #b71c1c; border: 1px solid #c62828; }
         #btn-reset-targets:hover { background-color: #ffebee; }
+        #modal-ripartizione-pasti table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        #modal-ripartizione-pasti th, #modal-ripartizione-pasti td { padding: 8px; border: 1px solid #ddd; text-align: center; }
+        #modal-ripartizione-pasti th { background: #f5f5f5; font-weight: 600; }
+        #modal-ripartizione-pasti input[type="number"] { width: 56px; padding: 4px; text-align: center; }
+        #modal-ripartizione-pasti .totale-cell { font-weight: 700; }
+        #modal-ripartizione-pasti .totale-cell.totale-err { color: #b71c1c; background: #ffebee; }
+        #modal-ripartizione-pasti .totale-cell.totale-ok { color: #1b5e20; background: #e8f5e9; }
         /* EPIC 3: Modalità edit – contorno tratteggiato e bottoni +/- */
         .edit-mode-active .sezione, .edit-mode-active #meal-builder-summary { outline: 2px dashed rgba(245, 124, 0, 0.5); outline-offset: 2px; }
         .target-actions-edit { display: none; margin-left: 6px; vertical-align: middle; }
@@ -78,24 +85,12 @@
         .nutrients-warning { color: #d32f2f !important; }
         #meal-builder-summary { margin-bottom: 20px; padding: 15px; background-color: #e3f2fd; border: 1px solid #90caf9; border-radius: 8px; }
         #meal-builder-summary p { margin: 5px 0; font-weight: 600; color: #1e88e5; }
-        #meal-builder-summary .progress-container { display: flex; gap: 20px; margin-top: 10px; }
-        #meal-builder-summary .progress-item { flex: 1; }
+        /* EPIC 1: Costruttore pasto – swipe orizzontale, tutte le barre in una riga scorrevole */
+        #meal-builder-summary .progress-container { display: flex; flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x mandatory; gap: 15px; margin-top: 10px; padding-bottom: 10px; -webkit-overflow-scrolling: touch; }
+        #meal-builder-summary .progress-container::-webkit-scrollbar { display: none; }
+        #meal-builder-summary .progress-item { flex: 0 0 160px; scroll-snap-align: start; min-width: 160px; }
         #meal-builder-summary .progress-item p { font-size: 0.9em; margin-bottom: 5px; color: #3f51b5; }
         #meal-builder-summary .progress-item progress { height: 18px; border-radius: 4px; }
-        /* EPIC 1: Costruttore pasto minimalista – Carb/Grassi/Fibre nascosti di default, svelati al click */
-        #meal-builder-summary .progress-item.meal-macro-extra { max-height: 0; overflow: hidden; opacity: 0; transition: max-height 0.35s ease-out, opacity 0.25s ease; }
-        #meal-builder-summary .progress-container.macro-expanded .progress-item.meal-macro-extra { max-height: 120px; opacity: 1; }
-        #meal-builder-summary .btn-expandi-macro { margin-top: 8px; padding: 6px 12px; font-size: 0.85em; background: #e3f2fd; color: #1565c0; border: 1px solid #90caf9; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
-        #meal-builder-summary .btn-expandi-macro:hover { background: #bbdefb; }
-        #meal-builder-summary .progress-container.macro-expanded .btn-expandi-macro .arrow-icon { transform: rotate(180deg); }
-        /* EPIC 4: Riepilogo pasto mobile – colonna unica, niente sbavature */
-        @media (max-width: 600px) {
-            #meal-builder-summary .progress-container { flex-direction: column; gap: 14px; margin-top: 12px; }
-            #meal-builder-summary .progress-item { width: 100%; min-width: 0; }
-            #meal-builder-summary .progress-item p { width: 100%; margin-bottom: 6px; }
-            #meal-builder-summary .progress-item progress { width: 100%; margin-top: 4px; }
-            #meal-builder-summary .progress-item p .fas { margin-left: 4px; }
-        }
         #calorie-balance-text { display: block; text-align: center; font-weight: bold; font-size: 1.2em; margin-top: 15px; margin-bottom: 10px; padding: 8px 0; border-radius: 5px; }
         .balance-deficit { background-color: #ffebee; color: #d32f2f; }
         .balance-surplus { background-color: #e8f5e9; color: #2e7d32; }
@@ -561,7 +556,9 @@
                 <span id="header-strategy-badge">Strategia: Default</span>
                 <button type="button" id="btn-edit-targets" title="Modifica target giornalieri">🔧</button>
                 <div class="header-edit-actions">
+                    <button type="button" id="btn-copia-prompt-ai" title="Copia il prompt per generare strategia con AI">📋 Copia Prompt AI</button>
                     <button type="button" id="btn-incolla-json-ai" title="Incolla JSON con target da AI">🪄 Incolla JSON AI</button>
+                    <button type="button" id="btn-modifica-ripartizione" title="Modifica ripartizione percentuale per pasto">📊 Ripartizione Pasti</button>
                     <button type="button" id="btn-reset-targets" title="Azzera tutte le modifiche manuali e torna ai target di default">🔄 Ripristina Default</button>
                 </div>
             </div>
@@ -855,22 +852,17 @@
                             <p>Calorie: <span id="meal-cal-current">0</span> / <span id="meal-cal-target"></span> kcal (<span id="meal-cal-remaining"></span>)</p>
                             <progress id="meal-progress-cal" value="0"></progress>
                         </div>
-                        <div class="progress-item meal-macro-extra">
+                        <div class="progress-item">
                             <p>Carboidrati: <span id="meal-carb-current">0</span> / <span id="meal-carb-target"></span> g (<span id="meal-carb-remaining"></span>)</p>
                             <progress id="meal-progress-carb" value="0"></progress>
                         </div>
-                        <div class="progress-item meal-macro-extra">
+                        <div class="progress-item">
                             <p>Grassi tot.: <span id="meal-fat-current">0</span> / <span id="meal-fat-target"></span> g (<span id="meal-fat-remaining"></span>)</p>
                             <progress id="meal-progress-fat" value="0"></progress>
                         </div>
-                        <div class="progress-item meal-macro-extra">
+                        <div class="progress-item">
                             <p>Fibre: <span id="meal-fibre-current">0</span> / <span id="meal-fibre-target"></span> g (<span id="meal-fibre-remaining"></span>)</p>
                             <progress id="meal-progress-fibre" value="0"></progress>
-                        </div>
-                        <div class="progress-item" style="flex-basis: 100%; margin-top: 4px;">
-                            <button type="button" class="btn-expandi-macro" id="btn-expandi-macro" aria-expanded="false">
-                                <span class="arrow-icon">🔽</span> <span class="btn-expandi-text">Espandi Macro</span>
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -972,6 +964,7 @@
     <div id="barcode-scanner-modal" class="modal"><div class="modal-content"><span class="modal-close" data-modal="barcode-scanner-modal">&times;</span><h2>Scansiona Codice a Barre</h2><p style="text-align: center;">Inquadra il codice a barre del prodotto.</p><div id="scanner-container" style="position: relative; width: 100%; padding-top: 75%;"><video id="barcode-scanner-video" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 1px solid #ccc; border-radius: 8px;"></video><div id="scanner-overlay" style="position: absolute; top: 50%; left: 50%; width: 80%; height: 2px; background-color: red; transform: translate(-50%, -50%); box-shadow: 0 0 10px red;"></div></div><p id="barcode-scanner-status" style="text-align: center; margin-top: 15px; font-weight: bold; min-height: 20px;"></p></div></div>
     <div id="diff-modal" class="modal"><div class="modal-content"><span class="modal-close" data-modal="diff-modal">&times;</span><h2 id="diff-modal-title">Confronta Valori Nutrizionali</h2><p>Sono state trovate differenze significative. Scegli quali valori mantenere per ogni nutriente.</p><div id="diff-modal-list" style="max-height: 50vh; overflow-y: auto; padding: 10px; border: 1px solid #eee; border-radius: 8px; margin-top: 15px;"></div><div class="nutrient-confirm-buttons" style="margin-top: 20px;"><button id="btn-cancel-diff" style="background-color: #607d8b;">Annulla</button><button id="btn-apply-diff" style="background-color: #2e7d32;">Applica Modifiche</button></div></div></div>
     <div id="test-warning-modal" class="modal"><div class="modal-content"><span class="modal-close" data-modal="test-warning-modal">&times;</span><h2>Test Pasto – Nutrienti fuori target</h2><p style="font-size: 0.9em; color: #555;">Clicca su una barra per vedere quali alimenti contribuiscono.</p><div id="test-warning-modal-bars"></div></div></div>
+    <div id="modal-ripartizione-pasti" class="modal"><div class="modal-content" style="max-width: 620px;"><span class="modal-close" data-modal="modal-ripartizione-pasti">&times;</span><h2>Ripartizione Pasti (%)</h2><p style="font-size: 0.9em; color: #555;">Ogni riga deve totalizzare 100. Valori attuali o default: 20, 35, 15, 30.</p><div id="modal-ripartizione-table-wrap"></div><p id="modal-ripartizione-validation" style="margin-top: 10px; font-weight: 600;"></p><button type="button" id="btn-salva-ripartizione" disabled style="margin-top: 12px; background-color: #2e7d32; color: #fff; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer;">Salva Ripartizione</button></div></div>
 
    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js" type="module"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js" type="module"></script>
@@ -1000,6 +993,8 @@
         let foodDatabase = {};
         /** EPIC 3/5: Target giornalieri personalizzati (per giorno). Se presente, aggiornaUI e simulatore pasto li usano al posto dei default. */
         if (typeof window.customDailyTargets === 'undefined') window.customDailyTargets = {};
+        /** EPIC 3: Ripartizione percentuale per pasto (kcal, prot, carb, fatTotal, fibreTotali → merenda1, pranzo, merenda2, cena). Totale riga = 100. */
+        if (typeof window.customRipartizionePasti === 'undefined') window.customRipartizionePasti = {};
         // Inizializza pastoInCostruzione leggendo da window (se già creato dalla Chat AI) o da localStorage
         let pastoInCostruzione = JSON.parse(localStorage.getItem('trackerPastoInCostruzione')) || [];
 window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
@@ -1055,6 +1050,25 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
         }
 
         const MEAL_TYPE_SEQUENCE = ['merenda1', 'pranzo', 'merenda2', 'cena'];
+        /** Percentuale (0-1) per pasto e nutriente: da customRipartizionePasti se presente, altrimenti default 20/35/15/30. */
+        function getRipartizioneRatio(nutrientKey, mealType) {
+            const r = window.customRipartizionePasti && window.customRipartizionePasti[nutrientKey];
+            if (r && typeof r[mealType] === 'number' && !isNaN(r[mealType])) return r[mealType] / 100;
+            const defaults = { merenda1: 0.20, pranzo: 0.35, merenda2: 0.15, cena: 0.30 };
+            return defaults[mealType] != null ? defaults[mealType] : 0.25;
+        }
+        const PROMPT_AI_STRATEGIA = `Agisci come un nutrizionista esperto. Crea una strategia giornaliera. Fornisci ESCLUSIVAMENTE un JSON valido con questa struttura esatta:
+{
+"target_giornalieri": { "kcal": 2100, "prot": 140, "carb": 200, "fatTotal": 65, "fibreTotali": 30 },
+"ripartizione_pasti": {
+"kcal": { "merenda1": 20, "pranzo": 35, "merenda2": 15, "cena": 30 },
+"prot": { "merenda1": 20, "pranzo": 35, "merenda2": 15, "cena": 30 },
+"carb": { "merenda1": 20, "pranzo": 35, "merenda2": 15, "cena": 30 },
+"fatTotal": { "merenda1": 20, "pranzo": 35, "merenda2": 15, "cena": 30 },
+"fibreTotali": { "merenda1": 20, "pranzo": 35, "merenda2": 15, "cena": 30 }
+}
+}
+Puoi variare le percentuali (es. più fibre al mattino, più carboidrati a pranzo), ma il totale per ogni riga deve essere SEMPRE 100.`;
         const LOCAL_STORAGE_SYNC_KEYS = ['trackerFoodDatabase', 'trackerPesate', 'trackerMealType', 'trackerPastoInCostruzione'];
         const LOCAL_LAST_UPDATE_KEY = 'lastLocalUpdateTimestamp';
         const CLOUD_LAST_UPDATE_PATH = 'lastCloudUpdateTimestamp';
@@ -1403,6 +1417,10 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
                 const rawTargets = localStorage.getItem('trackerCustomTargets_' + data);
                 window.customDailyTargets = rawTargets ? JSON.parse(rawTargets) : {};
             } catch (e) { window.customDailyTargets = {}; }
+            try {
+                const rawRipartizione = localStorage.getItem('trackerRipartizionePasti_' + data);
+                window.customRipartizionePasti = rawRipartizione ? JSON.parse(rawRipartizione) : {};
+            } catch (e) { window.customRipartizionePasti = {}; }
 
             const dataCorrente = new Date(data);
             const giornoSettimana = dataCorrente.getDay(); 
@@ -1679,6 +1697,7 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
                 }
             });
         }
+
 function calcolaObiettiviPastoConArray(mealType, giornoCorrenteString, pastoArray) {
     const dataVisualizzata = new Date(giornoCorrenteString);
     const giornoSettimana = dataVisualizzata.getDay();
@@ -1689,11 +1708,11 @@ function calcolaObiettiviPastoConArray(mealType, giornoCorrenteString, pastoArra
     const obiettivoCarbTotale = effective.carb;
     const obiettivoFatTotale = effective.fatTotal != null ? effective.fatTotal : (pianoDelGiorno.fatTotal != null ? pianoDelGiorno.fatTotal : 85);
     const obiettivoFibreTotale = effective.fibreTotali != null ? effective.fibreTotali : (pianoDelGiorno.fibreTotali != null ? pianoDelGiorno.fibreTotali : 30);
-    const calRatio = OBIETTIVI_MACRO_PASTO_BASE_FORZA[mealType]?.cal_perc ?? 0;
-    const protRatio = OBIETTIVI_MACRO_PASTO_BASE_FORZA[mealType]?.prot_perc ?? 0;
-    const carbRatio = OBIETTIVI_MACRO_PASTO_BASE_FORZA[mealType]?.carb_perc ?? 0;
-    const fatRatio = OBIETTIVI_MACRO_PASTO_BASE_FORZA[mealType]?.fatTotal_perc ?? 0;
-    const fibreRatio = OBIETTIVI_MACRO_PASTO_BASE_FORZA[mealType]?.fibreTotali_perc ?? 0;
+    const calRatio = getRipartizioneRatio('kcal', mealType);
+    const protRatio = getRipartizioneRatio('prot', mealType);
+    const carbRatio = getRipartizioneRatio('carb', mealType);
+    const fatRatio = getRipartizioneRatio('fatTotal', mealType);
+    const fibreRatio = getRipartizioneRatio('fibreTotali', mealType);
 
     let obiettivoPastoProt = 0, obiettivoPastoCal = 0, obiettivoPastoCarb = 0, obiettivoPastoFat = 0, obiettivoPastoFibre = 0;
     const log = datiGiornalieri.log || [];
@@ -2806,57 +2825,166 @@ Regole:
                 btnEditTargets.addEventListener('click', () => {
                     if (editModeActive) {
                         if (!window.customDailyTargets) window.customDailyTargets = {};
+                        if (!window.customRipartizionePasti) window.customRipartizionePasti = {};
                         const data = giornoVisualizzato;
-                        const key = 'trackerCustomTargets_' + data;
-                        localStorage.setItem(key, JSON.stringify(window.customDailyTargets));
-                        saveSingleItemToCloud(key, window.customDailyTargets);
+                        const keyTargets = 'trackerCustomTargets_' + data;
+                        const keyRipartizione = 'trackerRipartizionePasti_' + data;
+                        localStorage.setItem(keyTargets, JSON.stringify(window.customDailyTargets));
+                        saveSingleItemToCloud(keyTargets, window.customDailyTargets);
+                        localStorage.setItem(keyRipartizione, JSON.stringify(window.customRipartizionePasti));
+                        saveSingleItemToCloud(keyRipartizione, window.customRipartizionePasti);
                         setEditMode(false);
                     } else {
                         setEditMode(true);
                     }
                 });
             }
+            const btnCopiaPromptAi = document.getElementById('btn-copia-prompt-ai');
+            if (btnCopiaPromptAi) {
+                btnCopiaPromptAi.addEventListener('click', () => {
+                    navigator.clipboard.writeText(PROMPT_AI_STRATEGIA).then(() => alert('Prompt copiato negli appunti.')).catch(() => alert('Impossibile copiare negli appunti.'));
+                });
+            }
             const btnIncollaJsonAi = document.getElementById('btn-incolla-json-ai');
             if (btnIncollaJsonAi) {
                 btnIncollaJsonAi.addEventListener('click', () => {
-                    const raw = window.prompt('Incolla il JSON con i target (es. {"kcal":2100,"prot":150,"carb":200,"fatTotal":65,"fibreTotali":35})');
+                    const raw = window.prompt('Incolla il JSON con target_giornalieri e/o ripartizione_pasti (struttura come da Copia Prompt AI).');
                     if (raw == null || raw.trim() === '') return;
                     try {
                         const parsed = JSON.parse(raw);
                         if (typeof parsed !== 'object' || parsed === null) throw new Error('JSON non valido');
-                        window.customDailyTargets = window.customDailyTargets || {};
-                        for (const k in parsed) {
-                            const v = Number(parsed[k]);
-                            if (!isNaN(v) && v >= 0) window.customDailyTargets[k] = v;
+                        if (parsed.target_giornalieri && typeof parsed.target_giornalieri === 'object') {
+                            window.customDailyTargets = window.customDailyTargets || {};
+                            for (const k in parsed.target_giornalieri) {
+                                const v = Number(parsed.target_giornalieri[k]);
+                                if (!isNaN(v) && v >= 0) window.customDailyTargets[k] = v;
+                            }
+                        }
+                        if (parsed.ripartizione_pasti && typeof parsed.ripartizione_pasti === 'object') {
+                            window.customRipartizionePasti = {};
+                            for (const nutrientKey in parsed.ripartizione_pasti) {
+                                const mealObj = parsed.ripartizione_pasti[nutrientKey];
+                                if (mealObj && typeof mealObj === 'object') {
+                                    window.customRipartizionePasti[nutrientKey] = { ...mealObj };
+                                }
+                            }
                         }
                         aggiornaUI();
-                        injectTargetButtons();
+                        if (editModeActive) injectTargetButtons();
+                        if (typeof renderMealBuilder === 'function') renderMealBuilder();
                     } catch (e) {
                         alert('JSON non valido: ' + (e.message || 'errore di parsing'));
                     }
                 });
             }
+            const RIPARTIZIONE_ROW_LABELS = [
+                { label: 'Calorie', key: 'kcal' },
+                { label: 'Proteine', key: 'prot' },
+                { label: 'Carboidrati', key: 'carb' },
+                { label: 'Grassi', key: 'fatTotal' },
+                { label: 'Fibre', key: 'fibreTotali' }
+            ];
+            const RIPARTIZIONE_COLUMNS = [
+                { label: 'Merenda AM', key: 'merenda1' },
+                { label: 'Pranzo', key: 'pranzo' },
+                { label: 'Merenda PM', key: 'merenda2' },
+                { label: 'Cena', key: 'cena' }
+            ];
+            const RIPARTIZIONE_DEFAULT = { merenda1: 20, pranzo: 35, merenda2: 15, cena: 30 };
+
+            function getRipartizioneValue(nutrientKey, mealKey) {
+                const r = window.customRipartizionePasti && window.customRipartizionePasti[nutrientKey];
+                if (r && typeof r[mealKey] === 'number' && !isNaN(r[mealKey])) return r[mealKey];
+                return RIPARTIZIONE_DEFAULT[mealKey] != null ? RIPARTIZIONE_DEFAULT[mealKey] : 0;
+            }
+
+            function renderModalRipartizioneTable() {
+                const wrap = document.getElementById('modal-ripartizione-table-wrap');
+                const btnSalva = document.getElementById('btn-salva-ripartizione');
+                const validationEl = document.getElementById('modal-ripartizione-validation');
+                if (!wrap || !btnSalva) return;
+                let html = '<table><thead><tr><th>Nutriente</th>';
+                RIPARTIZIONE_COLUMNS.forEach(c => { html += '<th>' + c.label + '</th>'; });
+                html += '<th class="totale-cell">Totale</th></tr></thead><tbody>';
+                RIPARTIZIONE_ROW_LABELS.forEach((row, rowIdx) => {
+                    html += '<tr data-nutrient="' + row.key + '"><td>' + row.label + '</td>';
+                    RIPARTIZIONE_COLUMNS.forEach(col => {
+                        const val = getRipartizioneValue(row.key, col.key);
+                        html += '<td><input type="number" min="0" max="100" step="1" data-nutrient="' + row.key + '" data-meal="' + col.key + '" value="' + val + '"></td>';
+                    });
+                    const rowSum = RIPARTIZIONE_COLUMNS.reduce((s, c) => s + getRipartizioneValue(row.key, c.key), 0);
+                    html += '<td class="totale-cell totale-cell-sum" data-nutrient="' + row.key + '">' + rowSum + '</td></tr>';
+                });
+                html += '</tbody></table>';
+                wrap.innerHTML = html;
+                function validateAll() {
+                    let allOk = true;
+                    RIPARTIZIONE_ROW_LABELS.forEach((row) => {
+                        const sum = RIPARTIZIONE_COLUMNS.reduce((s, col) => {
+                            const input = wrap.querySelector('input[data-nutrient="' + row.key + '"][data-meal="' + col.key + '"]');
+                            return s + (input ? (parseFloat(input.value) || 0) : 0);
+                        }, 0);
+                        const cell = wrap.querySelector('.totale-cell-sum[data-nutrient="' + row.key + '"]');
+                        if (cell) {
+                            cell.textContent = Math.round(sum);
+                            cell.classList.remove('totale-ok', 'totale-err');
+                            if (Math.abs(sum - 100) < 0.01) {
+                                cell.classList.add('totale-ok');
+                            } else {
+                                cell.classList.add('totale-err');
+                                allOk = false;
+                            }
+                        }
+                    });
+                    btnSalva.disabled = !allOk;
+                    if (validationEl) validationEl.textContent = allOk ? 'Tutte le righe totalizzano 100. Puoi salvare.' : 'La somma di ogni riga deve essere 100.';
+                    if (validationEl) validationEl.style.color = allOk ? '#1b5e20' : '#b71c1c';
+                }
+                wrap.querySelectorAll('input[type="number"]').forEach(input => {
+                    input.addEventListener('input', validateAll);
+                });
+                validateAll();
+            }
+
+            function openModalRipartizione() {
+                renderModalRipartizioneTable();
+                const modal = document.getElementById('modal-ripartizione-pasti');
+                if (modal) modal.style.display = 'block';
+            }
+
+            const btnModificaRipartizione = document.getElementById('btn-modifica-ripartizione');
+            if (btnModificaRipartizione) btnModificaRipartizione.addEventListener('click', openModalRipartizione);
+
+            document.getElementById('btn-salva-ripartizione')?.addEventListener('click', () => {
+                const wrap = document.getElementById('modal-ripartizione-table-wrap');
+                if (!wrap) return;
+                window.customRipartizionePasti = {};
+                RIPARTIZIONE_ROW_LABELS.forEach((row) => {
+                    window.customRipartizionePasti[row.key] = {};
+                    RIPARTIZIONE_COLUMNS.forEach((col) => {
+                        const input = wrap.querySelector('input[data-nutrient="' + row.key + '"][data-meal="' + col.key + '"]');
+                        const v = input ? (parseFloat(input.value) || 0) : 0;
+                        window.customRipartizionePasti[row.key][col.key] = Math.round(v);
+                    });
+                });
+                document.getElementById('modal-ripartizione-pasti').style.display = 'none';
+                aggiornaUI();
+                if (typeof renderMealBuilder === 'function') renderMealBuilder();
+            });
+
             const btnResetTargets = document.getElementById('btn-reset-targets');
             if (btnResetTargets) {
                 btnResetTargets.addEventListener('click', () => {
                     if (!confirm('Sei sicuro di voler ripristinare i target nutrizionali di base? Perderai tutte le modifiche manuali e l\'eventuale strategia AI applicata a questa giornata.')) return;
                     window.customDailyTargets = {};
+                    window.customRipartizionePasti = {};
                     localStorage.removeItem('trackerCustomTargets_' + giornoVisualizzato);
+                    localStorage.removeItem('trackerRipartizionePasti_' + giornoVisualizzato);
                     saveSingleItemToCloud('trackerCustomTargets_' + giornoVisualizzato, null);
+                    saveSingleItemToCloud('trackerRipartizionePasti_' + giornoVisualizzato, null);
                     aggiornaUI();
                     if (typeof renderMealBuilder === 'function') renderMealBuilder();
                     setEditMode(false);
-                });
-            }
-
-            const btnExpandiMacro = document.getElementById('btn-expandi-macro');
-            const mealBuilderProgressWrap = document.getElementById('meal-builder-progress-wrap');
-            if (btnExpandiMacro && mealBuilderProgressWrap) {
-                btnExpandiMacro.addEventListener('click', () => {
-                    const expanded = mealBuilderProgressWrap.classList.toggle('macro-expanded');
-                    btnExpandiMacro.setAttribute('aria-expanded', expanded);
-                    const textEl = btnExpandiMacro.querySelector('.btn-expandi-text');
-                    if (textEl) textEl.textContent = expanded ? 'Comprimi Macro' : 'Espandi Macro';
                 });
             }
 
