@@ -1521,19 +1521,21 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
             return teorico;
         }
 
-        /** Per il ricalcolo a cascata: restituisce le kcal workout da usare per il pasto mealType (effettivo solo per pasti dopo l'allenamento). */
+        /** Per il ricalcolo a cascata (delta correction): teorico per pasti prima/durante workout, effettivo per pasti dopo; il delta viene assorbito dal rimanente. */
         function getWorkoutKcalForMeal(mealType) {
             const MEAL_ORDER = ['merenda1', 'pranzo', 'merenda2', 'cena'];
-            const log = datiGiornalieri.log || [];
-            const workoutEntries = log.filter(e => e.type === 'workout');
-            const effettivo = workoutEntries.reduce((s, e) => s + (e.kcal || e.cal || 0), 0);
-            const teorico = (datiGiornalieri.workoutTeorico && typeof datiGiornalieri.workoutTeorico.kcal === 'number') ? datiGiornalieri.workoutTeorico.kcal : 0;
-            if (effettivo <= 0) return teorico;
-            const dopoMeal = workoutEntries[0] && workoutEntries[0].dopoMeal != null ? workoutEntries[0].dopoMeal : 'cena';
+            const workoutEntries = (datiGiornalieri.log || []).filter(e => e.type === 'workout');
+            const kcalEffettive = workoutEntries.reduce((s, e) => s + (e.kcal || 0), 0);
+            const kcalTeoriche = (datiGiornalieri.workoutTeorico && datiGiornalieri.workoutTeorico.kcal) || 0;
+
+            if (workoutEntries.length === 0) return kcalTeoriche;
+
+            const dopoMeal = workoutEntries[0].dopoMeal || 'cena';
             const currentIdx = MEAL_ORDER.indexOf(mealType);
             const dopoIdx = MEAL_ORDER.indexOf(dopoMeal);
-            if (currentIdx > dopoIdx) return effettivo;
-            return teorico;
+
+            if (currentIdx <= dopoIdx) return kcalTeoriche;
+            return kcalEffettive;
         }
 
         /** Restituisce i target giornalieri effettivi: default da piano + workout (effettivo o teorico) + adjustment, sovrascritti da window.customDailyTargets. */
@@ -1749,6 +1751,11 @@ function calcolaObiettiviPastoConArray(mealType, giornoCorrenteString, pastoArra
     const dataVisualizzata = new Date(giornoCorrenteString);
     const giornoSettimana = dataVisualizzata.getDay();
     const pianoDelGiorno = PIANO_SETTIMANALE[giornoSettimana] || PIANO_SETTIMANALE[1];
+
+    const kcalTeoriche = datiGiornalieri.workoutTeorico?.kcal || 0;
+    const kcalEffettive = (datiGiornalieri.log || []).filter(e => e.type === 'workout').reduce((s, e) => s + (e.kcal || 0), 0);
+    // Target giornaliero usa getEffectiveDailyTargets(mealType): per pasti dopo il workout usa kcalEffettive,
+    // così il rimanente (target - consumatoPassato) include il delta e viene spalmato sui pasti rimanenti.
     const effective = getEffectiveDailyTargets(mealType);
 
     const targetGiorno = {
