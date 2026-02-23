@@ -1534,7 +1534,9 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
             const currentIdx = MEAL_ORDER.indexOf(mealType);
             const dopoIdx = MEAL_ORDER.indexOf(dopoMeal);
 
+            // Se il pasto è prima del workout, usa il teorico (pianificato)
             if (currentIdx < dopoIdx) return kcalTeoriche;
+            // Se il pasto è il workout stesso o successivo, usa l'effettivo (reale)
             return kcalEffettive;
         }
 
@@ -1543,12 +1545,19 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
             const dataVisualizzata = new Date(giornoVisualizzato);
             const pianoDelGiorno = PIANO_SETTIMANALE[dataVisualizzata.getDay()] || PIANO_SETTIMANALE[1];
 
+            // Recupero dati reali
             const workoutEntries = (datiGiornalieri.log || []).filter(e => e.type === 'workout');
             const kcalEffettive = workoutEntries.reduce((s, e) => s + (e.kcal || 0), 0);
             const kcalTeoriche = (datiGiornalieri.workoutTeorico && datiGiornalieri.workoutTeorico.kcal) || 0;
-            const workoutKcal = mealTypeForKcal != null ? getWorkoutKcalForMeal(mealTypeForKcal) : (workoutEntries.length > 0 ? kcalEffettive : kcalTeoriche);
+
+            // PRIORITÀ: Se c'è un workout nel log, domina l'effettivo. Altrimenti il teorico.
+            const workoutKcal = (mealTypeForKcal != null)
+                ? getWorkoutKcalForMeal(mealTypeForKcal)
+                : (workoutEntries.length > 0 ? kcalEffettive : kcalTeoriche);
 
             let obiettivoCalorieTotale = pianoDelGiorno.cal_base + workoutKcal + (datiGiornalieri.calorieAdjustment || 0);
+
+            // Applica customDailyTargets se presenti
             const base = {
                 prot: pianoDelGiorno.prot, kcal: obiettivoCalorieTotale, carb: pianoDelGiorno.carb, zuccheri: pianoDelGiorno.zuccheri,
                 ...OBIETTIVI_MICRO, ...OBIETTIVI_FAT, ...OBIETTIVI_VIT, ...OBIETTIVI_AMINO, ...OBIETTIVI_FIBRE
@@ -1558,7 +1567,9 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
             for (const key in custom) {
                 if (typeof custom[key] === 'number' && !isNaN(custom[key])) out[key] = custom[key];
             }
+            // Forza sovrascrittura Kcal se l'utente ha messo un target manuale fisso
             if (custom.kcal != null && !isNaN(Number(custom.kcal))) out.kcal = Number(custom.kcal);
+
             return out;
         }
 
@@ -1617,7 +1628,9 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
 
 
             spanObiettivoProteine.textContent = OBIETTIVI.prot; spanTotaleProteine.textContent = totali.prot.toFixed(1); progressProteine.max = OBIETTIVI.prot; progressProteine.value = totali.prot;
-            spanObiettivoCalorie.textContent = OBIETTIVI.kcal; spanTotaleCalorie.textContent = totali.kcal.toFixed(0); progressCalorie.max = OBIETTIVI.kcal; progressCalorie.value = totali.kcal;
+            spanObiettivoCalorie.textContent = OBIETTIVI.kcal; spanTotaleCalorie.textContent = totali.kcal.toFixed(0);
+            progressCalorie.max = OBIETTIVI.kcal; // Aggiornato dinamicamente al target (workout effettivo)
+            progressCalorie.value = totali.kcal;
             spanObiettivoCarboidrati.textContent = OBIETTIVI.carb; spanTotaleCarboidrati.textContent = totali.carb.toFixed(1); progressCarboidrati.max = OBIETTIVI.carb; progressCarboidrati.value = totali.carb;
             spanObiettivoZuccheri.textContent = OBIETTIVI.zuccheri; spanTotaleZuccheri.textContent = totali.zuccheri.toFixed(1); progressZuccheri.max = OBIETTIVI.zuccheri; progressZuccheri.value = totali.zuccheri;
             const workoutEff = datiGiornalieri.workoutCalorie ? datiGiornalieri.workoutCalorie.toFixed(0) : 0;
