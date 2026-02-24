@@ -1386,6 +1386,8 @@ Includi nel JSON la chiave 'workout_pianificato' con 'desc' e 'kcal' stimate in 
 
         function injectTargetButtons() {
             const OBIETTIVI = getEffectiveDailyTargets();
+            const dataRef = new Date(giornoVisualizzato);
+            const pianoDelGiorno = PIANO_SETTIMANALE[dataRef.getDay()] || PIANO_SETTIMANALE[1];
             TARGET_EDIT_MAP.forEach(({ id, key, step }) => {
                 const el = document.getElementById(id);
                 if (!el || el.getAttribute(TARGET_ACTIONS_MARKER)) return;
@@ -1403,14 +1405,17 @@ Includi nel JSON la chiave 'workout_pianificato' con 'desc' e 'kcal' stimate in 
                 plusBtn.setAttribute('aria-label', 'Aumenta');
                 plusBtn.textContent = '+';
                 minusBtn.addEventListener('click', () => {
-                    const v = (window.customDailyTargets[key] != null ? Number(window.customDailyTargets[key]) : OBIETTIVI[key]) - step;
-                    window.customDailyTargets[key] = Math.max(0, v);
+                    const currentVal = (key === 'kcal')
+                        ? ((window.customDailyTargets.kcal != null && !isNaN(Number(window.customDailyTargets.kcal))) ? Number(window.customDailyTargets.kcal) : pianoDelGiorno.cal_base)
+                        : (window.customDailyTargets[key] != null ? Number(window.customDailyTargets[key]) : OBIETTIVI[key]);
+                    window.customDailyTargets[key] = Math.max(0, currentVal - step);
                     aggiornaUI();
                     injectTargetButtons();
                 });
                 plusBtn.addEventListener('click', () => {
-                    const base = getEffectiveDailyTargets();
-                    const currentVal = base[key] != null ? Number(base[key]) : 0;
+                    const currentVal = (key === 'kcal')
+                        ? ((window.customDailyTargets.kcal != null && !isNaN(Number(window.customDailyTargets.kcal))) ? Number(window.customDailyTargets.kcal) : pianoDelGiorno.cal_base)
+                        : (getEffectiveDailyTargets()[key] != null ? Number(getEffectiveDailyTargets()[key]) : 0);
                     window.customDailyTargets[key] = currentVal + step;
                     aggiornaUI();
                     injectTargetButtons();
@@ -1629,38 +1634,33 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
             return kcalEffettive;
         }
 
-        /** Restituisce i target giornalieri effettivi: default da piano + workout (effettivo o teorico) + adjustment, sovrascritti da window.customDailyTargets. */
+        /** Restituisce i target giornalieri effettivi: base (custom.kcal o cal_base) + workout + adjustment + lavoro; macro da custom o piano. */
         function getEffectiveDailyTargets(mealTypeForKcal) {
             const dataVisualizzata = new Date(giornoVisualizzato);
             const pianoDelGiorno = PIANO_SETTIMANALE[dataVisualizzata.getDay()] || PIANO_SETTIMANALE[1];
 
-            // Recupero dati reali
-            const workoutEntries = (datiGiornalieri.log || []).filter(e => e.type === 'workout');
-            const kcalEffettive = workoutEntries.reduce((s, e) => s + (e.kcal || 0), 0);
-            const kcalTeoriche = (datiGiornalieri.workoutTeorico && datiGiornalieri.workoutTeorico.kcal) || 0;
-
-            // PRIORITÀ: Se c'è un workout nel log, domina l'effettivo. Altrimenti il teorico.
             const workoutKcal = (mealTypeForKcal != null)
                 ? getWorkoutKcalForMeal(mealTypeForKcal)
-                : (workoutEntries.length > 0 ? kcalEffettive : kcalTeoriche);
+                : getWorkoutKcalForTarget();
 
-            let obiettivoCalorieTotale = pianoDelGiorno.cal_base + workoutKcal + (datiGiornalieri.calorieAdjustment || 0);
+            const custom = window.customDailyTargets || {};
+            let calorieBaseEffettive = (custom.kcal != null && !isNaN(Number(custom.kcal)))
+                ? Number(custom.kcal)
+                : pianoDelGiorno.cal_base;
+
+            let obiettivoCalorieTotale = calorieBaseEffettive + workoutKcal + (datiGiornalieri.calorieAdjustment || 0);
             const lavoroKcal = typeof datiGiornalieri.lavoroKcal === 'number' && !isNaN(datiGiornalieri.lavoroKcal) ? datiGiornalieri.lavoroKcal : 0;
             obiettivoCalorieTotale += lavoroKcal;
 
-            // Applica customDailyTargets se presenti
             const base = {
                 prot: pianoDelGiorno.prot, kcal: obiettivoCalorieTotale, carb: pianoDelGiorno.carb, zuccheri: pianoDelGiorno.zuccheri,
                 ...OBIETTIVI_MICRO, ...OBIETTIVI_FAT, ...OBIETTIVI_VIT, ...OBIETTIVI_AMINO, ...OBIETTIVI_FIBRE
             };
-            const custom = window.customDailyTargets || {};
             const out = { ...base };
             for (const key in custom) {
-                if (key === 'kcal') continue; // kcal sempre dinamiche (base + workout + adjustment)
+                if (key === 'kcal') continue;
                 if (typeof custom[key] === 'number' && !isNaN(custom[key])) out[key] = custom[key];
             }
-            // out.kcal resta base.kcal: mai override da custom, workout modifica sempre il target
-
             return out;
         }
 
