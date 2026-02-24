@@ -1500,6 +1500,7 @@ Includi nel JSON la chiave 'workout_pianificato' con 'desc' e 'kcal' stimate in 
         }
         
         function caricaGiorno(data) {
+            loadProfileForTipo(getCurrentTipoGiorno());
             giornoVisualizzato = data;
             dataCaricamentoInput.value = data;
 
@@ -1528,9 +1529,6 @@ Includi nel JSON la chiave 'workout_pianificato' con 'desc' e 'kcal' stimate in 
             if (typeof datiGiornalieri.workoutCalorie === 'undefined') datiGiornalieri.workoutCalorie = 0;
             if (typeof datiGiornalieri.workoutTeorico === 'undefined') datiGiornalieri.workoutTeorico = null;
             if (typeof datiGiornalieri.lavoroKcal !== 'number' || isNaN(datiGiornalieri.lavoroKcal)) datiGiornalieri.lavoroKcal = 0;
-
-            /* Target e ripartizione provengono dal profilo strategia (tipo giorno), non dalla data */
-            loadProfileForTipo(getCurrentTipoGiorno());
 
             const dataCorrente = new Date(data);
             const giornoSettimana = dataCorrente.getDay(); 
@@ -3082,6 +3080,9 @@ Regole:
                         datiGiornalieri.lavoroKcal = (typeof lavoroVal === 'number' && !isNaN(lavoroVal) && lavoroVal >= 0) ? lavoroVal : 0;
                         salvaGiorno(giornoVisualizzato, datiGiornalieri);
                         saveCurrentProfileToTipo();
+                        loadProfileForTipo(getCurrentTipoGiorno());
+                        aggiornaUI();
+                        if (typeof renderMealBuilder === 'function') renderMealBuilder();
                         setEditMode(false);
                     } else {
                         setEditMode(true);
@@ -3150,10 +3151,11 @@ Regole:
                                 salvaGiorno(giornoVisualizzato, datiGiornalieri);
                             }
                         }
+                        saveCurrentProfileToTipo();
+                        loadProfileForTipo(getCurrentTipoGiorno());
                         aggiornaUI();
                         if (editModeActive) injectTargetButtons();
                         if (typeof renderMealBuilder === 'function') renderMealBuilder();
-                        saveCurrentProfileToTipo();
                     } catch (e) {
                         alert('JSON non valido: ' + (e.message || 'errore di parsing'));
                     }
