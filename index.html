@@ -10,78 +10,17 @@
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
-        :root {
-            --bg-color: #f4f7f9;
-            --text-color: #333;
-            --card-bg: #ffffff;
-            --border-color: #e0e0e0;
-            --accent-primary: #0d47a1;
-            --accent-secondary: #1976d2;
-            --header-bg: #fff3e0;
-            --header-border: #ffe0b2;
-            --header-text: #d84315;
-            --section-bg: #fafafa;
-            --input-border: #ccc;
-            --muted: #555;
-        }
-        body.dark-theme {
-            --bg-color: #1a1d21;
-            --text-color: #e4e6eb;
-            --card-bg: #24262b;
-            --border-color: #3e4248;
-            --accent-primary: #6b8cce;
-            --accent-secondary: #7c9de0;
-            --header-bg: #2d2a26;
-            --header-border: #4a4238;
-            --header-text: #e8b896;
-            --section-bg: #2a2d32;
-            --input-border: #4a4e54;
-            --muted: #b0b3b8;
-        }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; display: flex; justify-content: center; transition: background-color 0.3s, color 0.3s; }
-        .container { width: 100%; max-width: 800px; background-color: var(--card-bg); padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: background-color 0.3s; }
-        h1, h2, h3 { color: var(--accent-primary); border-bottom: 2px solid var(--border-color); padding-bottom: 10px; margin-top: 0; transition: color 0.3s, border-color 0.3s; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f7f9; color: #333; margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 800px; background-color: #ffffff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #0d47a1; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px; margin-top: 0; }
         h2 { font-size: 1.4em; margin-top: 30px; }
-        h3 { font-size: 1.1em; color: var(--text-color); border-bottom: 1px solid var(--border-color); margin-top: 20px; }
-        h4 { font-size: 1em; color: var(--accent-secondary); margin-top: 20px; margin-bottom: 10px; font-weight: 600; }
-        /* EPIC 2: Header dinamico (titolo + badge strategia + cacciavite) */
-        #header-giornata-wrap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 20px; padding: 12px 14px; background-color: var(--header-bg); border-radius: 8px; border: 1px solid var(--header-border); transition: background-color 0.3s, border-color 0.3s; }
-        #header-title-group { display: flex; align-items: center; gap: 10px; flex: 1 1 auto; flex-wrap: wrap; }
-        #tipo-giorno-select { max-width: 180px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--input-border); background: var(--card-bg); color: var(--text-color); font-weight: 600; font-size: 1em; }
-        #header-data-label { font-size: 1em; color: var(--header-text); font-weight: 500; white-space: nowrap; }
-        #titolo-giornata { display: none; }
-        #header-strategy-badge { font-size: 0.8em; padding: 4px 10px; border-radius: 20px; background: var(--border-color); color: var(--muted); font-weight: 600; transition: background 0.3s, color 0.3s; }
-        #header-strategy-badge.strategy-custom { background: #e3f2fd; color: #1565c0; }
-        body.dark-theme #header-strategy-badge.strategy-custom { background: #1e3a5f; color: #90caf9; }
-        #btn-edit-targets { padding: 8px 14px; border-radius: 8px; border: 1px solid #ffb74d; background: #fff8e1; color: #e65100; cursor: pointer; font-size: 1em; transition: background 0.2s, color 0.2s; }
-        #btn-edit-targets:hover { background: #ffe0b2; }
-        #btn-edit-targets.edit-save-mode { background: #2e7d32; color: #fff; border-color: #1b5e20; }
-        #btn-edit-targets.edit-save-mode:hover { background: #1b5e20; }
-        #btn-dark-mode-toggle { padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--section-bg); color: var(--text-color); cursor: pointer; font-size: 1.2em; line-height: 1; transition: background 0.2s, transform 0.2s; }
-        #btn-dark-mode-toggle:hover { transform: scale(1.05); }
-        .header-edit-actions { display: none; align-items: center; gap: 8px; flex-wrap: wrap; }
-        .edit-mode-active .header-edit-actions { display: flex; }
-        #btn-reset-targets { background-color: #fafafa; color: #b71c1c; border: 1px solid #c62828; }
-        #btn-reset-targets:hover { background-color: #ffebee; }
-        #modal-ripartizione-pasti table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-        #modal-ripartizione-pasti th, #modal-ripartizione-pasti td { padding: 8px; border: 1px solid #ddd; text-align: center; }
-        #modal-ripartizione-pasti th { background: #f5f5f5; font-weight: 600; }
-        #modal-ripartizione-pasti input[type="number"] { width: 56px; padding: 4px; text-align: center; }
-        #modal-ripartizione-pasti .totale-cell { font-weight: 700; }
-        #modal-ripartizione-pasti .totale-cell.totale-err { color: #b71c1c; background: #ffebee; }
-        #modal-ripartizione-pasti .totale-cell.totale-ok { color: #1b5e20; background: #e8f5e9; }
-        /* EPIC 3: Modalità edit – contorno tratteggiato e bottoni +/- */
-        .edit-mode-active .sezione, .edit-mode-active #meal-builder-summary { outline: 2px dashed rgba(245, 124, 0, 0.5); outline-offset: 2px; }
-        .target-actions-edit { display: none; margin-left: 6px; vertical-align: middle; }
-        .edit-mode-active .target-actions-edit { display: inline-flex; align-items: center; gap: 2px; }
-        .target-actions-edit button { width: 26px; height: 26px; border-radius: 50%; border: 1px solid #90a4ae; background: #fff; color: #455a64; font-size: 1.1em; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: background 0.2s, color 0.2s; }
-        .target-actions-edit button:hover { background: #eceff1; color: #1976d2; }
-        .target-actions-edit button.target-plus:hover { color: #2e7d32; }
-        .target-actions-edit button.target-minus:hover { color: #c62828; }
-        .sezione { margin-bottom: 25px; padding: 20px; background-color: var(--section-bg); border: 1px solid var(--border-color); border-radius: 8px; border-left-width: 5px; transition: background-color 0.3s, border-color 0.3s; }
-        label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--muted); }
+        h3 { font-size: 1.1em; color: #333; border-bottom: 1px solid #eee; margin-top: 20px; }
+        h4 { font-size: 1em; color: #1565c0; margin-top: 20px; margin-bottom: 10px; font-weight: 600; }
+        #titolo-giornata { text-align: center; color: #d84315; font-weight: 600; margin-bottom: 20px; padding: 10px; background-color: #fff3e0; border-radius: 8px; border: 1px solid #ffe0b2;}
+        .sezione { margin-bottom: 25px; padding: 20px; background-color: #fafafa; border: 1px solid #e0e0e0; border-radius: 8px; border-left-width: 5px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: #555; }
         input[type="text"], input[type="number"], input[type="date"], select, input[type="email"], input[type="password"], textarea {
-            width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid var(--input-border); border-radius: 6px; box-sizing: border-box; font-size: 1em; background: var(--card-bg); color: var(--text-color); transition: border-color 0.3s, background 0.3s;
+            width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 1em;
         }
         button { background-color: #1976d2; color: white; padding: 12px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 1em; font-weight: 600; transition: background-color 0.3s; }
         button:hover { background-color: #1565c0; }
@@ -119,21 +58,10 @@
         .nutrients-warning { color: #d32f2f !important; }
         #meal-builder-summary { margin-bottom: 20px; padding: 15px; background-color: #e3f2fd; border: 1px solid #90caf9; border-radius: 8px; }
         #meal-builder-summary p { margin: 5px 0; font-weight: 600; color: #1e88e5; }
-        /* EPIC 1: Costruttore pasto – swipe orizzontale, tutte le barre in una riga scorrevole */
-        #meal-builder-summary .progress-container { display: flex; flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x mandatory; gap: 15px; margin-top: 10px; padding-bottom: 10px; -webkit-overflow-scrolling: touch; }
-        #meal-builder-summary .progress-container::-webkit-scrollbar { height: 8px; display: block; }
-        #meal-builder-summary .progress-container::-webkit-scrollbar-track { background: #e3f2fd; border-radius: 4px; margin-top: 5px; }
-        #meal-builder-summary .progress-container::-webkit-scrollbar-thumb { background: #90caf9; border-radius: 4px; }
-        #meal-builder-summary .progress-container::-webkit-scrollbar-thumb:hover { background: #64b5f6; }
-        #meal-builder-summary .progress-item { flex: 0 0 145px; scroll-snap-align: start; min-width: 145px; }
-        #meal-builder-summary .progress-item p { font-size: 0.85em; margin-bottom: 5px; color: #3f51b5; }
-        #meal-builder-summary .progress-item progress { height: 16px; border-radius: 4px; }
-        @media (max-width: 600px) {
-            #meal-builder-summary .progress-container { gap: 10px; padding-bottom: 15px; }
-            #meal-builder-summary .progress-item { flex: 0 0 46%; min-width: 130px; }
-            #meal-builder-summary .progress-item p { font-size: 0.78em; }
-            #meal-builder-summary .progress-item progress { height: 14px; }
-        }
+        #meal-builder-summary .progress-container { display: flex; gap: 20px; margin-top: 10px; }
+        #meal-builder-summary .progress-item { flex: 1; }
+        #meal-builder-summary .progress-item p { font-size: 0.9em; margin-bottom: 5px; color: #3f51b5; }
+        #meal-builder-summary .progress-item progress { height: 18px; border-radius: 4px; }
         #calorie-balance-text { display: block; text-align: center; font-weight: bold; font-size: 1.2em; margin-top: 15px; margin-bottom: 10px; padding: 8px 0; border-radius: 5px; }
         .balance-deficit { background-color: #ffebee; color: #d32f2f; }
         .balance-surplus { background-color: #e8f5e9; color: #2e7d32; }
@@ -263,36 +191,9 @@
             text-decoration: none;
             cursor: pointer;
         }
-        body.dark-theme .modal-content { background-color: var(--card-bg); border-color: var(--border-color); color: var(--text-color); }
-        body.dark-theme .modal-close { color: var(--muted); }
-        body.dark-theme .modal-close:hover { color: var(--text-color); }
-        .ghost-car-table { margin-top: 10px; }
-        .ghost-car-table th, .ghost-car-table td { padding: 10px 8px; border-bottom: 1px solid var(--border-color); }
-        .ghost-car-table progress { width: 100%; min-width: 80px; height: 14px; border-radius: 6px; }
-        .ghost-car-row-pianificato { color: var(--muted); font-style: italic; }
         .modal-content video {
             background-color: #000;
         }
-        /* EPIC 3: Test Pasto – pulsante smart (default / success / warning) */
-        .test-pasto-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
-        .test-pasto-status { font-size: 1.5em; }
-        .test-pasto-status.alert-blink { animation: testAlertBlink 0.8s ease-in-out infinite; }
-        @keyframes testAlertBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-        #btn-test-pasto { width: 100%; margin-bottom: 10px; transition: background-color 0.3s, box-shadow 0.3s; }
-        #btn-test-pasto.test-pasto-default { background-color: #546e7a; color: #fff; }
-        #btn-test-pasto.test-pasto-default:hover { background-color: #455a64; }
-        #btn-test-pasto.test-pasto-success { background-color: #2e7d32; color: #fff; }
-        #btn-test-pasto.test-pasto-success:hover { background-color: #1b5e20; }
-        #btn-test-pasto.test-pasto-warning { background-color: #f9a825; color: #1a237e; animation: testPastoWarningBlink 1.2s ease-in-out infinite; }
-        #btn-test-pasto.test-pasto-warning:hover { background-color: #f57f17; }
-        @keyframes testPastoWarningBlink { 0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(249, 168, 37, 0.5); } 50% { opacity: 0.85; box-shadow: 0 0 12px 2px rgba(249, 168, 37, 0.6); } }
-        #test-warning-modal .test-warning-bar-wrap { margin-bottom: 12px; }
-        #test-warning-modal .test-warning-bar-wrap progress { width: 100%; height: 22px; }
-        #test-warning-modal .test-warning-bar-wrap.progress-excess progress { accent-color: #c62828; }
-        #test-warning-modal .test-warning-bar-wrap.progress-deficit progress { accent-color: #ef6c00; }
-        #test-warning-modal .test-warning-accordion { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; background: #fafafa; padding: 0 10px; border-radius: 4px; margin-top: 6px; }
-        #test-warning-modal .test-warning-accordion.open { max-height: 500px; overflow-y: auto; padding: 10px; }
-        #test-warning-modal .test-warning-food-item { padding: 4px 0; font-size: 0.9em; color: #333; }
         .vitamin-weekly-summary {
             margin-bottom: 20px;
             padding-bottom: 15px;
@@ -601,36 +502,12 @@
             <p id="auth-status"></p>
         </div>
         <div id="main-tracker-content">
-            <div id="header-giornata-wrap">
-                <div id="header-title-group">
-                    <select id="tipo-giorno-select" title="Tipo di giorno / Profilo strategia">
-                        <option value="gambe">🦵 Gambe</option>
-                        <option value="upper">💪 Upper</option>
-                        <option value="riposo">🧘 Riposo</option>
-                    </select>
-                    <span id="header-data-label"></span>
-                </div>
-                <h2 id="titolo-giornata"></h2>
-                <span id="header-strategy-badge">Strategia: Default</span>
-                <button type="button" id="btn-edit-targets" title="Modifica target giornalieri">🔧</button>
-                <button type="button" id="btn-dark-mode-toggle" title="Cambia tema">🌙</button>
-                <div class="header-edit-actions">
-                    <label for="lavoro-kcal-input" style="display:inline; margin:0;">Dispendio Lavoro/Extra (kcal):</label>
-                    <input type="number" id="lavoro-kcal-input" min="0" step="10" placeholder="0" style="width:90px; margin:0 8px 0 4px; padding:6px 8px;">
-                    <button type="button" id="btn-copia-prompt-ai" title="Copia il prompt per generare strategia con AI">📋 Copia Prompt AI</button>
-                    <button type="button" id="btn-incolla-json-ai" title="Incolla JSON con target da AI">🪄 Incolla JSON AI</button>
-                    <button type="button" id="btn-modifica-ripartizione" title="Modifica ripartizione percentuale per pasto">📊 Ripartizione Pasti</button>
-                    <button type="button" id="btn-reset-targets" title="Azzera tutte le modifiche manuali e torna ai target di default">🔄 Ripristina Default</button>
-                </div>
-            </div>
+            <h2 id="titolo-giornata"></h2>
 <div class="nav-links">
     <a href="storico.html">📊 Storico</a>
     
     <button id="btn-export-json-ai" style="flex-grow: 1; text-align: center; padding: 10px; background-color: #673ab7; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 1em;">
         🧠 Dati Completi AI
-    </button>
-    <button id="btn-ghost-car" type="button" style="flex-grow: 1; text-align: center; padding: 10px; background-color: #455a64; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 1em;" title="Confronta con la tua strategia ideale (Ghost Car)">
-        👻 Ghost Car Mode
     </button>
 </div>
                 
@@ -650,7 +527,7 @@
                 <progress id="progress-proteine" class="macro-progress" value="0"></progress>
                 <p>Calorie: <span id="totale-calorie">0</span> / <span id="obiettivo-calorie"></span> kcal</p>
                 <progress id="progress-calorie" class="macro-progress" value="0"></progress>
-                <p>Workout: <span id="workout-calories-totali">0</span><span id="workout-teorico-suffix"></span> kcal</p>
+                <p>Workout: <span id="workout-calories-totali">0</span> kcal</p>
                 <hr>
 
                 <h3 class="collapsible-header" id="carbs-header">
@@ -809,13 +686,6 @@
                     <input type="text" id="workout-desc" placeholder="es. Corsa 30 min, Pesistica">
                     <label for="workout-calories">Calorie Bruciate (kcal)</label>
                     <input type="number" id="workout-calories" min="0">
-                    <label for="workout-dopo-meal">Quando (impatto sui pasti successivi)</label>
-                    <select id="workout-dopo-meal">
-                        <option value="merenda1">Dopo Merenda AM</option>
-                        <option value="pranzo">Dopo Pranzo</option>
-                        <option value="merenda2">Dopo Merenda PM</option>
-                        <option value="cena">Fine giornata (solo Cena)</option>
-                    </select>
                     <button id="btn-add-workout">Aggiungi Allenamento</button>
                 </div>
             </div>
@@ -911,7 +781,7 @@
                 <h2>Costruttore Pasto</h2>
                 <div id="meal-builder-summary">
                     <p>Pasto Selezionato: <span id="current-meal-type-display"></span></p>
-                    <div class="progress-container" id="meal-builder-progress-wrap">
+                    <div class="progress-container">
                         <div class="progress-item">
                             <p style="display: flex; align-items: center; gap: 10px;">
                                 <span>Proteine: <span id="meal-prot-current">0</span> / <span id="meal-prot-target"></span> g (<span id="meal-prot-remaining"></span>)</span>
@@ -923,22 +793,7 @@
                             <p>Calorie: <span id="meal-cal-current">0</span> / <span id="meal-cal-target"></span> kcal (<span id="meal-cal-remaining"></span>)</p>
                             <progress id="meal-progress-cal" value="0"></progress>
                         </div>
-                        <div class="progress-item">
-                            <p>Carboidrati: <span id="meal-carb-current">0</span> / <span id="meal-carb-target"></span> g (<span id="meal-carb-remaining"></span>)</p>
-                            <progress id="meal-progress-carb" value="0"></progress>
-                        </div>
-                        <div class="progress-item">
-                            <p>Grassi tot.: <span id="meal-fat-current">0</span> / <span id="meal-fat-target"></span> g (<span id="meal-fat-remaining"></span>)</p>
-                            <progress id="meal-progress-fat" value="0"></progress>
-                        </div>
-                        <div class="progress-item">
-                            <p>Fibre: <span id="meal-fibre-current">0</span> / <span id="meal-fibre-target"></span> g (<span id="meal-fibre-remaining"></span>)</p>
-                            <progress id="meal-progress-fibre" value="0"></progress>
-                        </div>
                     </div>
-                </div>
-                <div class="test-pasto-row" aria-live="polite">
-                    <span id="test-pasto-status" class="test-pasto-status"></span>
                 </div>
                 <select id="meal-type-selector">
                     <option value="merenda1">Merenda AM</option>
@@ -950,7 +805,6 @@
                     <thead><tr><th>Sel.</th><th>Descrizione</th><th>(g)</th><th>Prot</th><th>Kcal</th><th>Azione</th></tr></thead>
                     <tbody id="log-pasto-builder-body"></tbody>
                 </table>
-                <button type="button" id="btn-test-pasto" class="test-pasto-default">Testa Pasto Completo</button>
                 <button id="btn-salva-pasto">Salva Pasto nel Diario</button>
             </div>
             <div class="sezione">
@@ -1022,7 +876,6 @@
                     Una volta autenticato, puoi sincronizzare i dati. Lo scaricamento manuale sovrascrive i dati locali.
                 </p>
             </div>
-
         </div>
     </div>
     
@@ -1034,9 +887,6 @@
     <div id="nutrient-confirm-modal" class="modal"><div class="modal-content"><span class="modal-close" data-modal="nutrient-confirm-modal">&times;</span><h2>Conferma Dati Nutrizionali</h2><p>Controlla e correggi i valori estratti dalla foto prima di confermare.</p><div id="nutrient-confirm-list"><p id="ocr-status-nutrients" style="text-align: center; color: #888; display: block;">In attesa di una foto...</p></div><div class="nutrient-confirm-buttons"><button id="btn-cancel-nutrients" style="background-color: #607d8b;">Annulla</button><button id="btn-confirm-nutrients" style="background-color: #2e7d32;">Conferma e Compila</button></div></div></div><input type="file" id="nutrient-photo-input" accept="image/*" style="display: none;">
     <div id="barcode-scanner-modal" class="modal"><div class="modal-content"><span class="modal-close" data-modal="barcode-scanner-modal">&times;</span><h2>Scansiona Codice a Barre</h2><p style="text-align: center;">Inquadra il codice a barre del prodotto.</p><div id="scanner-container" style="position: relative; width: 100%; padding-top: 75%;"><video id="barcode-scanner-video" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 1px solid #ccc; border-radius: 8px;"></video><div id="scanner-overlay" style="position: absolute; top: 50%; left: 50%; width: 80%; height: 2px; background-color: red; transform: translate(-50%, -50%); box-shadow: 0 0 10px red;"></div></div><p id="barcode-scanner-status" style="text-align: center; margin-top: 15px; font-weight: bold; min-height: 20px;"></p></div></div>
     <div id="diff-modal" class="modal"><div class="modal-content"><span class="modal-close" data-modal="diff-modal">&times;</span><h2 id="diff-modal-title">Confronta Valori Nutrizionali</h2><p>Sono state trovate differenze significative. Scegli quali valori mantenere per ogni nutriente.</p><div id="diff-modal-list" style="max-height: 50vh; overflow-y: auto; padding: 10px; border: 1px solid #eee; border-radius: 8px; margin-top: 15px;"></div><div class="nutrient-confirm-buttons" style="margin-top: 20px;"><button id="btn-cancel-diff" style="background-color: #607d8b;">Annulla</button><button id="btn-apply-diff" style="background-color: #2e7d32;">Applica Modifiche</button></div></div></div>
-    <div id="test-warning-modal" class="modal"><div class="modal-content"><span class="modal-close" data-modal="test-warning-modal">&times;</span><h2>Test Pasto – Nutrienti fuori target</h2><p style="font-size: 0.9em; color: #555;">Clicca su una barra per vedere quali alimenti contribuiscono.</p><div id="test-warning-modal-bars"></div></div></div>
-    <div id="modal-ripartizione-pasti" class="modal"><div class="modal-content" style="max-width: 620px;"><span class="modal-close" data-modal="modal-ripartizione-pasti">&times;</span><h2>Ripartizione Pasti (%)</h2><p style="font-size: 0.9em; color: #555;">Ogni riga deve totalizzare 100. Valori attuali o default: 20, 35, 15, 30.</p><div id="modal-ripartizione-table-wrap"></div><p id="modal-ripartizione-validation" style="margin-top: 10px; font-weight: 600;"></p><button type="button" id="btn-salva-ripartizione" disabled style="margin-top: 12px; background-color: #2e7d32; color: #fff; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer;">Salva Ripartizione</button></div></div>
-    <div id="modal-ghost-car" class="modal"><div class="modal-content" style="max-width: 560px;"><span class="modal-close" data-modal="modal-ghost-car">&times;</span><h2>👻 Ghost Car Mode</h2><p id="ghost-car-message" style="font-size: 1.05em; margin: 12px 0 20px 0; padding: 12px; border-radius: 8px; background: var(--section-bg); border: 1px solid var(--border-color); color: var(--text-color);"></p><p id="ghost-car-focus" style="font-size: 0.95em; margin: 0 0 16px 0; padding: 10px; border-radius: 6px; color: var(--muted); display: none;"></p><table class="ghost-car-table" style="width:100%; border-collapse: collapse;"><thead><tr><th style="text-align:left; padding:8px; border-bottom: 2px solid var(--border-color);">Pasto</th><th style="text-align:center; padding:8px; border-bottom: 2px solid var(--border-color);">Aderenza</th><th style="text-align:right; padding:8px; border-bottom: 2px solid var(--border-color);">Barra</th></tr></thead><tbody id="ghost-car-tbody"></tbody></table></div></div>
 
    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js" type="module"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js" type="module"></script>
@@ -1063,10 +913,6 @@
         let giornoVisualizzato = getTodayString('ymd');
         let datiGiornalieri = {};
         let foodDatabase = {};
-        /** EPIC 3/5: Target giornalieri personalizzati (per giorno). Se presente, aggiornaUI e simulatore pasto li usano al posto dei default. */
-        if (typeof window.customDailyTargets === 'undefined') window.customDailyTargets = {};
-        /** EPIC 3: Ripartizione percentuale per pasto (kcal, prot, carb, fatTotal, fibreTotali → merenda1, pranzo, merenda2, cena). Totale riga = 100. */
-        if (typeof window.customRipartizionePasti === 'undefined') window.customRipartizionePasti = {};
         // Inizializza pastoInCostruzione leggendo da window (se già creato dalla Chat AI) o da localStorage
         let pastoInCostruzione = JSON.parse(localStorage.getItem('trackerPastoInCostruzione')) || [];
 window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
@@ -1077,13 +923,13 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
         let currentUserUID = null; 
 
         const PIANO_SETTIMANALE = {
-            0: { tipo: '💧 Riposo (Deficit)', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25, fatTotal: 85, fibreTotali: 30 },
-            1: { tipo: '🔥 Bicipiti', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25, fatTotal: 85, fibreTotali: 30 },
-            2: { tipo: '💪 Gambe', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25, fatTotal: 85, fibreTotali: 30 },
-            3: { tipo: '🏃 Spalle', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25, fatTotal: 85, fibreTotali: 30 },
-            4: { tipo: '🏋️ Addominali', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25, fatTotal: 85, fibreTotali: 30 },
-            5: { tipo: '🏃 Schiena', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25, fatTotal: 85, fibreTotali: 30 },
-            6: { tipo: '🥗 Total body leggero o cardio', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25, fatTotal: 85, fibreTotali: 30 }
+            0: { tipo: '💧 Riposo (Deficit)', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
+            1: { tipo: '🔥 Bicipiti', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
+            2: { tipo: '💪 Gambe', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
+            3: { tipo: '🏃 Spalle', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
+            4: { tipo: '🏋️ Addominali', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
+            5: { tipo: '🏃 Schiena', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 },
+            6: { tipo: '🥗 Total body leggero o cardio', cal_base: 2300, prot: 140, carb: 300, zuccheri: 25 }
         };
 
         const DEFICIT_PREIMPOSTATO_SETTIMANALE = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
@@ -1109,12 +955,11 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
             thr: 23, trp: 6.0, his: 15
         };
 
-        /* EPIC 2: Default ripartizione multi-target (prot, kcal, carb, grassi, fibre). Se Strategia AI è attiva, i moltiplicatori del JSON sovrascrivono questi valori per il pasto corrente. */
         const OBIETTIVI_MACRO_PASTO_BASE_FORZA = {
-            merenda1: { prot: 30, cal_perc: 0.20, carb_perc: 0.20, fatTotal_perc: 0.20, fibreTotali_perc: 0.20 },
-            pranzo: { prot: 40, cal_perc: 0.35, carb_perc: 0.35, fatTotal_perc: 0.35, fibreTotali_perc: 0.35 },
-            merenda2: { prot: 30, cal_perc: 0.15, carb_perc: 0.15, fatTotal_perc: 0.15, fibreTotali_perc: 0.15 },
-            cena: { prot: 40, cal_perc: 0.30, carb_perc: 0.30, fatTotal_perc: 0.30, fibreTotali_perc: 0.30 }
+            merenda1: { prot: 30, cal_perc: 0.20 },
+            pranzo: { prot: 40, cal_perc: 0.35 },
+            merenda2: { prot: 30, cal_perc: 0.15 },
+            cena: { prot: 40, cal_perc: 0.30 }
         };
         const totalProtForza = Object.values(OBIETTIVI_MACRO_PASTO_BASE_FORZA).reduce((sum, p) => sum + p.prot, 0);
         for (const mealType in OBIETTIVI_MACRO_PASTO_BASE_FORZA) {
@@ -1122,65 +967,6 @@ window.pastoInCostruzione = pastoInCostruzione; // Sincronizza sempre all'avvio
         }
 
         const MEAL_TYPE_SEQUENCE = ['merenda1', 'pranzo', 'merenda2', 'cena'];
-        const STRATEGIES_PROFILES_KEY = 'tracker_strategies_profiles';
-        const TIPO_GIORNO_KEY = 'tracker_tipo_giorno';
-        const TIPO_GIORNO_VALUES = ['gambe', 'upper', 'riposo'];
-
-        function getStrategiesProfiles() {
-            try {
-                const raw = localStorage.getItem(STRATEGIES_PROFILES_KEY);
-                const parsed = raw ? JSON.parse(raw) : {};
-                TIPO_GIORNO_VALUES.forEach(t => {
-                    if (!parsed[t]) parsed[t] = { customDailyTargets: {}, customRipartizionePasti: {} };
-                });
-                return parsed;
-            } catch (e) { return { gambe: { customDailyTargets: {}, customRipartizionePasti: {} }, upper: { customDailyTargets: {}, customRipartizionePasti: {} }, riposo: { customDailyTargets: {}, customRipartizionePasti: {} } }; }
-        }
-        function getCurrentTipoGiorno() {
-            const t = localStorage.getItem(TIPO_GIORNO_KEY);
-            return TIPO_GIORNO_VALUES.indexOf(t) >= 0 ? t : 'gambe';
-        }
-        function setCurrentTipoGiorno(tipo) {
-            if (TIPO_GIORNO_VALUES.indexOf(tipo) < 0) return;
-            localStorage.setItem(TIPO_GIORNO_KEY, tipo);
-        }
-        function loadProfileForTipo(tipo) {
-            const profiles = getStrategiesProfiles();
-            const p = profiles[tipo] || {};
-            window.customDailyTargets = (p.customDailyTargets && typeof p.customDailyTargets === 'object') ? { ...p.customDailyTargets } : {};
-            window.customRipartizionePasti = (p.customRipartizionePasti && typeof p.customRipartizionePasti === 'object') ? { ...p.customRipartizionePasti } : {};
-        }
-        function saveCurrentProfileToTipo() {
-            const tipo = getCurrentTipoGiorno();
-            const profiles = getStrategiesProfiles();
-            profiles[tipo] = {
-                customDailyTargets: window.customDailyTargets ? { ...window.customDailyTargets } : {},
-                customRipartizionePasti: window.customRipartizionePasti ? { ...window.customRipartizionePasti } : {}
-            };
-            localStorage.setItem(STRATEGIES_PROFILES_KEY, JSON.stringify(profiles));
-        }
-
-        /** Percentuale (0-1) per pasto e nutriente: da customRipartizionePasti se presente, altrimenti default 20/35/15/30. */
-        function getRipartizioneRatio(nutrientKey, mealType) {
-            const r = window.customRipartizionePasti && window.customRipartizionePasti[nutrientKey];
-            if (r && typeof r[mealType] === 'number' && !isNaN(r[mealType])) return r[mealType] / 100;
-            const defaults = { merenda1: 0.20, pranzo: 0.35, merenda2: 0.15, cena: 0.30 };
-            return defaults[mealType] != null ? defaults[mealType] : 0.25;
-        }
-        const PROMPT_AI_STRATEGIA = `Agisci come un nutrizionista esperto. Crea una strategia giornaliera. Fornisci ESCLUSIVAMENTE un JSON valido con questa struttura esatta:
-{
-"target_giornalieri": { "kcal": 2100, "prot": 140, "carb": 200, "fatTotal": 65, "fibreTotali": 30 },
-"ripartizione_pasti": {
-"kcal": { "merenda1": 20, "pranzo": 35, "merenda2": 15, "cena": 30 },
-"prot": { "merenda1": 20, "pranzo": 35, "merenda2": 15, "cena": 30 },
-"carb": { "merenda1": 20, "pranzo": 35, "merenda2": 15, "cena": 30 },
-"fatTotal": { "merenda1": 20, "pranzo": 35, "merenda2": 15, "cena": 30 },
-"fibreTotali": { "merenda1": 20, "pranzo": 35, "merenda2": 15, "cena": 30 }
-},
-"workout_pianificato": { "desc": "Gambe", "kcal": 180 }
-}
-Puoi variare le percentuali (es. più fibre al mattino, più carboidrati a pranzo), ma il totale per ogni riga deve essere SEMPRE 100.
-Includi nel JSON la chiave 'workout_pianificato' con 'desc' e 'kcal' stimate in base al tipo di allenamento indicato dall'utente (es. oggi Gambe = 180 kcal). La strategia nutrizionale deve già includere queste calorie nel target giornaliero.`;
         const LOCAL_STORAGE_SYNC_KEYS = ['trackerFoodDatabase', 'trackerPesate', 'trackerMealType', 'trackerPastoInCostruzione'];
         const LOCAL_LAST_UPDATE_KEY = 'lastLocalUpdateTimestamp';
         const CLOUD_LAST_UPDATE_PATH = 'lastCloudUpdateTimestamp';
@@ -1355,105 +1141,10 @@ Includi nel JSON la chiave 'workout_pianificato' con 'desc' e 'kcal' stimate in 
         const mealProtCurrent = document.getElementById('meal-prot-current'), mealProtTarget = document.getElementById('meal-prot-target'), mealProtRemaining = document.getElementById('meal-prot-remaining');
         const mealCalCurrent = document.getElementById('meal-cal-current'), mealCalTarget = document.getElementById('meal-cal-target'), mealCalRemaining = document.getElementById('meal-cal-remaining');
         const mealProgressProt = document.getElementById('meal-progress-prot'), mealProgressCal = document.getElementById('meal-progress-cal');
-        const mealCarbCurrent = document.getElementById('meal-carb-current'), mealCarbTarget = document.getElementById('meal-carb-target'), mealCarbRemaining = document.getElementById('meal-carb-remaining');
-        const mealFatCurrent = document.getElementById('meal-fat-current'), mealFatTarget = document.getElementById('meal-fat-target'), mealFatRemaining = document.getElementById('meal-fat-remaining');
-        const mealFibreCurrent = document.getElementById('meal-fibre-current'), mealFibreTarget = document.getElementById('meal-fibre-target'), mealFibreRemaining = document.getElementById('meal-fibre-remaining');
-        const mealProgressCarb = document.getElementById('meal-progress-carb'), mealProgressFat = document.getElementById('meal-progress-fat'), mealProgressFibre = document.getElementById('meal-progress-fibre');
         const workoutDescInput = document.getElementById('workout-desc');
         const workoutCaloriesInput = document.getElementById('workout-calories');
         const btnAddWorkout = document.getElementById('btn-add-workout');
-
-        /** EPIC 3: Mappa span obiettivo → chiave per customDailyTargets e step per +/- (kcal ±50, macro ±5, micro ±1). */
-        const TARGET_EDIT_MAP = [
-            { id: 'obiettivo-proteine', key: 'prot', step: 5 },
-            { id: 'obiettivo-calorie', key: 'kcal', step: 50 },
-            { id: 'obiettivo-carboidrati', key: 'carb', step: 5 },
-            { id: 'obiettivo-zuccheri', key: 'zuccheri', step: 5 },
-            { id: 'obiettivo-fibre-totali', key: 'fibreTotali', step: 1 },
-            { id: 'obiettivo-fibre-solubili', key: 'fibreSolubili', step: 1 },
-            { id: 'obiettivo-fibre-insolubili', key: 'fibreInsolubili', step: 1 },
-            { id: 'obiettivo-fats-total', key: 'fatTotal', step: 5 },
-            { id: 'obiettivo-fat-sat', key: 'fatSat', step: 1 },
-            { id: 'obiettivo-fat-trans', key: 'fatTrans', step: 1 },
-            { id: 'obiettivo-fat-unsat', key: 'fatUnsat', step: 5 },
-            { id: 'obiettivo-fat-mono', key: 'fatMono', step: 1 },
-            { id: 'obiettivo-fat-poly', key: 'fatPoly', step: 1 },
-            { id: 'obiettivo-omega3', key: 'omega3', step: 1 },
-            { id: 'obiettivo-omega6', key: 'omega6', step: 1 }
-        ];
-        let editModeActive = false;
-        const TARGET_ACTIONS_MARKER = 'data-target-actions-injected';
-
-        function injectTargetButtons() {
-            const OBIETTIVI = getEffectiveDailyTargets();
-            const dataRef = new Date(giornoVisualizzato);
-            const pianoDelGiorno = PIANO_SETTIMANALE[dataRef.getDay()] || PIANO_SETTIMANALE[1];
-            TARGET_EDIT_MAP.forEach(({ id, key, step }) => {
-                const el = document.getElementById(id);
-                if (!el || el.getAttribute(TARGET_ACTIONS_MARKER)) return;
-                el.setAttribute(TARGET_ACTIONS_MARKER, '1');
-                const wrap = document.createElement('span');
-                wrap.className = 'target-actions-edit';
-                const minusBtn = document.createElement('button');
-                minusBtn.type = 'button';
-                minusBtn.className = 'target-minus';
-                minusBtn.setAttribute('aria-label', 'Diminuisci');
-                minusBtn.textContent = '−';
-                const plusBtn = document.createElement('button');
-                plusBtn.type = 'button';
-                plusBtn.className = 'target-plus';
-                plusBtn.setAttribute('aria-label', 'Aumenta');
-                plusBtn.textContent = '+';
-                minusBtn.addEventListener('click', () => {
-                    const currentVal = (key === 'kcal')
-                        ? ((window.customDailyTargets.kcal != null && !isNaN(Number(window.customDailyTargets.kcal))) ? Number(window.customDailyTargets.kcal) : pianoDelGiorno.cal_base)
-                        : (window.customDailyTargets[key] != null ? Number(window.customDailyTargets[key]) : OBIETTIVI[key]);
-                    window.customDailyTargets[key] = Math.max(0, currentVal - step);
-                    aggiornaUI();
-                    injectTargetButtons();
-                });
-                plusBtn.addEventListener('click', () => {
-                    const currentVal = (key === 'kcal')
-                        ? ((window.customDailyTargets.kcal != null && !isNaN(Number(window.customDailyTargets.kcal))) ? Number(window.customDailyTargets.kcal) : pianoDelGiorno.cal_base)
-                        : (getEffectiveDailyTargets()[key] != null ? Number(getEffectiveDailyTargets()[key]) : 0);
-                    window.customDailyTargets[key] = currentVal + step;
-                    aggiornaUI();
-                    injectTargetButtons();
-                });
-                wrap.appendChild(minusBtn);
-                wrap.appendChild(plusBtn);
-                el.parentNode.insertBefore(wrap, el.nextSibling);
-            });
-        }
-
-        function removeTargetButtons() {
-            document.querySelectorAll('.target-actions-edit').forEach(w => w.remove());
-            TARGET_EDIT_MAP.forEach(({ id }) => {
-                const el = document.getElementById(id);
-                if (el) el.removeAttribute(TARGET_ACTIONS_MARKER);
-            });
-        }
-
-        function setEditMode(active) {
-            editModeActive = active;
-            const main = document.getElementById('main-tracker-content');
-            const btn = document.getElementById('btn-edit-targets');
-            const lavoroInput = document.getElementById('lavoro-kcal-input');
-            if (main) main.classList.toggle('edit-mode-active', active);
-            if (btn) {
-                if (active) {
-                    btn.textContent = '💾 Salva Modifiche';
-                    btn.classList.add('edit-save-mode');
-                    if (lavoroInput) lavoroInput.value = (datiGiornalieri.lavoroKcal != null && !isNaN(datiGiornalieri.lavoroKcal)) ? datiGiornalieri.lavoroKcal : '';
-                    injectTargetButtons();
-                } else {
-                    btn.textContent = '🔧';
-                    btn.classList.remove('edit-save-mode');
-                    removeTargetButtons();
-                }
-            }
-        }
-
+        
         function getTodayString(format = 'ymd') { return new Date().toISOString().split('T')[0]; }
 
         function sanitizeFirebaseKey(str) {
@@ -1505,7 +1196,6 @@ Includi nel JSON la chiave 'workout_pianificato' con 'desc' e 'kcal' stimate in 
         }
         
         function caricaGiorno(data) {
-            loadProfileForTipo(getCurrentTipoGiorno());
             giornoVisualizzato = data;
             dataCaricamentoInput.value = data;
 
@@ -1532,8 +1222,6 @@ Includi nel JSON la chiave 'workout_pianificato' con 'desc' e 'kcal' stimate in 
             dailyNotesTextarea.value = datiGiornalieri.note || '';
             if (!datiGiornalieri.log) datiGiornalieri.log = [];
             if (typeof datiGiornalieri.workoutCalorie === 'undefined') datiGiornalieri.workoutCalorie = 0;
-            if (typeof datiGiornalieri.workoutTeorico === 'undefined') datiGiornalieri.workoutTeorico = null;
-            if (typeof datiGiornalieri.lavoroKcal !== 'number' || isNaN(datiGiornalieri.lavoroKcal)) datiGiornalieri.lavoroKcal = 0;
 
             const dataCorrente = new Date(data);
             const giornoSettimana = dataCorrente.getDay(); 
@@ -1607,143 +1295,17 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
             console.log("Interfaccia app avviata con successo con dati locali.");
         }
 
-        /** Calorie workout da usare per il target: effettivo (se presente nel log) altrimenti teorico. */
-        function getWorkoutKcalForTarget() {
-            const effettivo = datiGiornalieri.workoutCalorie || 0;
-            if (effettivo > 0) return effettivo;
-            const teorico = datiGiornalieri.workoutTeorico && typeof datiGiornalieri.workoutTeorico.kcal === 'number' ? datiGiornalieri.workoutTeorico.kcal : 0;
-            return teorico;
-        }
-
-        /** Per il ricalcolo a cascata (delta correction): teorico per pasti prima/durante workout, effettivo per pasti dopo; il delta viene assorbito dal rimanente. */
-        function getWorkoutKcalForMeal(mealType) {
-            const MEAL_ORDER = ['merenda1', 'pranzo', 'merenda2', 'cena'];
-            const workoutEntries = (datiGiornalieri.log || []).filter(e => e.type === 'workout');
-            const kcalEffettive = workoutEntries.reduce((s, e) => s + (e.kcal || 0), 0);
-            const kcalTeoriche = (datiGiornalieri.workoutTeorico && datiGiornalieri.workoutTeorico.kcal) || 0;
-
-            if (workoutEntries.length === 0) return kcalTeoriche;
-
-            const dopoMeal = workoutEntries[0].dopoMeal || 'cena';
-            const currentIdx = MEAL_ORDER.indexOf(mealType);
-            const dopoIdx = MEAL_ORDER.indexOf(dopoMeal);
-
-            // Se il pasto è prima del workout, usa il teorico (pianificato)
-            if (currentIdx < dopoIdx) return kcalTeoriche;
-            // Se il pasto è il workout stesso o successivo, usa l'effettivo (reale)
-            return kcalEffettive;
-        }
-
-        /** Restituisce i target giornalieri effettivi: base (custom.kcal o cal_base) + workout + adjustment + lavoro; macro da custom o piano. */
-        function getEffectiveDailyTargets(mealTypeForKcal) {
-            const dataVisualizzata = new Date(giornoVisualizzato);
-            const pianoDelGiorno = PIANO_SETTIMANALE[dataVisualizzata.getDay()] || PIANO_SETTIMANALE[1];
-
-            const workoutKcal = (mealTypeForKcal != null)
-                ? getWorkoutKcalForMeal(mealTypeForKcal)
-                : getWorkoutKcalForTarget();
-
-            const custom = window.customDailyTargets || {};
-            let calorieBaseEffettive = (custom.kcal != null && !isNaN(Number(custom.kcal)))
-                ? Number(custom.kcal)
-                : pianoDelGiorno.cal_base;
-
-            let obiettivoCalorieTotale = calorieBaseEffettive + workoutKcal + (datiGiornalieri.calorieAdjustment || 0);
-            const lavoroKcal = typeof datiGiornalieri.lavoroKcal === 'number' && !isNaN(datiGiornalieri.lavoroKcal) ? datiGiornalieri.lavoroKcal : 0;
-            obiettivoCalorieTotale += lavoroKcal;
-
-            const base = {
-                prot: pianoDelGiorno.prot, kcal: obiettivoCalorieTotale, carb: pianoDelGiorno.carb, zuccheri: pianoDelGiorno.zuccheri,
-                ...OBIETTIVI_MICRO, ...OBIETTIVI_FAT, ...OBIETTIVI_VIT, ...OBIETTIVI_AMINO, ...OBIETTIVI_FIBRE
-            };
-            const out = { ...base };
-            for (const key in custom) {
-                if (key === 'kcal') continue;
-                if (typeof custom[key] === 'number' && !isNaN(custom[key])) out[key] = custom[key];
-            }
-            return out;
-        }
-
-        /** Calcola aderenza alla strategia (Ghost Car) per il giorno visualizzato: target da ripartizione × target giornalieri, effettivi dal log. Pasti non ancora consumati = "Pianificati". */
-        function calcolaAderenzaStrategica() {
-            const MEAL_ORDER = ['merenda1', 'pranzo', 'merenda2', 'cena'];
-            const MEAL_LABELS = { merenda1: 'Merenda AM', pranzo: 'Pranzo', merenda2: 'Merenda PM', cena: 'Cena' };
-            const strategyKeys = ['kcal', 'prot', 'carb', 'fatTotal', 'fibreTotali'];
-            const targetGiorno = getEffectiveDailyTargets();
-            const log = datiGiornalieri.log || [];
-            const pasti = [];
-            let sommaAderenza = 0;
-            let countAderenza = 0;
-            let hasLowAdherence = false;
-            let hasHighFat = false;
-
-            MEAL_ORDER.forEach(mealId => {
-                const targetMeal = {};
-                strategyKeys.forEach(key => {
-                    const ratio = getRipartizioneRatio(key, mealId);
-                    const dailyVal = targetGiorno[key] != null ? targetGiorno[key] : 0;
-                    targetMeal[key] = ratio * dailyVal;
-                });
-                const entry = log.find(e => e.type === 'meal' && e.mealId === mealId);
-                if (!entry || !entry.items || entry.items.length === 0) {
-                    pasti.push({ mealId, mealLabel: MEAL_LABELS[mealId], pianificato: true, target: targetMeal, effettivi: null, aderenzaPerc: null });
-                    return;
-                }
-                const effettivi = { kcal: 0, prot: 0, carb: 0, fatTotal: 0, fibreTotali: 0 };
-                entry.items.forEach(item => {
-                    effettivi.kcal += (item.kcal || item.cal) || 0;
-                    effettivi.prot += item.prot || 0;
-                    effettivi.carb += item.carb || 0;
-                    effettivi.fatTotal += item.fatTotal || 0;
-                    effettivi.fibreTotali += item.fibreTotali || 0;
-                });
-                let scoreSum = 0, scoreCount = 0;
-                strategyKeys.forEach(key => {
-                    const target = targetMeal[key];
-                    if (target <= 0) return;
-                    const actual = effettivi[key] || 0;
-                    const ratio = actual / target;
-                    const band = 0.10;
-                    let score = 100;
-                    if (ratio < 1 - band) score = Math.max(0, 100 - (1 - band - ratio) * 250);
-                    else if (ratio > 1 + band) score = Math.max(0, 100 - (ratio - 1 - band) * 250);
-                    scoreSum += score;
-                    scoreCount += 1;
-                    if (key === 'fatTotal' && ratio > 1.3) hasHighFat = true;
-                });
-                const aderenzaPerc = scoreCount > 0 ? Math.round(scoreSum / scoreCount) : 100;
-                if (aderenzaPerc < 70) hasLowAdherence = true;
-                sommaAderenza += aderenzaPerc;
-                countAderenza += 1;
-                pasti.push({ mealId, mealLabel: MEAL_LABELS[mealId], pianificato: false, target: targetMeal, effettivi, aderenzaPerc });
-            });
-
-            const aderenzaMedia = countAderenza > 0 ? Math.round(sommaAderenza / countAderenza) : 0;
-            let messaggio = '';
-            if (aderenzaMedia > 90) messaggio = 'Sei un cecchino! Stai guidando esattamente sulla scia della tua Ghost Car! 🏎️💨';
-            else if (aderenzaMedia >= 70) messaggio = 'Ottima gestione! Sei incollato ai tuoi obiettivi, continua così! 🚀';
-            else messaggio = 'Giornata dinamica! Ogni pasto è un\'opportunità: la strategia si sta adattando al tuo ritmo. Forza! ⚡';
-            let messaggioFocus = '';
-            if (hasLowAdherence || hasHighFat) messaggioFocus = 'Hai dato energia extra al corpo, usala per il prossimo movimento! 🧘';
-
-            return { pasti, aderenzaMedia, messaggio, messaggioFocus };
-        }
-
         function aggiornaUI() {
             const dataVisualizzata = new Date(giornoVisualizzato);
             const pianoDelGiorno = PIANO_SETTIMANALE[dataVisualizzata.getDay()] || PIANO_SETTIMANALE[1];
-            const OBIETTIVI = getEffectiveDailyTargets();
-
-            const headerDataLabel = document.getElementById('header-data-label');
-            if (headerDataLabel) headerDataLabel.textContent = dataVisualizzata.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
+            
+            const obiettivoCalorieTotale = pianoDelGiorno.cal_base + (datiGiornalieri.workoutCalorie || 0) + (datiGiornalieri.calorieAdjustment || 0);
+            const OBIETTIVI = { 
+                prot: pianoDelGiorno.prot, kcal: obiettivoCalorieTotale, carb: pianoDelGiorno.carb, zuccheri: pianoDelGiorno.zuccheri, 
+                ...OBIETTIVI_MICRO, ...OBIETTIVI_FAT, ...OBIETTIVI_VIT, ...OBIETTIVI_AMINO, ...OBIETTIVI_FIBRE
+            };
+            
             titoloGiornataEl.textContent = `${pianoDelGiorno.tipo} - ${dataVisualizzata.toLocaleDateString('it-IT', {day: 'numeric', month: 'long', year: 'numeric'})}`;
-
-            const badgeEl = document.getElementById('header-strategy-badge');
-            if (badgeEl) {
-                const hasCustom = window.customDailyTargets && Object.keys(window.customDailyTargets).length > 0;
-                badgeEl.textContent = hasCustom ? 'Strategia: Personalizzata' : 'Strategia: Default';
-                badgeEl.classList.toggle('strategy-custom', !!hasCustom);
-            }
             
             let totali = { 
                 prot: 0, kcal: 0, carb: 0, zuccheri: 0, fatTotal: 0, fatSat: 0, fatTrans: 0, fatMono: 0, fatPoly: 0, omega3: 0, omega6: 0, 
@@ -1786,27 +1348,21 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
 
 
             spanObiettivoProteine.textContent = OBIETTIVI.prot; spanTotaleProteine.textContent = totali.prot.toFixed(1); progressProteine.max = OBIETTIVI.prot; progressProteine.value = totali.prot;
-            spanObiettivoCalorie.textContent = OBIETTIVI.kcal; spanTotaleCalorie.textContent = totali.kcal.toFixed(0);
-            progressCalorie.max = OBIETTIVI.kcal; // Aggiornato dinamicamente al target (workout effettivo)
-            progressCalorie.value = totali.kcal;
+            spanObiettivoCalorie.textContent = OBIETTIVI.kcal; spanTotaleCalorie.textContent = totali.kcal.toFixed(0); progressCalorie.max = OBIETTIVI.kcal; progressCalorie.value = totali.kcal;
             spanObiettivoCarboidrati.textContent = OBIETTIVI.carb; spanTotaleCarboidrati.textContent = totali.carb.toFixed(1); progressCarboidrati.max = OBIETTIVI.carb; progressCarboidrati.value = totali.carb;
             spanObiettivoZuccheri.textContent = OBIETTIVI.zuccheri; spanTotaleZuccheri.textContent = totali.zuccheri.toFixed(1); progressZuccheri.max = OBIETTIVI.zuccheri; progressZuccheri.value = totali.zuccheri;
-            const workoutEff = datiGiornalieri.workoutCalorie ? datiGiornalieri.workoutCalorie.toFixed(0) : 0;
-            const workoutTeo = (datiGiornalieri.workoutTeorico && datiGiornalieri.workoutTeorico.kcal != null) ? datiGiornalieri.workoutTeorico.kcal.toFixed(0) : '';
-            spanWorkoutCalories.textContent = workoutEff;
-            const suffixEl = document.getElementById('workout-teorico-suffix');
-            if (suffixEl) suffixEl.textContent = workoutTeo ? ' / ' + workoutTeo : '';
-            spanObiettivoFibreTotali.textContent = OBIETTIVI.fibreTotali; spanTotaleFibreTotali.textContent = totali.fibreTotali.toFixed(1); progressFibreTotali.max = OBIETTIVI.fibreTotali; progressFibreTotali.value = totali.fibreTotali;
-            spanObiettivoFibreSolubili.textContent = OBIETTIVI.fibreSolubili; spanTotaleFibreSolubili.textContent = totali.fibreSolubili.toFixed(1); progressFibreSolubili.max = OBIETTIVI.fibreSolubili; progressFibreSolubili.value = totali.fibreSolubili;
-            spanObiettivoFibreInsolubili.textContent = OBIETTIVI.fibreInsolubili; spanTotaleFibreInsolubili.textContent = totali.fibreInsolubili.toFixed(1); progressFibreInsolubili.max = OBIETTIVI.fibreInsolubili; progressFibreInsolubili.value = totali.fibreInsolubili;
-            spanObiettivoFatsTotal.textContent = OBIETTIVI.fatTotal; spanTotaleFatsTotal.textContent = totali.fatTotal.toFixed(1); progressFatsTotal.max = OBIETTIVI.fatTotal; progressFatsTotal.value = totali.fatTotal;
-            spanObiettivoFatSat.textContent = OBIETTIVI.fatSat; spanTotaleFatSat.textContent = totali.fatSat.toFixed(1); progressFatSat.max = OBIETTIVI.fatSat; progressFatSat.value = totali.fatSat;
-            spanObiettivoFatTrans.textContent = OBIETTIVI.fatTrans; spanTotaleFatTrans.textContent = totali.fatTrans.toFixed(1); progressFatTrans.max = OBIETTIVI.fatTrans; progressFatTrans.value = totali.fatTrans;
-            spanObiettivoFatUnsat.textContent = OBIETTIVI.fatUnsat; spanTotaleFatUnsat.textContent = totali.fatUnsat.toFixed(1); progressFatUnsat.max = OBIETTIVI.fatUnsat; progressFatUnsat.value = totali.fatUnsat;
-            spanObiettivoFatMono.textContent = OBIETTIVI.fatMono; spanTotaleFatMono.textContent = totali.fatMono.toFixed(1); progressFatMono.max = OBIETTIVI.fatMono; progressFatMono.value = totali.fatMono;
-            spanObiettivoFatPoly.textContent = OBIETTIVI.fatPoly; spanTotaleFatPoly.textContent = totali.fatPoly.toFixed(1); progressFatPoly.max = OBIETTIVI.fatPoly; progressFatPoly.value = totali.fatPoly;
-            spanObiettivoOmega3.textContent = OBIETTIVI.omega3; spanTotaleOmega3.textContent = totali.omega3.toFixed(1); progressOmega3.max = OBIETTIVI.omega3; progressOmega3.value = totali.omega3;
-            spanObiettivoOmega6.textContent = OBIETTIVI.omega6; spanTotaleOmega6.textContent = totali.omega6.toFixed(1); progressOmega6.max = OBIETTIVI.omega6; progressOmega6.value = totali.omega6;
+            spanWorkoutCalories.textContent = datiGiornalieri.workoutCalorie ? datiGiornalieri.workoutCalorie.toFixed(0) : 0; 
+            spanObiettivoFibreTotali.textContent = OBIETTIVI_FIBRE.fibreTotali; spanTotaleFibreTotali.textContent = totali.fibreTotali.toFixed(1); progressFibreTotali.max = OBIETTIVI_FIBRE.fibreTotali; progressFibreTotali.value = totali.fibreTotali;
+            spanObiettivoFibreSolubili.textContent = OBIETTIVI_FIBRE.fibreSolubili; spanTotaleFibreSolubili.textContent = totali.fibreSolubili.toFixed(1); progressFibreSolubili.max = OBIETTIVI_FIBRE.fibreSolubili; progressFibreSolubili.value = totali.fibreSolubili;
+            spanObiettivoFibreInsolubili.textContent = OBIETTIVI_FIBRE.fibreInsolubili; spanTotaleFibreInsolubili.textContent = totali.fibreInsolubili.toFixed(1); progressFibreInsolubili.max = OBIETTIVI_FIBRE.fibreInsolubili; progressFibreInsolubili.value = totali.fibreInsolubili;
+            spanObiettivoFatsTotal.textContent = OBIETTIVI_FAT.fatTotal; spanTotaleFatsTotal.textContent = totali.fatTotal.toFixed(1); progressFatsTotal.max = OBIETTIVI_FAT.fatTotal; progressFatsTotal.value = totali.fatTotal;
+            spanObiettivoFatSat.textContent = OBIETTIVI_FAT.fatSat; spanTotaleFatSat.textContent = totali.fatSat.toFixed(1); progressFatSat.max = OBIETTIVI_FAT.fatSat; progressFatSat.value = totali.fatSat;
+            spanObiettivoFatTrans.textContent = OBIETTIVI_FAT.fatTrans; spanTotaleFatTrans.textContent = totali.fatTrans.toFixed(1); progressFatTrans.max = OBIETTIVI_FAT.fatTrans; progressFatTrans.value = totali.fatTrans;
+            spanObiettivoFatUnsat.textContent = OBIETTIVI_FAT.fatUnsat; spanTotaleFatUnsat.textContent = totali.fatUnsat.toFixed(1); progressFatUnsat.max = OBIETTIVI_FAT.fatUnsat; progressFatUnsat.value = totali.fatUnsat;
+            spanObiettivoFatMono.textContent = OBIETTIVI_FAT.fatMono; spanTotaleFatMono.textContent = totali.fatMono.toFixed(1); progressFatMono.max = OBIETTIVI_FAT.fatMono; progressFatMono.value = totali.fatMono;
+            spanObiettivoFatPoly.textContent = OBIETTIVI_FAT.fatPoly; spanTotaleFatPoly.textContent = totali.fatPoly.toFixed(1); progressFatPoly.max = OBIETTIVI_FAT.fatPoly; progressFatPoly.value = totali.fatPoly;
+            spanObiettivoOmega3.textContent = OBIETTIVI_FAT.omega3; spanTotaleOmega3.textContent = totali.omega3.toFixed(1); progressOmega3.max = OBIETTIVI_FAT.omega3; progressOmega3.value = totali.omega3;
+            spanObiettivoOmega6.textContent = OBIETTIVI_FAT.omega6; spanTotaleOmega6.textContent = totali.omega6.toFixed(1); progressOmega6.max = OBIETTIVI_FAT.omega6; progressOmega6.value = totali.omega6;
             spanTotaleMg.textContent = totali.mg.toFixed(1); progressMg.max = OBIETTIVI.mg; progressMg.value = totali.mg;
             spanTotaleK.textContent = totali.k.toFixed(0); progressK.max = OBIETTIVI.k; progressK.value = totali.k;
             spanTotaleCa.textContent = totali.ca.toFixed(1); progressCa.max = OBIETTIVI.ca; progressCa.value = totali.ca;
@@ -1838,7 +1394,7 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
             }
             omegaRatioValueEl.textContent = ratioText;
 
-            const targetCaloriesForBalanceText = OBIETTIVI.kcal;
+            const targetCaloriesForBalanceText = pianoDelGiorno.cal_base + (datiGiornalieri.workoutCalorie || 0);
             const calorieDifference = totali.kcal - targetCaloriesForBalanceText;
             calorieBalanceText.className = '';
             const tolerance = 50;
@@ -1847,10 +1403,10 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
             } else { calorieBalanceText.textContent = `In Pari`; calorieBalanceText.classList.add('balance-even'); }
             calorieAdjustmentInput.value = datiGiornalieri.calorieAdjustment || 0;
             
-            document.getElementById('fats-header').classList.toggle('nutrients-warning', totali.fatSat > OBIETTIVI.fatSat || totali.fatTrans > OBIETTIVI.fatTrans || totali.fatTotal > OBIETTIVI.fatTotal);
-            document.getElementById('fibre-header').classList.toggle('nutrients-warning', totali.fibreTotali < OBIETTIVI.fibreTotali * 0.8);
-            document.getElementById('micro-header').classList.toggle('nutrients-warning', Object.keys(OBIETTIVI_MICRO).some(k => totali[k] < OBIETTIVI[k] * 0.5));
-            document.getElementById('vit-header').classList.toggle('nutrients-warning', Object.keys(OBIETTIVI_VIT).some(k => totali[k] < OBIETTIVI[k] * 0.5));
+            document.getElementById('fats-header').classList.toggle('nutrients-warning', totali.fatSat > OBIETTIVI_FAT.fatSat || totali.fatTrans > OBIETTIVI_FAT.fatTrans || totali.fatTotal > OBIETTIVI_FAT.fatTotal);
+            document.getElementById('fibre-header').classList.toggle('nutrients-warning', totali.fibreTotali < OBIETTIVI_FIBRE.fibreTotali * 0.8);
+            document.getElementById('micro-header').classList.toggle('nutrients-warning', Object.keys(OBIETTIVI_MICRO).some(k => totali[k] < OBIETTIVI_MICRO[k] * 0.5));
+            document.getElementById('vit-header').classList.toggle('nutrients-warning', Object.keys(OBIETTIVI_VIT).some(k => totali[k] < OBIETTIVI_VIT[k] * 0.5));
             
             logBody.innerHTML = ''; 
             const nutrientKeys = ['kcal', 'na', 'fibreTotali', 'fibreSolubili', 'fibreInsolubili', ...Object.keys(OBIETTIVI_AMINO), 'fatSat', 'fatTrans', 'fatMono', 'fatPoly', 'omega3', 'omega6', 'mg', 'k', 'vitc', 'ca', 'fe', 'zn', 'cu', 'vitA', 'vitB12', 'vitD', 'vitE', 'vitK', 'b9', 'b2', 'b6', 'p'];
@@ -1922,102 +1478,47 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
                 }
             });
         }
-
 function calcolaObiettiviPastoConArray(mealType, giornoCorrenteString, pastoArray) {
     const dataVisualizzata = new Date(giornoCorrenteString);
     const giornoSettimana = dataVisualizzata.getDay();
     const pianoDelGiorno = PIANO_SETTIMANALE[giornoSettimana] || PIANO_SETTIMANALE[1];
 
-    const kcalTeoriche = datiGiornalieri.workoutTeorico?.kcal || 0;
-    const kcalEffettive = (datiGiornalieri.log || []).filter(e => e.type === 'workout').reduce((s, e) => s + (e.kcal || 0), 0);
-    // Target giornaliero usa getEffectiveDailyTargets(mealType): per pasti dopo il workout usa kcalEffettive,
-    // così il rimanente (target - consumatoPassato) include il delta e viene spalmato sui pasti rimanenti.
-    const effective = getEffectiveDailyTargets(mealType);
+    const obiettivoCalTotaleGiornaliero = pianoDelGiorno.cal_base + (datiGiornalieri.workoutCalorie || 0) + (datiGiornalieri.calorieAdjustment || 0);
+    const obiettivoProtTotaleGiornaliero = pianoDelGiorno.prot;
 
-    const targetGiorno = {
-        prot: effective.prot,
-        kcal: effective.kcal,
-        carb: effective.carb,
-        fatTotal: effective.fatTotal != null ? effective.fatTotal : (pianoDelGiorno.fatTotal || 85),
-        fibreTotali: effective.fibreTotali != null ? effective.fibreTotali : (pianoDelGiorno.fibreTotali || 30)
-    };
+    let obiettivoPastoProt = 0, obiettivoPastoCal = 0;
+    const calRatio = OBIETTIVI_MACRO_PASTO_BASE_FORZA[mealType]?.cal_perc ?? 0;
+    const protRatio = OBIETTIVI_MACRO_PASTO_BASE_FORZA[mealType]?.prot_perc ?? 0;
 
-    const MEAL_ORDER = ['merenda1', 'pranzo', 'merenda2', 'cena'];
-    const currentIdx = MEAL_ORDER.indexOf(mealType);
-
-    // 1. Calcolo consumato nei pasti cronologicamente PRECEDENTI
-    const consumatoPassato = { prot: 0, kcal: 0, carb: 0, fatTotal: 0, fibreTotali: 0 };
-    const log = datiGiornalieri.log || [];
-    log.forEach(entry => {
-        if (entry.type === 'meal' && entry.mealId) {
-            const entryIdx = MEAL_ORDER.indexOf(entry.mealId);
-            // Considera solo i pasti salvati che vengono PRIMA di quello attualmente in costruzione
-            if (entryIdx !== -1 && entryIdx < currentIdx) {
-                const items = entry.items || [];
+    if (mealType === 'cena') {
+        let consumatoProtAltriPasti = 0, consumatoCalAltriPasti = 0;
+        (datiGiornalieri.log || []).forEach(entry => {
+            if (entry.mealId && entry.mealId !== 'cena') {
+                const items = entry.type === 'meal' ? entry.items : [entry];
                 items.forEach(item => {
-                    consumatoPassato.prot += item.prot || 0;
-                    consumatoPassato.kcal += (item.kcal || item.cal) || 0;
-                    consumatoPassato.carb += item.carb || 0;
-                    consumatoPassato.fatTotal += item.fatTotal || 0;
-                    consumatoPassato.fibreTotali += item.fibreTotali || 0;
+                   consumatoProtAltriPasti += item.prot || 0;
+                   consumatoCalAltriPasti += (item.kcal || item.cal) || 0;
                 });
             }
-        }
-    });
-
-    // 2. Calcolo somma percentuali per i pasti DA ORA a fine giornata
-    const sumRatios = { prot: 0, kcal: 0, carb: 0, fatTotal: 0, fibreTotali: 0 };
-    for (let i = currentIdx; i < MEAL_ORDER.length; i++) {
-        const m = MEAL_ORDER[i];
-        sumRatios.prot += getRipartizioneRatio('prot', m);
-        sumRatios.kcal += getRipartizioneRatio('kcal', m);
-        sumRatios.carb += getRipartizioneRatio('carb', m);
-        sumRatios.fatTotal += getRipartizioneRatio('fatTotal', m);
-        sumRatios.fibreTotali += getRipartizioneRatio('fibreTotali', m);
+        });
+        obiettivoPastoProt = Math.max(0, Math.round(obiettivoProtTotaleGiornaliero - consumatoProtAltriPasti));
+        obiettivoPastoCal = Math.max(0, Math.round(obiettivoCalTotaleGiornaliero - consumatoCalAltriPasti));
+    } else {
+        obiettivoPastoProt = Math.round(obiettivoProtTotaleGiornaliero * protRatio);
+        obiettivoPastoCal = Math.round(obiettivoCalTotaleGiornaliero * calRatio);
     }
-
-    // 3. Funzione per riproporzionare il target
-    const calcolaTargetProporzionale = (key) => {
-        const ratioCorrente = getRipartizioneRatio(key, mealType);
-        const rimanenteGiorno = Math.max(0, targetGiorno[key] - consumatoPassato[key]);
-        if (sumRatios[key] <= 0) return 0;
-        return Math.round(rimanenteGiorno * (ratioCorrente / sumRatios[key]));
-    };
-
-    const obiettivoPasto = {
-        prot: calcolaTargetProporzionale('prot'),
-        kcal: calcolaTargetProporzionale('kcal'),
-        carb: calcolaTargetProporzionale('carb'),
-        fatTotal: calcolaTargetProporzionale('fatTotal'),
-        fibreTotali: calcolaTargetProporzionale('fibreTotali')
-    };
-
-    // 4. Somma valori del pasto IN COSTRUZIONE
+    
     const totaliPastoInCostruzione = pastoArray.reduce((acc, item) => {
-        acc.prot += item.prot || 0;
-        acc.kcal += (item.kcal || item.cal) || 0;
-        acc.carb += item.carb || 0;
-        acc.fatTotal += item.fatTotal || 0;
-        acc.fibreTotali += item.fibreTotali || 0;
-        return acc;
-    }, { prot: 0, kcal: 0, carb: 0, fatTotal: 0, fibreTotali: 0 });
+        acc.prot += item.prot || 0; acc.kcal += (item.kcal || item.cal) || 0; return acc;
+    }, { prot: 0, kcal: 0 });
 
     return {
-        currentProt: totaliPastoInCostruzione.prot,
-        targetProt: obiettivoPasto.prot,
-        remainingProt: obiettivoPasto.prot - totaliPastoInCostruzione.prot,
-        currentCal: totaliPastoInCostruzione.kcal,
-        targetCal: obiettivoPasto.kcal,
-        remainingCal: obiettivoPasto.kcal - totaliPastoInCostruzione.kcal,
-        currentCarb: totaliPastoInCostruzione.carb,
-        targetCarb: obiettivoPasto.carb,
-        remainingCarb: obiettivoPasto.carb - totaliPastoInCostruzione.carb,
-        currentFatTotal: totaliPastoInCostruzione.fatTotal,
-        targetFatTotal: obiettivoPasto.fatTotal,
-        remainingFatTotal: obiettivoPasto.fatTotal - totaliPastoInCostruzione.fatTotal,
-        currentFibreTotali: totaliPastoInCostruzione.fibreTotali,
-        targetFibreTotali: obiettivoPasto.fibreTotali,
-        remainingFibreTotali: obiettivoPasto.fibreTotali - totaliPastoInCostruzione.fibreTotali
+        currentProt: totaliPastoInCostruzione.prot, 
+        targetProt: obiettivoPastoProt, 
+        remainingProt: obiettivoPastoProt - totaliPastoInCostruzione.prot,
+        currentCal: totaliPastoInCostruzione.kcal, 
+        targetCal: obiettivoPastoCal, 
+        remainingCal: obiettivoPastoCal - totaliPastoInCostruzione.kcal
     };
 }
 function renderMealBuilder() {
@@ -2026,17 +1527,6 @@ function renderMealBuilder() {
     // e li passa alla variabile locale del modulo.
     if (window.pastoInCostruzione) {
         pastoInCostruzione = window.pastoInCostruzione;
-    }
-
-    // Reset pulsante Test Pasto a stato default quando il pasto cambia
-    if (typeof lastTestPastoButtonState !== 'undefined') {
-        lastTestPastoButtonState = 'default';
-        const btnTestPasto = document.getElementById('btn-test-pasto');
-        if (btnTestPasto) {
-            btnTestPasto.classList.remove('test-pasto-success', 'test-pasto-warning');
-            btnTestPasto.classList.add('test-pasto-default');
-            btnTestPasto.textContent = 'Testa Pasto Completo';
-        }
     }
 
     // Usa sempre il riferimento aggiornato
@@ -2053,14 +1543,11 @@ function renderMealBuilder() {
     const obiettiviPasto = calcolaObiettiviPastoConArray(selectedMealType, giornoVisualizzato, pastoCorrente);
     
     const totaliPastoCorrenteSelezionati = pastoCorrente.filter(item => item.selezionato !== false).reduce((acc, item) => {
-        acc.prot += item.prot || 0;
-        acc.kcal += (item.kcal || item.cal) || 0;
-        acc.carb += item.carb || 0;
-        acc.fatTotal += item.fatTotal || 0;
-        acc.fibreTotali += item.fibreTotali || 0;
+        acc.prot += item.prot || 0; 
+        acc.kcal += (item.kcal || item.cal) || 0; 
         return acc;
-    }, { prot: 0, kcal: 0, carb: 0, fatTotal: 0, fibreTotali: 0 });
-
+    }, { prot: 0, kcal: 0 });
+    
     currentMealTypeDisplay.textContent = selectedMealTypeText;
     mealProtCurrent.textContent = totaliPastoCorrenteSelezionati.prot.toFixed(1);
     mealProtTarget.textContent = obiettiviPasto.targetProt.toFixed(0);
@@ -2072,24 +1559,6 @@ function renderMealBuilder() {
     mealCalRemaining.textContent = `${(obiettiviPasto.targetCal - totaliPastoCorrenteSelezionati.kcal).toFixed(0)} kcal`;
     mealProgressCal.max = obiettiviPasto.targetCal;
     mealProgressCal.value = totaliPastoCorrenteSelezionati.kcal;
-    if (mealCarbCurrent) {
-        mealCarbCurrent.textContent = totaliPastoCorrenteSelezionati.carb.toFixed(1);
-        mealCarbTarget.textContent = obiettiviPasto.targetCarb.toFixed(0);
-        mealCarbRemaining.textContent = `${(obiettiviPasto.targetCarb - totaliPastoCorrenteSelezionati.carb).toFixed(1)} g`;
-        if (mealProgressCarb) { mealProgressCarb.max = obiettiviPasto.targetCarb; mealProgressCarb.value = totaliPastoCorrenteSelezionati.carb; }
-    }
-    if (mealFatCurrent) {
-        mealFatCurrent.textContent = totaliPastoCorrenteSelezionati.fatTotal.toFixed(1);
-        mealFatTarget.textContent = obiettiviPasto.targetFatTotal.toFixed(0);
-        mealFatRemaining.textContent = `${(obiettiviPasto.targetFatTotal - totaliPastoCorrenteSelezionati.fatTotal).toFixed(1)} g`;
-        if (mealProgressFat) { mealProgressFat.max = obiettiviPasto.targetFatTotal; mealProgressFat.value = totaliPastoCorrenteSelezionati.fatTotal; }
-    }
-    if (mealFibreCurrent) {
-        mealFibreCurrent.textContent = totaliPastoCorrenteSelezionati.fibreTotali.toFixed(1);
-        mealFibreTarget.textContent = obiettiviPasto.targetFibreTotali.toFixed(0);
-        mealFibreRemaining.textContent = `${(obiettiviPasto.targetFibreTotali - totaliPastoCorrenteSelezionati.fibreTotali).toFixed(1)} g`;
-        if (mealProgressFibre) { mealProgressFibre.max = obiettiviPasto.targetFibreTotali; mealProgressFibre.value = totaliPastoCorrenteSelezionati.fibreTotali; }
-    }
     
     const createBuilderDescriptionCellHTML = (item) => {
         let html = '';
@@ -2114,111 +1583,6 @@ function renderMealBuilder() {
 // 2. ESPOSIZIONE GLOBALE:
 // Rende la funzione visibile allo script della Chat AI
 window.renderMealBuilder = renderMealBuilder;
-
-        /** EPIC 3: Risultato ultimo test pasto (per modal drill-down) e stato pulsante smart */
-        let lastTestPastoResult = { outOfTarget: [], pastoInCostruzioneSnapshot: [] };
-        let lastTestPastoButtonState = 'default'; // 'default' | 'success' | 'warning'
-        const TOLERANZA_PERCENTUALE = 5;
-
-        function testPastoCompleto() {
-            const selectedMealType = mealTypeSelector ? mealTypeSelector.value : MEAL_TYPE_SEQUENCE[0];
-            const pastoArr = window.pastoInCostruzione || pastoInCostruzione || [];
-            const obiettiviPasto = calcolaObiettiviPastoConArray(selectedMealType, giornoVisualizzato, pastoArr);
-            const totaliPasto = pastoArr.filter(item => item.selezionato !== false).reduce((acc, item) => {
-                acc.prot += item.prot || 0; acc.kcal += (item.kcal || item.cal) || 0;
-                acc.carb += item.carb || 0; acc.fatTotal += item.fatTotal || 0; acc.fibreTotali += item.fibreTotali || 0;
-                return acc;
-            }, { prot: 0, kcal: 0, carb: 0, fatTotal: 0, fibreTotali: 0 });
-            const consumatoAltriPasti = (datiGiornalieri.log || []).filter(entry => entry.mealId && entry.mealId === selectedMealType).reduce((acc, entry) => {
-                const items = entry.type === 'meal' ? entry.items : [entry];
-                items.forEach(item => {
-                    acc.prot += item.prot || 0; acc.kcal += (item.kcal || item.cal) || 0;
-                    acc.carb += item.carb || 0; acc.fatTotal += item.fatTotal || 0; acc.fibreTotali += item.fibreTotali || 0;
-                });
-                return acc;
-            }, { prot: 0, kcal: 0, carb: 0, fatTotal: 0, fibreTotali: 0 });
-            const totaliCompleti = {
-                prot: totaliPasto.prot + consumatoAltriPasti.prot,
-                kcal: totaliPasto.kcal + consumatoAltriPasti.kcal,
-                carb: totaliPasto.carb + consumatoAltriPasti.carb,
-                fatTotal: totaliPasto.fatTotal + consumatoAltriPasti.fatTotal,
-                fibreTotali: totaliPasto.fibreTotali + consumatoAltriPasti.fibreTotali
-            };
-            const nutrients = [
-                { key: 'prot', title: 'Proteine', target: obiettiviPasto.targetProt, current: totaliCompleti.prot, unit: 'g' },
-                { key: 'kcal', title: 'Calorie', target: obiettiviPasto.targetCal, current: totaliCompleti.kcal, unit: 'kcal' },
-                { key: 'carb', title: 'Carboidrati', target: obiettiviPasto.targetCarb, current: totaliCompleti.carb, unit: 'g' },
-                { key: 'fatTotal', title: 'Grassi totali', target: obiettiviPasto.targetFatTotal, current: totaliCompleti.fatTotal, unit: 'g' },
-                { key: 'fibreTotali', title: 'Fibre', target: obiettiviPasto.targetFibreTotali, current: totaliCompleti.fibreTotali, unit: 'g' }
-            ];
-            const outOfTarget = [];
-            nutrients.forEach(n => {
-                if (n.target <= 0) return;
-                const diff = n.current - n.target;
-                const tol = n.target * (TOLERANZA_PERCENTUALE / 100);
-                if (Math.abs(diff) > tol) outOfTarget.push({ key: n.key, title: n.title, unit: n.unit, current: n.current, target: n.target, isExcess: diff > 0 });
-            });
-            lastTestPastoResult = { outOfTarget, pastoInCostruzioneSnapshot: pastoArr.slice() };
-            const statusEl = document.getElementById('test-pasto-status');
-            const btnTestPasto = document.getElementById('btn-test-pasto');
-            if (statusEl) {
-                statusEl.classList.remove('alert-blink');
-                if (outOfTarget.length === 0) {
-                    statusEl.textContent = '👍';
-                    statusEl.title = 'Pasto nei limiti (±' + TOLERANZA_PERCENTUALE + '%)';
-                } else {
-                    statusEl.textContent = '⚠️';
-                    statusEl.classList.add('alert-blink');
-                    statusEl.title = 'Uno o più nutrienti fuori target. Clicca per dettagli.';
-                }
-            }
-            /* Aggiorna il pulsante smart: default → success (verde) o warning (giallo lampeggiante) */
-            if (btnTestPasto) {
-                btnTestPasto.classList.remove('test-pasto-default', 'test-pasto-success', 'test-pasto-warning');
-                if (outOfTarget.length === 0) {
-                    btnTestPasto.classList.add('test-pasto-success');
-                    btnTestPasto.textContent = '✔️ Pasto in Target';
-                } else {
-                    btnTestPasto.classList.add('test-pasto-warning');
-                    btnTestPasto.textContent = '❌ Valori Fuori Target - Controlla';
-                }
-                lastTestPastoButtonState = outOfTarget.length === 0 ? 'success' : 'warning';
-            }
-        }
-
-        function apriTestWarningModal() {
-            const modal = document.getElementById('test-warning-modal');
-            const container = document.getElementById('test-warning-modal-bars');
-            if (!modal || !container) return;
-            const { outOfTarget, pastoInCostruzioneSnapshot } = lastTestPastoResult;
-            container.innerHTML = '';
-            outOfTarget.forEach(n => {
-                const wrap = document.createElement('div');
-                wrap.className = 'test-warning-bar-wrap ' + (n.isExcess ? 'progress-excess' : 'progress-deficit');
-                const pct = n.target > 0 ? Math.min(150, Math.round((n.current / n.target) * 100)) : 0;
-                wrap.innerHTML = '<p style="margin: 0 0 4px 0; font-size: 0.9em;">' + n.title + ': ' + n.current.toFixed(1) + ' / ' + n.target.toFixed(0) + ' ' + n.unit + (n.isExcess ? ' (eccesso)' : ' (difetto)') + '</p><progress value="' + Math.min(100, pct) + '" max="100"></progress><div class="test-warning-accordion" id="accordion-' + n.key + '"></div>';
-                const progressBar = wrap.querySelector('progress');
-                const accordion = wrap.querySelector('.test-warning-accordion');
-                const valFor = (item, key) => key === 'kcal' ? ((item.kcal != null ? item.kcal : item.cal) || 0) : (item[key] || 0);
-                const foodsWithNutrient = pastoInCostruzioneSnapshot.map((item, idx) => ({ item, idx, val: valFor(item, n.key) })).filter(x => x.val > 0).sort((a, b) => b.val - a.val);
-                progressBar.setAttribute('data-nutrient', n.key);
-                progressBar.style.cursor = 'pointer';
-                progressBar.addEventListener('click', () => {
-                    accordion.classList.toggle('open');
-                    if (accordion.classList.contains('open') && accordion.innerHTML === '') {
-                        foodsWithNutrient.forEach(({ item, val }) => {
-                            const div = document.createElement('div');
-                            div.className = 'test-warning-food-item';
-                            div.textContent = (item.desc || 'Voce') + ': ' + val.toFixed(1) + ' ' + n.unit;
-                            accordion.appendChild(div);
-                        });
-                        if (foodsWithNutrient.length === 0) { const empty = document.createElement('div'); empty.className = 'test-warning-food-item'; empty.textContent = 'Nessun alimento in costruzione contribuisce.'; accordion.appendChild(empty); }
-                    }
-                });
-                container.appendChild(wrap);
-            });
-            modal.style.display = 'flex';
-        }
 
         function renderSuggestions() {
             const value = builderDesc.value.toLowerCase();
@@ -3054,252 +2418,6 @@ Regole:
             infoVitSettimanaliBtn.addEventListener('click', openWeeklyVitaminsModal);
             infoFatsSettimanaliBtn.addEventListener('click', openWeeklyFatsModal);
 
-            /* EPIC 3: Test Pasto Completo – pulsante smart: default/success = esegue test, warning = apre modal */
-            const btnTestPasto = document.getElementById('btn-test-pasto');
-            const testPastoStatusEl = document.getElementById('test-pasto-status');
-            if (btnTestPasto) {
-                btnTestPasto.addEventListener('click', () => {
-                    if (lastTestPastoButtonState === 'warning') {
-                        apriTestWarningModal();
-                    } else {
-                        testPastoCompleto();
-                    }
-                });
-            }
-            if (testPastoStatusEl) testPastoStatusEl.addEventListener('click', () => { if (lastTestPastoResult.outOfTarget && lastTestPastoResult.outOfTarget.length > 0) apriTestWarningModal(); });
-
-            const btnEditTargets = document.getElementById('btn-edit-targets');
-            const mainTrackerContent = document.getElementById('main-tracker-content');
-            if (btnEditTargets) {
-                btnEditTargets.addEventListener('click', () => {
-                    if (editModeActive) {
-                        if (!window.customDailyTargets) window.customDailyTargets = {};
-                        if (!window.customRipartizionePasti) window.customRipartizionePasti = {};
-                        const lavoroInput = document.getElementById('lavoro-kcal-input');
-                        const lavoroVal = lavoroInput ? parseFloat(lavoroInput.value) : NaN;
-                        datiGiornalieri.lavoroKcal = (typeof lavoroVal === 'number' && !isNaN(lavoroVal) && lavoroVal >= 0) ? lavoroVal : 0;
-                        salvaGiorno(giornoVisualizzato, datiGiornalieri);
-                        saveCurrentProfileToTipo();
-                        loadProfileForTipo(getCurrentTipoGiorno());
-                        aggiornaUI();
-                        if (typeof renderMealBuilder === 'function') renderMealBuilder();
-                        setEditMode(false);
-                    } else {
-                        setEditMode(true);
-                    }
-                });
-            }
-            const btnCopiaPromptAi = document.getElementById('btn-copia-prompt-ai');
-            if (btnCopiaPromptAi) {
-                btnCopiaPromptAi.addEventListener('click', () => {
-                    navigator.clipboard.writeText(PROMPT_AI_STRATEGIA).then(() => alert('Prompt copiato negli appunti.')).catch(() => alert('Impossibile copiare negli appunti.'));
-                });
-            }
-            const tipoGiornoSelect = document.getElementById('tipo-giorno-select');
-            if (tipoGiornoSelect) {
-                tipoGiornoSelect.value = getCurrentTipoGiorno();
-                tipoGiornoSelect.addEventListener('change', () => {
-                    const tipo = tipoGiornoSelect.value;
-                    if (['gambe', 'upper', 'riposo'].indexOf(tipo) < 0) return;
-                    setCurrentTipoGiorno(tipo);
-                    loadProfileForTipo(tipo);
-                    aggiornaUI();
-                    if (typeof renderMealBuilder === 'function') renderMealBuilder();
-                });
-            }
-            const btnDarkModeToggle = document.getElementById('btn-dark-mode-toggle');
-            if (btnDarkModeToggle) {
-                const isDark = localStorage.getItem('tracker_dark_theme') === '1';
-                if (isDark) document.body.classList.add('dark-theme');
-                btnDarkModeToggle.textContent = document.body.classList.contains('dark-theme') ? '☀️' : '🌙';
-                btnDarkModeToggle.addEventListener('click', () => {
-                    document.body.classList.toggle('dark-theme');
-                    const dark = document.body.classList.contains('dark-theme');
-                    localStorage.setItem('tracker_dark_theme', dark ? '1' : '0');
-                    btnDarkModeToggle.textContent = dark ? '☀️' : '🌙';
-                });
-            }
-            const btnIncollaJsonAi = document.getElementById('btn-incolla-json-ai');
-            if (btnIncollaJsonAi) {
-                btnIncollaJsonAi.addEventListener('click', () => {
-                    const raw = window.prompt('Incolla il JSON con target_giornalieri e/o ripartizione_pasti (struttura come da Copia Prompt AI).');
-                    if (raw == null || raw.trim() === '') return;
-                    try {
-                        const parsed = JSON.parse(raw);
-                        if (typeof parsed !== 'object' || parsed === null) throw new Error('JSON non valido');
-                        if (parsed.target_giornalieri && typeof parsed.target_giornalieri === 'object') {
-                            window.customDailyTargets = window.customDailyTargets || {};
-                            for (const k in parsed.target_giornalieri) {
-                                const v = Number(parsed.target_giornalieri[k]);
-                                if (!isNaN(v) && v >= 0) window.customDailyTargets[k] = v;
-                            }
-                        }
-                        if (parsed.ripartizione_pasti && typeof parsed.ripartizione_pasti === 'object') {
-                            window.customRipartizionePasti = {};
-                            for (const nutrientKey in parsed.ripartizione_pasti) {
-                                const mealObj = parsed.ripartizione_pasti[nutrientKey];
-                                if (mealObj && typeof mealObj === 'object') {
-                                    window.customRipartizionePasti[nutrientKey] = { ...mealObj };
-                                }
-                            }
-                        }
-                        if (parsed.workout_pianificato && typeof parsed.workout_pianificato === 'object') {
-                            const wp = parsed.workout_pianificato;
-                            const kcal = typeof wp.kcal === 'number' ? wp.kcal : (parseFloat(wp.kcal) || 0);
-                            if (kcal >= 0) {
-                                datiGiornalieri.workoutTeorico = { desc: (wp.desc && String(wp.desc)) || 'Allenamento', kcal: kcal };
-                                salvaGiorno(giornoVisualizzato, datiGiornalieri);
-                            }
-                        }
-                        saveCurrentProfileToTipo();
-                        loadProfileForTipo(getCurrentTipoGiorno());
-                        aggiornaUI();
-                        if (editModeActive) injectTargetButtons();
-                        if (typeof renderMealBuilder === 'function') renderMealBuilder();
-                    } catch (e) {
-                        alert('JSON non valido: ' + (e.message || 'errore di parsing'));
-                    }
-                });
-            }
-            const RIPARTIZIONE_ROW_LABELS = [
-                { label: 'Calorie', key: 'kcal' },
-                { label: 'Proteine', key: 'prot' },
-                { label: 'Carboidrati', key: 'carb' },
-                { label: 'Grassi', key: 'fatTotal' },
-                { label: 'Fibre', key: 'fibreTotali' }
-            ];
-            const RIPARTIZIONE_COLUMNS = [
-                { label: 'Merenda AM', key: 'merenda1' },
-                { label: 'Pranzo', key: 'pranzo' },
-                { label: 'Merenda PM', key: 'merenda2' },
-                { label: 'Cena', key: 'cena' }
-            ];
-            const RIPARTIZIONE_DEFAULT = { merenda1: 20, pranzo: 35, merenda2: 15, cena: 30 };
-
-            function getRipartizioneValue(nutrientKey, mealKey) {
-                const r = window.customRipartizionePasti && window.customRipartizionePasti[nutrientKey];
-                if (r && typeof r[mealKey] === 'number' && !isNaN(r[mealKey])) return r[mealKey];
-                return RIPARTIZIONE_DEFAULT[mealKey] != null ? RIPARTIZIONE_DEFAULT[mealKey] : 0;
-            }
-
-            function renderModalRipartizioneTable() {
-                const wrap = document.getElementById('modal-ripartizione-table-wrap');
-                const btnSalva = document.getElementById('btn-salva-ripartizione');
-                const validationEl = document.getElementById('modal-ripartizione-validation');
-                if (!wrap || !btnSalva) return;
-                let html = '<table><thead><tr><th>Nutriente</th>';
-                RIPARTIZIONE_COLUMNS.forEach(c => { html += '<th>' + c.label + '</th>'; });
-                html += '<th class="totale-cell">Totale</th></tr></thead><tbody>';
-                RIPARTIZIONE_ROW_LABELS.forEach((row, rowIdx) => {
-                    html += '<tr data-nutrient="' + row.key + '"><td>' + row.label + '</td>';
-                    RIPARTIZIONE_COLUMNS.forEach(col => {
-                        const val = getRipartizioneValue(row.key, col.key);
-                        html += '<td><input type="number" min="0" max="100" step="1" data-nutrient="' + row.key + '" data-meal="' + col.key + '" value="' + val + '"></td>';
-                    });
-                    const rowSum = RIPARTIZIONE_COLUMNS.reduce((s, c) => s + getRipartizioneValue(row.key, c.key), 0);
-                    html += '<td class="totale-cell totale-cell-sum" data-nutrient="' + row.key + '">' + rowSum + '</td></tr>';
-                });
-                html += '</tbody></table>';
-                wrap.innerHTML = html;
-                function validateAll() {
-                    let allOk = true;
-                    RIPARTIZIONE_ROW_LABELS.forEach((row) => {
-                        const sum = RIPARTIZIONE_COLUMNS.reduce((s, col) => {
-                            const input = wrap.querySelector('input[data-nutrient="' + row.key + '"][data-meal="' + col.key + '"]');
-                            return s + (input ? (parseFloat(input.value) || 0) : 0);
-                        }, 0);
-                        const cell = wrap.querySelector('.totale-cell-sum[data-nutrient="' + row.key + '"]');
-                        if (cell) {
-                            cell.textContent = Math.round(sum);
-                            cell.classList.remove('totale-ok', 'totale-err');
-                            if (Math.abs(sum - 100) < 0.01) {
-                                cell.classList.add('totale-ok');
-                            } else {
-                                cell.classList.add('totale-err');
-                                allOk = false;
-                            }
-                        }
-                    });
-                    btnSalva.disabled = !allOk;
-                    if (validationEl) validationEl.textContent = allOk ? 'Tutte le righe totalizzano 100. Puoi salvare.' : 'La somma di ogni riga deve essere 100.';
-                    if (validationEl) validationEl.style.color = allOk ? '#1b5e20' : '#b71c1c';
-                }
-                wrap.querySelectorAll('input[type="number"]').forEach(input => {
-                    input.addEventListener('input', validateAll);
-                });
-                validateAll();
-            }
-
-            function openModalRipartizione() {
-                renderModalRipartizioneTable();
-                const modal = document.getElementById('modal-ripartizione-pasti');
-                if (modal) modal.style.display = 'block';
-            }
-
-            const btnModificaRipartizione = document.getElementById('btn-modifica-ripartizione');
-            if (btnModificaRipartizione) btnModificaRipartizione.addEventListener('click', openModalRipartizione);
-
-            const btnGhostCar = document.getElementById('btn-ghost-car');
-            if (btnGhostCar) {
-                btnGhostCar.addEventListener('click', () => {
-                    const result = calcolaAderenzaStrategica();
-                    const msgEl = document.getElementById('ghost-car-message');
-                    const focusEl = document.getElementById('ghost-car-focus');
-                    const tbody = document.getElementById('ghost-car-tbody');
-                    if (msgEl) msgEl.textContent = result.messaggio;
-                    if (focusEl) {
-                        focusEl.textContent = result.messaggioFocus;
-                        focusEl.style.display = result.messaggioFocus ? 'block' : 'none';
-                    }
-                    if (tbody) {
-                        tbody.innerHTML = result.pasti.map(p => {
-                            if (p.pianificato) {
-                                return '<tr class="ghost-car-row-pianificato"><td>' + p.mealLabel + '</td><td colspan="2" style="text-align:center;">Pianificati</td></tr>';
-                            }
-                            const pct = Math.min(100, Math.max(0, p.aderenzaPerc));
-                            return '<tr><td>' + p.mealLabel + '</td><td style="text-align:center; font-weight:600;">' + pct + '%</td><td><progress value="' + pct + '" max="100"></progress></td></tr>';
-                        }).join('');
-                    }
-                    const modal = document.getElementById('modal-ghost-car');
-                    if (modal) modal.style.display = 'block';
-                });
-            }
-
-            document.getElementById('btn-salva-ripartizione')?.addEventListener('click', () => {
-                const wrap = document.getElementById('modal-ripartizione-table-wrap');
-                if (!wrap) return;
-                window.customRipartizionePasti = {};
-                RIPARTIZIONE_ROW_LABELS.forEach((row) => {
-                    window.customRipartizionePasti[row.key] = {};
-                    RIPARTIZIONE_COLUMNS.forEach((col) => {
-                        const input = wrap.querySelector('input[data-nutrient="' + row.key + '"][data-meal="' + col.key + '"]');
-                        const v = input ? (parseFloat(input.value) || 0) : 0;
-                        window.customRipartizionePasti[row.key][col.key] = Math.round(v);
-                    });
-                });
-                document.getElementById('modal-ripartizione-pasti').style.display = 'none';
-                aggiornaUI();
-                if (typeof renderMealBuilder === 'function') renderMealBuilder();
-            });
-
-            const btnResetTargets = document.getElementById('btn-reset-targets');
-            if (btnResetTargets) {
-                btnResetTargets.addEventListener('click', () => {
-                    if (!confirm('Sei sicuro di voler ripristinare i target nutrizionali di base? Perderai tutte le modifiche manuali e l\'eventuale strategia AI applicata a questa giornata.')) return;
-                    window.customDailyTargets = {};
-                    window.customRipartizionePasti = {};
-                    datiGiornalieri.workoutTeorico = null;
-                    localStorage.removeItem('trackerCustomTargets_' + giornoVisualizzato);
-                    localStorage.removeItem('trackerRipartizionePasti_' + giornoVisualizzato);
-                    saveSingleItemToCloud('trackerCustomTargets_' + giornoVisualizzato, null);
-                    saveSingleItemToCloud('trackerRipartizionePasti_' + giornoVisualizzato, null);
-                    salvaGiorno(giornoVisualizzato, datiGiornalieri);
-                    aggiornaUI();
-                    if (typeof renderMealBuilder === 'function') renderMealBuilder();
-                    setEditMode(false);
-                });
-            }
-
             document.querySelectorAll('.modal-close').forEach(button => {
                 button.addEventListener('click', () => {
                     button.closest('.modal').style.display = 'none';
@@ -3410,18 +2528,16 @@ Regole:
                 }
             });
 
-            const workoutDopoMealSelect = document.getElementById('workout-dopo-meal');
             btnAddWorkout.addEventListener('click', () => {
                 const desc = workoutDescInput.value.trim(), calories = parseFloat(workoutCaloriesInput.value);
                 if (!desc || isNaN(calories) || calories <= 0) { alert('Dati allenamento non validi.'); return; }
                 if (!datiGiornalieri.log) datiGiornalieri.log = [];
-                const dopoMeal = (workoutDopoMealSelect && workoutDopoMealSelect.value) || 'cena';
-                datiGiornalieri.log.push({ type: 'workout', desc: desc, kcal: calories, dopoMeal: dopoMeal });
+                datiGiornalieri.log.push({ type: 'workout', desc: desc, kcal: calories });
                 datiGiornalieri.workoutCalorie = (datiGiornalieri.workoutCalorie || 0) + calories;
-                salvaGiorno(giornoVisualizzato, datiGiornalieri);
                 aggiornaUI();
-                if (typeof renderMealBuilder === 'function') renderMealBuilder();
+                salvaGiorno(giornoVisualizzato, datiGiornalieri); 
                 workoutDescInput.value = ''; workoutCaloriesInput.value = '';
+                renderMealBuilder(); 
             });
 
            btnAggiungiSingolo.addEventListener('click', () => handleAlimentoAddition(false));
@@ -4056,36 +3172,46 @@ if (button.dataset.type === 'builder') {
                 btnExportAi.addEventListener('click', async () => {
                     const dataRef = new Date(giornoVisualizzato);
                     const piano = PIANO_SETTIMANALE[dataRef.getDay()] || PIANO_SETTIMANALE[1];
-                    const targetGiornalieri = getEffectiveDailyTargets();
-
+                    const targetKcal = piano.cal_base + (datiGiornalieri.workoutCalorie || 0) + (datiGiornalieri.calorieAdjustment || 0);
+                    
                     const allNutrientKeys = [
-                        'prot', 'kcal', 'carb', 'zuccheri', 'fatTotal', 'fatSat', 'fatTrans',
+                        'prot', 'kcal', 'carb', 'zuccheri', 'fatTotal', 'fatSat', 'fatTrans', 
                         'fatMono', 'fatPoly', 'omega3', 'omega6', 'fibreTotali', 'fibreSolubili', 'fibreInsolubili',
-                        'sale', 'na', 'mg', 'k', 'vitc', 'ca', 'fe', 'zn', 'cu', 'p',
+                        'sale', 'na', 'mg', 'k', 'vitc', 'ca', 'fe', 'zn', 'cu', 'p', 
                         'vitA', 'vitB12', 'vitD', 'vitE', 'vitK', 'b9', 'b2', 'b6',
                         'leu', 'iso', 'val', 'lys', 'met', 'phe', 'thr', 'trp', 'his'
                     ];
 
+                    let dailyTotals = {};
+                    allNutrientKeys.forEach(k => dailyTotals[k] = 0);
+
                     const logDettagliato = [];
+
                     (datiGiornalieri.log || []).forEach(entry => {
                         if (entry.type === 'workout') return;
 
                         const items = entry.type === 'meal' ? entry.items : [entry];
                         const itemsExport = items.map(item => {
-                            const cleanItem = { alimento: item.desc, qta_g: item.qta };
+                            const cleanItem = {
+                                alimento: item.desc,
+                                qta_g: item.qta
+                            };
+                            
                             allNutrientKeys.forEach(key => {
                                 const val = item[key];
                                 if (val !== undefined && val !== null && (val > 0 || key === 'kcal' || key === 'prot')) {
                                     cleanItem[key] = Number(val.toFixed(2));
+                                    dailyTotals[key] += val;
                                 }
                             });
+                            
                             if (!item.kcal && !item.cal) cleanItem._WARNING = "Kcal a 0 o mancanti";
+                            
                             return cleanItem;
                         });
 
                         logDettagliato.push({
                             tipo: entry.type === 'meal' ? `Pasto: ${entry.desc}` : 'Alimento Singolo',
-                            mealId: entry.type === 'meal' ? entry.mealId : null,
                             dettagli: itemsExport
                         });
                     });
@@ -4096,7 +3222,23 @@ if (button.dataset.type === 'builder') {
                             giorno_tipo: piano.tipo,
                             note_utente: datiGiornalieri.note || "Nessuna nota"
                         },
-                        target_giornalieri: targetGiornalieri,
+                        cruscotto_totali: {
+                            MACROS: {
+                                Kcal: { consumate: dailyTotals.kcal.toFixed(0), target: targetKcal },
+                                Proteine: { consumate: dailyTotals.prot.toFixed(1), target: piano.prot },
+                                Carboidrati: { consumate: dailyTotals.carb.toFixed(1), target: piano.carb },
+                                Grassi: { consumate: dailyTotals.fatTotal.toFixed(1), target: OBIETTIVI_FAT.fatTotal },
+                                Sale: { consumate: dailyTotals.sale.toFixed(1), target: "5g max" }
+                            },
+                            MICROS_CRITICI: {
+                                Fibre: dailyTotals.fibreTotali.toFixed(1),
+                                Zuccheri: dailyTotals.zuccheri.toFixed(1),
+                                Grassi_Saturi: dailyTotals.fatSat.toFixed(1),
+                                Sodio: dailyTotals.na.toFixed(0),
+                                Potassio: dailyTotals.k.toFixed(0)
+                            },
+                            OMEGA_RATIO: (dailyTotals.omega3 > 0) ? `1:${(dailyTotals.omega6/dailyTotals.omega3).toFixed(1)}` : "N/D"
+                        },
                         allenamento: {
                             descrizione: (datiGiornalieri.log || []).filter(e => e.type === 'workout').map(e => e.desc).join(", ") || "Riposo",
                             kcal_bruciate: datiGiornalieri.workoutCalorie || 0
@@ -4107,7 +3249,7 @@ if (button.dataset.type === 'builder') {
                     try {
                         const jsonString = JSON.stringify(fullExportData, null, 2);
                         await navigator.clipboard.writeText(jsonString);
-                        alert("✅ Dati Completi AI copiati!\n\nJSON con: meta, target_giornalieri, allenamento, diario_alimentare_completo (dati grezzi).\nIncolla in chat e chiedi analisi o parere nutrizionale.");
+                        alert("✅ Dati COMPLETI copiati (Nutrienti, Micros, Log)!\n\nIncolla su ChatGPT/Gemini e chiedi:\n'Analizza questo JSON. Cerca anomalie nei dati (es. cibi con calorie a zero) e dammi un parere nutrizionale.'");
                     } catch (err) {
                         console.error("Errore copia:", err);
                         alert("Errore nella copia automatica. Controlla la console.");
@@ -4503,28 +3645,27 @@ if (button.dataset.type === 'builder') {
     function cercaInDatabase(query) {
         if (!query) return [];
         const db = window.foodDatabase || {};
-        const q = query.toLowerCase().trim().replace(/\s+/g, ' ');
+        const q = query.toLowerCase();
         const results = [];
+        
         const exactKey = window.sanitizeFirebaseKey ? window.sanitizeFirebaseKey(q) : q.replace(/[.#$[\]\/]/g, '_');
         if (db[exactKey]) {
             return [{ key: exactKey, data: db[exactKey], exact: true }];
         }
-        const queryWords = q.split(/\s+/).filter(Boolean);
+        
         for (const key in db) {
             const item = db[key];
             if (!item || !item.desc) continue;
             const descLower = item.desc.toLowerCase();
-            const keyLower = key.toLowerCase();
-            const exactMatch = descLower === q || keyLower === q || descLower.includes(q) || q.includes(descLower) || keyLower.includes(q);
-            const allWordsMatch = queryWords.length > 0 && queryWords.every(w => descLower.includes(w) || keyLower.includes(w));
-            if (exactMatch || allWordsMatch) {
-                results.push({ key, data: item, exact: exactMatch });
+            if (descLower.includes(q) || q.includes(descLower) || key.includes(q)) {
+                results.push({ key, data: item, exact: false });
             }
         }
+        
         return results.sort((a, b) => {
-            if (a.exact && !b.exact) return -1;
-            if (!a.exact && b.exact) return 1;
-            return (a.data.desc || '').localeCompare(b.data.desc || '');
+            if (a.exact) return -1;
+            if (b.exact) return 1;
+            return a.data.desc.localeCompare(b.data.desc);
         });
     }
 
@@ -4538,21 +3679,28 @@ function gestisciQuantitaEInserimento(data, qtaUtente, pasto) {
         
         // CASO 2: L'utente NON ha messo i grammi, ma c'è uno storico (lastQta)
         if (data.lastQta && data.lastQta > 0) {
+            // Creiamo un elemento visivo in chat per chiedere conferma
             const div = document.createElement('div');
-            div.style.cssText = 'background:#f1f8e9; border:1px solid #aed581; padding:12px; border-radius:10px; margin:8px 0;';
-            div.innerHTML = `<p style="margin:0 0 10px 0; color:#33691e; font-weight:600;">Trovato <strong>${data.desc}</strong> nel tuo database.</p><p style="margin:0 0 10px 0; color:#558b2f;">Usare l'ultima quantità (<strong>${data.lastQta}g</strong>)?</p>`;
+            div.style.cssText = 'background:#e8f5e9; border:1px solid #4caf50; padding:10px; border-radius:8px; margin:5px 0; animation: fadeIn 0.3s;';
+            
+            div.innerHTML = `<p style="margin:0 0 10px 0; color:#2e7d32; font-weight:600;">
+                Trovato storico per <u>${data.desc}</u>.<br>
+                Usare l'ultimo valore (<strong>${data.lastQta}g</strong>)?</p>`;
+            
+            // Bottone SÌ (Usa storico)
             const btnSi = document.createElement('button');
-            btnSi.textContent = "Sì, usa";
-            btnSi.style.cssText = 'margin-right:8px; padding:8px 14px; background:#689f38; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600;';
+            btnSi.textContent = "✅ Sì, usa";
+            btnSi.style.cssText = 'margin-right:8px; padding:8px 15px; background:#4caf50; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold;';
             btnSi.onclick = () => {
                 div.remove(); // Toglie la domanda
                 addMessage(`Ok, uso ${data.lastQta}g`, 'assistant');
                 procediInserimentoFinale(data, data.lastQta, pasto);
             };
             
+            // Bottone NO (Inserisci manualmente)
             const btnNo = document.createElement('button');
-            btnNo.textContent = "No, inserisci grammi";
-            btnNo.style.cssText = 'padding:8px 14px; background:#fff; border:1px solid #c5e1a5; color:#33691e; border-radius:6px; cursor:pointer;';
+            btnNo.textContent = "✏️ No, cambia";
+            btnNo.style.cssText = 'padding:8px 15px; background:#fff; border:1px solid #ccc; color:#333; border-radius:5px; cursor:pointer;';
             btnNo.onclick = () => {
                 div.remove(); // Toglie la domanda
                 chiediQuantitaManuale(data, pasto); // Passa alla funzione di input manuale
@@ -4579,20 +3727,22 @@ function gestisciQuantitaEInserimento(data, qtaUtente, pasto) {
         // Inizializza l'array log se non esiste
         if (!window.datiGiornalieri.log) window.datiGiornalieri.log = [];
 
-        // Crea l'oggetto allenamento (dopoMeal default 'cena' = impatto solo su cena)
-        const newWorkout = {
-            type: 'workout',
-            desc: desc.charAt(0).toUpperCase() + desc.slice(1),
-            kcal: kcal,
-            dopoMeal: 'cena'
+        // Crea l'oggetto allenamento
+        const newWorkout = { 
+            type: 'workout', 
+            desc: desc.charAt(0).toUpperCase() + desc.slice(1), 
+            kcal: kcal 
         };
 
+        // Aggiunge al log
         window.datiGiornalieri.log.push(newWorkout);
+
+        // Aggiorna il totale calorie bruciate
         window.datiGiornalieri.workoutCalorie = (window.datiGiornalieri.workoutCalorie || 0) + kcal;
 
+        // Salva e aggiorna l'interfaccia
         window.salvaGiorno(window.giornoVisualizzato, window.datiGiornalieri);
         window.aggiornaUI();
-        if (typeof window.renderMealBuilder === 'function') window.renderMealBuilder();
 
         // Conferma in chat
         addMessage(`💪 Allenamento registrato: <strong>${newWorkout.desc}</strong> (-${kcal} kcal)`, 'assistant');
@@ -4600,8 +3750,8 @@ function gestisciQuantitaEInserimento(data, qtaUtente, pasto) {
 
     function mostraSelezioneMultipla(nomeOriginale, results, qtaUtente, pasto) {
         const div = document.createElement('div');
-        div.style.cssText = 'background:#f8f9fa; border:1px solid #dee2e6; padding:14px; border-radius:10px; margin:10px 0; max-width:90%;';
-        div.innerHTML = `<p style="margin:0 0 10px 0; font-weight:600; color:#495057;">Ho trovato più tipi di <strong>${nomeOriginale}</strong>. Quale intendi?</p>`;
+        div.style.cssText = 'background:#e3f2fd; border:1px solid #90caf9; padding:15px; border-radius:8px; margin:10px 0; max-width:90%;';
+        div.innerHTML = `<p style="margin:0 0 10px 0; font-weight:600; color:#1565c0;">Scegli quale "${nomeOriginale}":</p>`;
         
         results.forEach(r => {
             const btn = document.createElement('button');
@@ -4622,24 +3772,25 @@ function gestisciQuantitaEInserimento(data, qtaUtente, pasto) {
 
     function mostraDialogoNuovoAlimento(nome, qtaUtente, pasto) {
         const div = document.createElement('div');
-        div.style.cssText = 'background:#f5f5f5; border:1px solid #e0e0e0; padding:16px; border-radius:10px; margin:10px 0; max-width:90%; box-shadow:0 1px 3px rgba(0,0,0,0.08);';
-        div.innerHTML = `<p style="margin:0 0 12px 0; font-weight:600; color:#333;">Non ho trovato <strong>${nome}</strong> nel tuo database.</p><p style="margin:0 0 14px 0; color:#555; font-size:0.95em;">Vuoi che lo crei io come nutrizionista esperto?</p>`;
+        div.style.cssText = 'background:#fff3e0; border:2px solid #ff9800; padding:15px; border-radius:8px; margin:10px 0; max-width:90%;';
+        div.innerHTML = `<p style="margin:0 0 15px 0; font-weight:600; color:#e65100;">"${nome}" non trovato</p>`;
         
-        const btnAI = document.createElement('button');
-        btnAI.textContent = '✅ Sì, crealo con AI';
-        btnAI.style.cssText = 'display:block; width:100%; margin:8px 0; padding:12px; border:1px solid #667eea; background:#e8eaf6; color:#3f51b5; border-radius:6px; cursor:pointer; font-weight:600;';
         const btnManual = document.createElement('button');
-        btnManual.textContent = '✏️ No, compila manualmente';
-        btnManual.style.cssText = 'display:block; width:100%; margin:8px 0; padding:12px; border:1px solid #9e9e9e; background:#fafafa; color:#424242; border-radius:6px; cursor:pointer; font-weight:600;';
+        btnManual.textContent = '✏️ Compila manualmente nel form';
+        btnManual.style.cssText = 'display:block; width:100%; margin:8px 0; padding:12px; border:1px solid #4caf50; background:#e8f5e9; color:#2e7d32; border-radius:6px; cursor:pointer; font-weight:600;';
         btnManual.onclick = () => {
             div.remove();
             document.getElementById('builder-desc').value = nome;
             if (qtaUtente > 0) document.getElementById('builder-qta').value = qtaUtente;
-            const el = document.getElementById('builder-desc');
-            if (el) { el.focus(); }
+            document.getElementById('builder-desc').focus();
             document.getElementById('food-adder').scrollIntoView({ behavior: 'smooth' });
-            addMessage(`Compila i dati per <strong>${nome}</strong> nel form sopra.`, 'assistant');
+            addMessage(`Compila i dati per <strong>${nome}</strong> nel form sopra`, 'assistant');
         };
+        div.appendChild(btnManual);
+        
+        const btnAI = document.createElement('button');
+        btnAI.textContent = '🤖 Genera con AI e salva';
+        btnAI.style.cssText = 'display:block; width:100%; margin:8px 0; padding:12px; border:1px solid #667eea; background:#e8eaf6; color:#3f51b5; border-radius:6px; cursor:pointer; font-weight:600;';
         btnAI.onclick = async () => {
             btnAI.disabled = true;
             btnManual.disabled = true;
@@ -4692,17 +3843,17 @@ Solo JSON, senza testo.`;
             }
         };
         div.appendChild(btnAI);
-        div.appendChild(btnManual);
+        
         addMessageElement(div);
     }
 
     function chiediQuantitaManuale(data, pasto) {
         const div = document.createElement('div');
-        div.style.cssText = 'background:#fafafa; padding:14px; border-radius:10px; margin:10px 0; border:1px solid #e0e0e0;';
+        div.style.cssText = 'background:#f5f5f5; padding:15px; border-radius:8px; margin:10px 0; border:1px solid #ddd;';
         div.innerHTML = `
-            <p style="margin:0 0 10px 0; color:#424242;">Quanti grammi di <strong>${data.desc}</strong>?</p>
-            <input type="number" id="temp-qta-input" placeholder="es. 150" style="width:100px; padding:8px; border:1px solid #e0e0e0; border-radius:6px; margin-right:8px;">
-            <button id="temp-qta-btn" style="padding:8px 16px; background:#5c6bc0; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:500;">Conferma</button>
+            <p style="margin:0 0 10px 0;">Quanti grammi di <strong>${data.desc}</strong>?</p>
+            <input type="number" id="temp-qta-input" placeholder="es. 150" style="width:100px; padding:8px; border:1px solid #ddd; border-radius:4px; margin-right:10px;">
+            <button id="temp-qta-btn" style="padding:8px 16px; background:#1976d2; color:white; border:none; border-radius:4px; cursor:pointer;">Conferma</button>
         `;
         
         addMessageElement(div);
@@ -4914,7 +4065,7 @@ if (aiSendBtn) {
 
                 let foundAny = false;
 
-                // 1. Cerca comandi CIBO: ricerca in DB → univoco/multiplo/nuovo (con conferma creazione AI)
+                // 1. Cerca comandi CIBO
                 const regexFood = /\[AGGIUNGI:\s*([^|\]]+?)\s*\|\s*([0-9.,]+)\s*\|\s*([^\]]+?)\]/gi;
                 let matchFood;
                 while ((matchFood = regexFood.exec(resp)) !== null) {
@@ -4922,7 +4073,7 @@ if (aiSendBtn) {
                     const nome = matchFood[1].trim();
                     const qta = parseFloat(matchFood[2].replace(',', '.')) || 0;
                     const pasto = matchFood[3].trim().toLowerCase();
-                    await addFoodDirectly(nome, qta, pasto);
+                    await gestisciQuantitaEInserimento({ desc: nome }, qta, pasto); // Usa la tua funzione smart
                 }
 
                 // 2. Cerca comandi ALLENAMENTO
