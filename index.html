@@ -263,6 +263,13 @@
             text-decoration: none;
             cursor: pointer;
         }
+        body.dark-theme .modal-content { background-color: var(--card-bg); border-color: var(--border-color); color: var(--text-color); }
+        body.dark-theme .modal-close { color: var(--muted); }
+        body.dark-theme .modal-close:hover { color: var(--text-color); }
+        .ghost-car-table { margin-top: 10px; }
+        .ghost-car-table th, .ghost-car-table td { padding: 10px 8px; border-bottom: 1px solid var(--border-color); }
+        .ghost-car-table progress { width: 100%; min-width: 80px; height: 14px; border-radius: 6px; }
+        .ghost-car-row-pianificato { color: var(--muted); font-style: italic; }
         .modal-content video {
             background-color: #000;
         }
@@ -621,6 +628,9 @@
     
     <button id="btn-export-json-ai" style="flex-grow: 1; text-align: center; padding: 10px; background-color: #673ab7; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 1em;">
         🧠 Dati Completi AI
+    </button>
+    <button id="btn-ghost-car" type="button" style="flex-grow: 1; text-align: center; padding: 10px; background-color: #455a64; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 1em;" title="Confronta con la tua strategia ideale (Ghost Car)">
+        👻 Ghost Car Mode
     </button>
 </div>
                 
@@ -1026,6 +1036,7 @@
     <div id="diff-modal" class="modal"><div class="modal-content"><span class="modal-close" data-modal="diff-modal">&times;</span><h2 id="diff-modal-title">Confronta Valori Nutrizionali</h2><p>Sono state trovate differenze significative. Scegli quali valori mantenere per ogni nutriente.</p><div id="diff-modal-list" style="max-height: 50vh; overflow-y: auto; padding: 10px; border: 1px solid #eee; border-radius: 8px; margin-top: 15px;"></div><div class="nutrient-confirm-buttons" style="margin-top: 20px;"><button id="btn-cancel-diff" style="background-color: #607d8b;">Annulla</button><button id="btn-apply-diff" style="background-color: #2e7d32;">Applica Modifiche</button></div></div></div>
     <div id="test-warning-modal" class="modal"><div class="modal-content"><span class="modal-close" data-modal="test-warning-modal">&times;</span><h2>Test Pasto – Nutrienti fuori target</h2><p style="font-size: 0.9em; color: #555;">Clicca su una barra per vedere quali alimenti contribuiscono.</p><div id="test-warning-modal-bars"></div></div></div>
     <div id="modal-ripartizione-pasti" class="modal"><div class="modal-content" style="max-width: 620px;"><span class="modal-close" data-modal="modal-ripartizione-pasti">&times;</span><h2>Ripartizione Pasti (%)</h2><p style="font-size: 0.9em; color: #555;">Ogni riga deve totalizzare 100. Valori attuali o default: 20, 35, 15, 30.</p><div id="modal-ripartizione-table-wrap"></div><p id="modal-ripartizione-validation" style="margin-top: 10px; font-weight: 600;"></p><button type="button" id="btn-salva-ripartizione" disabled style="margin-top: 12px; background-color: #2e7d32; color: #fff; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer;">Salva Ripartizione</button></div></div>
+    <div id="modal-ghost-car" class="modal"><div class="modal-content" style="max-width: 560px;"><span class="modal-close" data-modal="modal-ghost-car">&times;</span><h2>👻 Ghost Car Mode</h2><p id="ghost-car-message" style="font-size: 1.05em; margin: 12px 0 20px 0; padding: 12px; border-radius: 8px; background: var(--section-bg); border: 1px solid var(--border-color); color: var(--text-color);"></p><p id="ghost-car-focus" style="font-size: 0.95em; margin: 0 0 16px 0; padding: 10px; border-radius: 6px; color: var(--muted); display: none;"></p><table class="ghost-car-table" style="width:100%; border-collapse: collapse;"><thead><tr><th style="text-align:left; padding:8px; border-bottom: 2px solid var(--border-color);">Pasto</th><th style="text-align:center; padding:8px; border-bottom: 2px solid var(--border-color);">Aderenza</th><th style="text-align:right; padding:8px; border-bottom: 2px solid var(--border-color);">Barra</th></tr></thead><tbody id="ghost-car-tbody"></tbody></table></div></div>
 
    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js" type="module"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js" type="module"></script>
@@ -1653,6 +1664,71 @@ window.pastoInCostruzione = pastoInCostruzione; // Mantieni sincronizzato
             // out.kcal resta base.kcal: mai override da custom, workout modifica sempre il target
 
             return out;
+        }
+
+        /** Calcola aderenza alla strategia (Ghost Car) per il giorno visualizzato: target da ripartizione × target giornalieri, effettivi dal log. Pasti non ancora consumati = "Pianificati". */
+        function calcolaAderenzaStrategica() {
+            const MEAL_ORDER = ['merenda1', 'pranzo', 'merenda2', 'cena'];
+            const MEAL_LABELS = { merenda1: 'Merenda AM', pranzo: 'Pranzo', merenda2: 'Merenda PM', cena: 'Cena' };
+            const strategyKeys = ['kcal', 'prot', 'carb', 'fatTotal', 'fibreTotali'];
+            const targetGiorno = getEffectiveDailyTargets();
+            const log = datiGiornalieri.log || [];
+            const pasti = [];
+            let sommaAderenza = 0;
+            let countAderenza = 0;
+            let hasLowAdherence = false;
+            let hasHighFat = false;
+
+            MEAL_ORDER.forEach(mealId => {
+                const targetMeal = {};
+                strategyKeys.forEach(key => {
+                    const ratio = getRipartizioneRatio(key, mealId);
+                    const dailyVal = targetGiorno[key] != null ? targetGiorno[key] : 0;
+                    targetMeal[key] = ratio * dailyVal;
+                });
+                const entry = log.find(e => e.type === 'meal' && e.mealId === mealId);
+                if (!entry || !entry.items || entry.items.length === 0) {
+                    pasti.push({ mealId, mealLabel: MEAL_LABELS[mealId], pianificato: true, target: targetMeal, effettivi: null, aderenzaPerc: null });
+                    return;
+                }
+                const effettivi = { kcal: 0, prot: 0, carb: 0, fatTotal: 0, fibreTotali: 0 };
+                entry.items.forEach(item => {
+                    effettivi.kcal += (item.kcal || item.cal) || 0;
+                    effettivi.prot += item.prot || 0;
+                    effettivi.carb += item.carb || 0;
+                    effettivi.fatTotal += item.fatTotal || 0;
+                    effettivi.fibreTotali += item.fibreTotali || 0;
+                });
+                let scoreSum = 0, scoreCount = 0;
+                strategyKeys.forEach(key => {
+                    const target = targetMeal[key];
+                    if (target <= 0) return;
+                    const actual = effettivi[key] || 0;
+                    const ratio = actual / target;
+                    const band = 0.10;
+                    let score = 100;
+                    if (ratio < 1 - band) score = Math.max(0, 100 - (1 - band - ratio) * 250);
+                    else if (ratio > 1 + band) score = Math.max(0, 100 - (ratio - 1 - band) * 250);
+                    scoreSum += score;
+                    scoreCount += 1;
+                    if (key === 'fatTotal' && ratio > 1.3) hasHighFat = true;
+                });
+                const aderenzaPerc = scoreCount > 0 ? Math.round(scoreSum / scoreCount) : 100;
+                if (aderenzaPerc < 70) hasLowAdherence = true;
+                sommaAderenza += aderenzaPerc;
+                countAderenza += 1;
+                pasti.push({ mealId, mealLabel: MEAL_LABELS[mealId], pianificato: false, target: targetMeal, effettivi, aderenzaPerc });
+            });
+
+            const aderenzaMedia = countAderenza > 0 ? Math.round(sommaAderenza / countAderenza) : 0;
+            let messaggio = '';
+            if (aderenzaMedia > 90) messaggio = 'Sei un cecchino! Stai guidando esattamente sulla scia della tua Ghost Car! 🏎️💨';
+            else if (aderenzaMedia >= 70) messaggio = 'Ottima gestione! Sei incollato ai tuoi obiettivi, continua così! 🚀';
+            else messaggio = 'Giornata dinamica! Ogni pasto è un\'opportunità: la strategia si sta adattando al tuo ritmo. Forza! ⚡';
+            let messaggioFocus = '';
+            if (hasLowAdherence || hasHighFat) messaggioFocus = 'Hai dato energia extra al corpo, usala per il prossimo movimento! 🧘';
+
+            return { pasti, aderenzaMedia, messaggio, messaggioFocus };
         }
 
         function aggiornaUI() {
@@ -3160,6 +3236,32 @@ Regole:
 
             const btnModificaRipartizione = document.getElementById('btn-modifica-ripartizione');
             if (btnModificaRipartizione) btnModificaRipartizione.addEventListener('click', openModalRipartizione);
+
+            const btnGhostCar = document.getElementById('btn-ghost-car');
+            if (btnGhostCar) {
+                btnGhostCar.addEventListener('click', () => {
+                    const result = calcolaAderenzaStrategica();
+                    const msgEl = document.getElementById('ghost-car-message');
+                    const focusEl = document.getElementById('ghost-car-focus');
+                    const tbody = document.getElementById('ghost-car-tbody');
+                    if (msgEl) msgEl.textContent = result.messaggio;
+                    if (focusEl) {
+                        focusEl.textContent = result.messaggioFocus;
+                        focusEl.style.display = result.messaggioFocus ? 'block' : 'none';
+                    }
+                    if (tbody) {
+                        tbody.innerHTML = result.pasti.map(p => {
+                            if (p.pianificato) {
+                                return '<tr class="ghost-car-row-pianificato"><td>' + p.mealLabel + '</td><td colspan="2" style="text-align:center;">Pianificati</td></tr>';
+                            }
+                            const pct = Math.min(100, Math.max(0, p.aderenzaPerc));
+                            return '<tr><td>' + p.mealLabel + '</td><td style="text-align:center; font-weight:600;">' + pct + '%</td><td><progress value="' + pct + '" max="100"></progress></td></tr>';
+                        }).join('');
+                    }
+                    const modal = document.getElementById('modal-ghost-car');
+                    if (modal) modal.style.display = 'block';
+                });
+            }
 
             document.getElementById('btn-salva-ripartizione')?.addEventListener('click', () => {
                 const wrap = document.getElementById('modal-ripartizione-table-wrap');
