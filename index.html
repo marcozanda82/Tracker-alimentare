@@ -1036,7 +1036,7 @@
     <div id="diff-modal" class="modal"><div class="modal-content"><span class="modal-close" data-modal="diff-modal">&times;</span><h2 id="diff-modal-title">Confronta Valori Nutrizionali</h2><p>Sono state trovate differenze significative. Scegli quali valori mantenere per ogni nutriente.</p><div id="diff-modal-list" style="max-height: 50vh; overflow-y: auto; padding: 10px; border: 1px solid #eee; border-radius: 8px; margin-top: 15px;"></div><div class="nutrient-confirm-buttons" style="margin-top: 20px;"><button id="btn-cancel-diff" style="background-color: #607d8b;">Annulla</button><button id="btn-apply-diff" style="background-color: #2e7d32;">Applica Modifiche</button></div></div></div>
     <div id="test-warning-modal" class="modal"><div class="modal-content"><span class="modal-close" data-modal="test-warning-modal">&times;</span><h2>Test Pasto – Nutrienti fuori target</h2><p style="font-size: 0.9em; color: #555;">Clicca su una barra per vedere quali alimenti contribuiscono.</p><div id="test-warning-modal-bars"></div></div></div>
     <div id="modal-ripartizione-pasti" class="modal"><div class="modal-content" style="max-width: 620px;"><span class="modal-close" data-modal="modal-ripartizione-pasti">&times;</span><h2>Ripartizione Pasti (%)</h2><p style="font-size: 0.9em; color: #555;">Ogni riga deve totalizzare 100. Valori attuali o default: 20, 35, 15, 30.</p><div id="modal-ripartizione-table-wrap"></div><p id="modal-ripartizione-validation" style="margin-top: 10px; font-weight: 600;"></p><button type="button" id="btn-salva-ripartizione" disabled style="margin-top: 12px; background-color: #2e7d32; color: #fff; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer;">Salva Ripartizione</button></div></div>
-    <div id="modal-ghost-car" class="modal"><div class="modal-content" style="max-width: 560px;"><span class="modal-close" data-modal="modal-ghost-car">&times;</span><h2>👻 Ghost Car Mode</h2><p id="ghost-car-message" style="font-size: 1.05em; margin: 12px 0 20px 0; padding: 12px; border-radius: 8px; background: var(--section-bg); border: 1px solid var(--border-color); color: var(--text-color);"></p><p id="ghost-car-focus" style="font-size: 0.95em; margin: 0 0 16px 0; padding: 10px; border-radius: 6px; color: var(--muted); display: none;"></p><table class="ghost-car-table" style="width:100%; border-collapse: collapse;"><thead><tr><th style="text-align:left; padding:8px; border-bottom: 2px solid var(--border-color);">Pasto</th><th style="text-align:center; padding:8px; border-bottom: 2px solid var(--border-color);">Aderenza</th><th style="text-align:right; padding:8px; border-bottom: 2px solid var(--border-color);">Barra</th></tr></thead><tbody id="ghost-car-tbody"></tbody></table></div></div>
+    <div id="modal-ghost-car" class="modal"><div class="modal-content" style="max-width: 560px;"><span class="modal-close" data-modal="modal-ghost-car">&times;</span><h2>👻 Ghost Car Mode</h2><p id="ghost-car-message" style="font-size: 1.05em; margin: 12px 0 20px 0; padding: 12px; border-radius: 8px; background: var(--section-bg); border: 1px solid var(--border-color); color: var(--text-color);"></p><p id="ghost-car-focus" style="font-size: 0.95em; margin: 0 0 16px 0; padding: 10px; border-radius: 6px; color: var(--muted); display: none;"></p><canvas id="ghost-chart" height="180" style="display:block; width:100%; max-width:100%; margin:12px 0; border-radius:8px; background:var(--section-bg);"></canvas><table class="ghost-car-table" style="width:100%; border-collapse: collapse;"><thead><tr><th style="text-align:left; padding:8px; border-bottom: 2px solid var(--border-color);">Pasto</th><th style="text-align:center; padding:8px; border-bottom: 2px solid var(--border-color);">Aderenza</th><th style="text-align:right; padding:8px; border-bottom: 2px solid var(--border-color);">Barra</th></tr></thead><tbody id="ghost-car-tbody"></tbody></table></div></div>
 
    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js" type="module"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js" type="module"></script>
@@ -3243,14 +3243,8 @@ Regole:
             if (btnGhostCar) {
                 btnGhostCar.addEventListener('click', () => {
                     const result = calcolaAderenzaStrategica();
-                    const msgEl = document.getElementById('ghost-car-message');
-                    const focusEl = document.getElementById('ghost-car-focus');
+                    renderGhostAdvanced(result);
                     const tbody = document.getElementById('ghost-car-tbody');
-                    if (msgEl) msgEl.textContent = result.messaggio;
-                    if (focusEl) {
-                        focusEl.textContent = result.messaggioFocus;
-                        focusEl.style.display = result.messaggioFocus ? 'block' : 'none';
-                    }
                     if (tbody) {
                         tbody.innerHTML = result.pasti.map(p => {
                             if (p.pianificato) {
@@ -4130,6 +4124,222 @@ if (button.dataset.type === 'builder') {
         window.foodDatabase = foodDatabase;
         window.salvaFoodDatabase = salvaFoodDatabase;
         window.sanitizeFirebaseKey = sanitizeFirebaseKey;
+
+        /**
+         * Ghost Mode avanzato: calcola scostamenti calorici per pasto, Sync Score,
+         * messaggio diagnostico e disegna il grafico traiettoria ideale vs reale.
+         * Usa solo result da calcolaAderenzaStrategica(), nessuna modifica alle altre funzioni.
+         */
+        function renderGhostAdvanced(result) {
+            const pasti = result.pasti || [];
+            const LABELS = ['Merenda AM', 'Pranzo', 'Merenda PM', 'Cena'];
+
+            // 1) Scostamento calorico % per ogni pasto (non registrato → null)
+            const scostamenti = pasti.map(p => {
+                if (p.pianificato || !p.effettivi || !p.target || p.target.kcal <= 0) return null;
+                const eff = p.effettivi.kcal || 0;
+                const target = p.target.kcal;
+                return ((eff - target) / target) * 100;
+            });
+
+            // 2) Sync Score giornaliero: 100 - media scostamenti assoluti, clamp 0-100
+            const valoriAssoluti = scostamenti.filter(s => s !== null).map(s => Math.abs(s));
+            const mediaAssoluta = valoriAssoluti.length ? valoriAssoluti.reduce((a, b) => a + b, 0) / valoriAssoluti.length : 0;
+            let syncScore = Math.round(100 - mediaAssoluta);
+            syncScore = Math.max(0, Math.min(100, syncScore));
+
+            // 3) Messaggio diagnostico e colore traiettoria (verde / giallo / rosso)
+            let messaggio = '';
+            let lineColor = '';
+            if (syncScore >= 90) {
+                messaggio = 'Ghost perfettamente in scia';
+                lineColor = '#2e7d32';
+            } else if (syncScore >= 75) {
+                messaggio = 'Quasi in scia';
+                lineColor = '#f9a825';
+            } else if (syncScore >= 60) {
+                messaggio = 'Traiettoria instabile';
+                lineColor = '#ef6c00';
+            } else {
+                messaggio = 'Fuori traiettoria Ghost';
+                lineColor = '#c62828';
+            }
+            const msgEl = document.getElementById('ghost-car-message');
+            if (msgEl) msgEl.textContent = messaggio + ' · Sync ' + syncScore + '%';
+
+            // ——— Coaching: scostamenti per pasto (kcal, prot, carb, grassi) e messaggio dinamico ———
+            const MEAL_LABELS_FOCUS = ['Merenda AM', 'Pranzo', 'Merenda PM', 'Cena'];
+            const pastiConScostamenti = pasti.map((p, idx) => {
+                if (p.pianificato || !p.effettivi || !p.target) return { mealLabel: MEAL_LABELS_FOCUS[idx], pianificato: true, scostKcal: null, scostProt: null, scostCarb: null, scostFat: null };
+                const e = p.effettivi;
+                const t = p.target;
+                const scost = (eff, tgt) => (tgt != null && tgt > 0 ? ((eff || 0) - tgt) / tgt * 100 : null);
+                return {
+                    mealLabel: p.mealLabel || MEAL_LABELS_FOCUS[idx],
+                    pianificato: false,
+                    scostKcal: scost(e.kcal || e.cal, t.kcal),
+                    scostProt: scost(e.prot, t.prot),
+                    scostCarb: scost(e.carb, t.carb),
+                    scostFat: scost(e.fatTotal, t.fatTotal)
+                };
+            });
+
+            let worstMealIdx = -1;
+            let maxAbsKcal = 0;
+            pastiConScostamenti.forEach((p, i) => {
+                if (p.pianificato || p.scostKcal == null) return;
+                const absK = Math.abs(p.scostKcal);
+                if (absK > maxAbsKcal) { maxAbsKcal = absK; worstMealIdx = i; }
+            });
+
+            const macroKeys = ['scostKcal', 'scostProt', 'scostCarb', 'scostFat'];
+            const macroNames = { scostKcal: 'calorico', scostProt: 'proteine', scostCarb: 'carboidrati', scostFat: 'grassi' };
+            let worstMacro = 'scostKcal';
+            let maxMacroDev = 0;
+            macroKeys.forEach(key => {
+                const somma = pastiConScostamenti
+                    .filter(p => !p.pianificato && p[key] != null)
+                    .reduce((acc, p) => acc + Math.abs(p[key]), 0);
+                if (somma > maxMacroDev) { maxMacroDev = somma; worstMacro = key; }
+            });
+
+            const getProssimoPasto = (afterIdx) => {
+                if (afterIdx < 0 || afterIdx >= 3) return 'cena';
+                return MEAL_LABELS_FOCUS[afterIdx + 1];
+            };
+            const worstMealLabel = worstMealIdx >= 0 ? MEAL_LABELS_FOCUS[worstMealIdx] : '';
+            const prossimoPasto = getProssimoPasto(worstMealIdx);
+
+            let focusMessage = '';
+            if (syncScore > 90) {
+                focusMessage = 'Perfettamente in traiettoria.';
+            } else if (syncScore >= 70) {
+                if (worstMealIdx < 0) focusMessage = 'Nessun pasto registrato: inizia a loggare per il coaching.';
+                else {
+                    const p = pastiConScostamenti[worstMealIdx];
+                    const eccessoKcal = p.scostKcal != null && p.scostKcal > 10;
+                    const deficitKcal = p.scostKcal != null && p.scostKcal < -10;
+                    if (eccessoKcal) focusMessage = 'Leggero eccesso calorico a ' + worstMealLabel + ': mantieni ' + prossimoPasto.toLowerCase() + ' in target.';
+                    else if (deficitKcal) focusMessage = 'Leggero deficit a ' + worstMealLabel + ': recupera con ' + prossimoPasto.toLowerCase() + ' bilanciato.';
+                    else if (worstMacro === 'scostProt' && pastiConScostamenti.some(x => !x.pianificato && x.scostProt != null && x.scostProt < -10)) focusMessage = 'Proteine leggermente sotto: punta al target a ' + prossimoPasto.toLowerCase() + '.';
+                    else if (worstMacro === 'scostCarb' && pastiConScostamenti.some(x => !x.pianificato && x.scostCarb != null && x.scostCarb > 10)) focusMessage = 'Carboidrati leggermente alti: mantieni ' + prossimoPasto.toLowerCase() + ' contenuto.';
+                    else if (worstMacro === 'scostFat' && pastiConScostamenti.some(x => !x.pianificato && x.scostFat != null && x.scostFat > 10)) focusMessage = 'Grassi leggermente alti: riduci a ' + prossimoPasto.toLowerCase() + '.';
+                    else focusMessage = 'Quasi in scia: mantieni ' + prossimoPasto.toLowerCase() + ' in target.';
+                }
+            } else {
+                if (worstMealIdx < 0) focusMessage = 'Registra i pasti per avere un piano d\'azione.';
+                else {
+                    const p = pastiConScostamenti[worstMealIdx];
+                    const eccessoKcal = p.scostKcal != null && p.scostKcal > 15;
+                    const deficitProt = p.scostProt != null && p.scostProt < -15;
+                    const eccessoCarb = p.scostCarb != null && p.scostCarb > 15;
+                    const eccessoFat = p.scostFat != null && p.scostFat > 15;
+                    if (eccessoKcal) focusMessage = 'Eccesso calorico a ' + worstMealLabel + ': rientra riducendo grassi a ' + prossimoPasto.toLowerCase() + '.';
+                    else if (deficitProt) focusMessage = 'Proteine sotto target: recupera nella ' + prossimoPasto.toLowerCase() + '.';
+                    else if (eccessoCarb) focusMessage = 'Carbo elevati a ' + worstMealLabel + ': mantieni ' + prossimoPasto.toLowerCase() + ' leggera.';
+                    else if (eccessoFat) focusMessage = 'Grassi alti a ' + worstMealLabel + ': riduci a ' + prossimoPasto.toLowerCase() + '.';
+                    else if (worstMacro === 'scostProt') focusMessage = 'Proteine fuori range: bilancia nella ' + prossimoPasto.toLowerCase() + '.';
+                    else if (worstMacro === 'scostCarb') focusMessage = 'Carboidrati fuori traiettoria: correggi a ' + prossimoPasto.toLowerCase() + '.';
+                    else if (worstMacro === 'scostFat') focusMessage = 'Grassi fuori target: rientra a ' + prossimoPasto.toLowerCase() + '.';
+                    else focusMessage = 'Fuori traiettoria: riallinea con ' + prossimoPasto.toLowerCase() + ' in target.';
+                }
+            }
+
+            const focusEl = document.getElementById('ghost-car-focus');
+            if (focusEl) {
+                focusEl.textContent = focusMessage;
+                focusEl.style.display = focusMessage ? 'block' : 'none';
+            }
+
+            // 4) Grafico canvas: asse X = 4 pasti, Y = scostamento % (-40 .. +40), linea 0 = ideale, linea reale = scostamenti
+            const canvas = document.getElementById('ghost-chart');
+            if (!canvas) return;
+            const cw = 520;
+            const ch = 180;
+            canvas.width = cw;
+            canvas.height = ch;
+            canvas.style.width = cw + 'px';
+            canvas.style.height = ch + 'px';
+            canvas.style.maxWidth = '100%';
+
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return;
+            const padL = 48;
+            const padR = 24;
+            const padT = 20;
+            const padB = 28;
+            const graphW = cw - padL - padR;
+            const graphH = ch - padT - padB;
+
+            ctx.clearRect(0, 0, cw, ch);
+
+            // Griglia e asse Y (-40 .. +40)
+            const yMin = -40;
+            const yMax = 40;
+            const yToY = (v) => padT + (1 - (v - yMin) / (yMax - yMin)) * graphH;
+            ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+            ctx.lineWidth = 1;
+            [0, -20, 20, -40, 40].forEach(v => {
+                const y = yToY(v);
+                ctx.beginPath();
+                ctx.moveTo(padL, y);
+                ctx.lineTo(cw - padR, y);
+                ctx.stroke();
+            });
+            ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+            ctx.lineWidth = 1.5;
+            const yZero = yToY(0);
+            ctx.beginPath();
+            ctx.moveTo(padL, yZero);
+            ctx.lineTo(cw - padR, yZero);
+            ctx.stroke();
+
+            // Linea ideale a 0 (tratto neon sottile)
+            ctx.setLineDash([]);
+            ctx.strokeStyle = 'rgba(13, 71, 161, 0.5)';
+            ctx.shadowColor = 'rgba(13, 71, 161, 0.4)';
+            ctx.shadowBlur = 4;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(padL, yZero);
+            ctx.lineTo(cw - padR, yZero);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // Linea reale (scostamenti); per null uso 0 per continuità
+            const points = scostamenti.map((s, i) => ({ x: padL + (i + 0.5) * (graphW / 4), y: yToY(s !== null ? s : 0) }));
+            if (points.length) {
+                ctx.strokeStyle = lineColor;
+                ctx.shadowColor = lineColor;
+                ctx.shadowBlur = 6;
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, points[0].y);
+                for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = lineColor;
+                points.forEach((p, i) => {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            }
+
+            // Etichette asse X (4 pasti)
+            ctx.fillStyle = 'var(--muted)';
+            ctx.font = '11px sans-serif';
+            ctx.textAlign = 'center';
+            ['Merenda AM', 'Pranzo', 'Merenda PM', 'Cena'].forEach((label, i) => {
+                const x = padL + (i + 0.5) * (graphW / 4);
+                ctx.fillText(label, x, ch - 8);
+            });
+            // Etichetta Y
+            ctx.textAlign = 'right';
+            ctx.fillText('0%', padL - 6, yZero + 4);
+            ctx.fillText('-40', padL - 6, yToY(-40) + 4);
+            ctx.fillText('+40', padL - 6, yToY(40) + 4);
+        }
 
 });
     </script>
