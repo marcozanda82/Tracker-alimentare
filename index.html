@@ -6,7 +6,7 @@
     <title>Tracker Nutrizionale Definitivo v6</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0d47a1">
-    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="apple-touch-icon" href="kentuos_icon_192.png">
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
@@ -1503,6 +1503,95 @@ Includi nel JSON la chiave 'workout_pianificato' con 'desc' e 'kcal' stimate in 
             console.log(`Dati salvati LOCALMENTE per il giorno: ${dataDaSalvare}`);
             saveSingleItemToCloud(key, datiDaSalvare);
         }
+
+        /**
+         * Retrocompatibilità Kentu ↔ vecchio HTML: se il log contiene type:'food' (log piatto),
+         * raggruppa per mealType in oggetti { type:'meal', mealId, desc, items }.
+         * I type:'meal' esistenti restano e si fondono con i food dello stesso mealId.
+         * type:'workout' e altri tipi restano in coda nell'ordine originale.
+         */
+        function normalizzaLogKentuCompatibile(log) {
+            if (!Array.isArray(log) || log.length === 0) return log;
+            var haFood = log.some(function (e) { return e && e.type === 'food'; });
+            if (!haFood) return log;
+
+            var MEAL_ORDER = ['merenda1', 'pranzo', 'merenda2', 'cena'];
+            var MEAL_LABELS = { merenda1: 'Merenda AM', pranzo: 'Pranzo', merenda2: 'Merenda PM', cena: 'Cena' };
+            var groups = { colazione: ['merenda1', 'colazione'], pranzo: ['pranzo'], spuntino: ['merenda2', 'spuntino', 'snack'], cena: ['cena'] };
+            var MEAL_TYPE_TO_CANONICAL = {};
+            Object.keys(groups).forEach(function (can) {
+                groups[can].forEach(function (alias) {
+                    MEAL_TYPE_TO_CANONICAL[alias] = can;
+                });
+            });
+
+            function toCanonicalBase(base) {
+                return MEAL_TYPE_TO_CANONICAL[base] || base;
+            }
+
+            function vecchioMealIdDaFood(entry) {
+                var raw = String(entry.mealType || '').split('_')[0];
+                var can = toCanonicalBase(raw);
+                if (can === 'colazione') return 'merenda1';
+                if (can === 'pranzo') return 'pranzo';
+                if (can === 'spuntino') return 'merenda2';
+                if (can === 'cena') return 'cena';
+                if (MEAL_ORDER.indexOf(raw) !== -1) return raw;
+                return 'merenda2';
+            }
+
+            function cloneFoodComeItemPasto(f) {
+                var o = {};
+                for (var k in f) {
+                    if (Object.prototype.hasOwnProperty.call(f, k)) o[k] = f[k];
+                }
+                if (o.cal != null && o.kcal == null) {
+                    o.kcal = o.cal;
+                    delete o.cal;
+                }
+                if (o.weight != null && o.qta == null) o.qta = o.weight;
+                delete o.type;
+                delete o.mealType;
+                return o;
+            }
+
+            var mealById = {};
+            var rest = [];
+
+            log.forEach(function (e) {
+                if (!e) return;
+                if (e.type === 'food') return;
+                if (e.type === 'meal' && e.mealId && MEAL_ORDER.indexOf(e.mealId) !== -1) {
+                    mealById[e.mealId] = JSON.parse(JSON.stringify(e));
+                    if (!Array.isArray(mealById[e.mealId].items)) mealById[e.mealId].items = [];
+                    return;
+                }
+                rest.push(e);
+            });
+
+            log.forEach(function (e) {
+                if (!e || e.type !== 'food') return;
+                var mid = vecchioMealIdDaFood(e);
+                if (!mealById[mid]) {
+                    mealById[mid] = {
+                        type: 'meal',
+                        mealId: mid,
+                        desc: MEAL_LABELS[mid],
+                        isExpanded: false,
+                        items: []
+                    };
+                }
+                mealById[mid].items.push(cloneFoodComeItemPasto(e));
+            });
+
+            var orderedMeals = MEAL_ORDER.map(function (id) {
+                return mealById[id];
+            }).filter(function (m) {
+                return m && Array.isArray(m.items) && m.items.length > 0;
+            });
+
+            return orderedMeals.concat(rest);
+        }
         
         function caricaGiorno(data) {
             loadProfileForTipo(getCurrentTipoGiorno());
@@ -1531,6 +1620,22 @@ Includi nel JSON la chiave 'workout_pianificato' con 'desc' e 'kcal' stimate in 
             datiGiornalieri = datiTrovati || { log: [], workoutCalorie: 0, note: '' };
             dailyNotesTextarea.value = datiGiornalieri.note || '';
             if (!datiGiornalieri.log) datiGiornalieri.log = [];
+            datiGiornalieri.log = normalizzaLogKentuCompatibile(datiGiornalieri.log);
+            (datiGiornalieri.log || []).forEach(function (entry) {
+                var items = entry.type === 'meal' ? (entry.items || []) : [];
+                items.forEach(function (item) {
+                    if (item && item.cal && !item.kcal) {
+                        item.kcal = item.cal;
+                        delete item.cal;
+                    }
+                });
+            });
+            var sommaWorkoutDaLog = (datiGiornalieri.log || []).reduce(function (s, e) {
+                return s + (e && e.type === 'workout' ? (Number(e.kcal) || 0) : 0);
+            }, 0);
+            if (sommaWorkoutDaLog > 0 && (typeof datiGiornalieri.workoutCalorie !== 'number' || isNaN(datiGiornalieri.workoutCalorie) || datiGiornalieri.workoutCalorie === 0)) {
+                datiGiornalieri.workoutCalorie = sommaWorkoutDaLog;
+            }
             if (typeof datiGiornalieri.workoutCalorie === 'undefined') datiGiornalieri.workoutCalorie = 0;
             if (typeof datiGiornalieri.workoutTeorico === 'undefined') datiGiornalieri.workoutTeorico = null;
             if (typeof datiGiornalieri.lavoroKcal !== 'number' || isNaN(datiGiornalieri.lavoroKcal)) datiGiornalieri.lavoroKcal = 0;
